@@ -1,0 +1,5 @@
+# notas y prompts personales, no forman parte del juego
+Claude,json
+*.local.*
+.DS_Store
+Thumbs.db
