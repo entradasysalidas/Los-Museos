@@ -7,7 +7,7 @@ reinterpretación libre a partir del tema y los componentes de la caja.
 
 ## Jugar
 
-👉 **[Jugar online](https://USUARIO.github.io/lunes/)**
+👉 **[Jugar online](https://entradasysalidas.github.io/Lunes/)**
 
 O descargá `index.html` y abrilo con doble clic. Funciona offline.
 
