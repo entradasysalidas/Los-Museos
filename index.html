@@ -3,635 +3,1214 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LUNES — Escapá de la oficina</title>
+<title>LUNES — Sobreviví a la jornada laboral</title>
 <style>
   :root{
-    --bg:#15161a; --panel:#1f2128; --panel2:#272a33; --line:#343845;
-    --ink:#e9e9ee; --dim:#9aa0b0; --acc:#ffcc33; --bad:#e04b4b; --good:#4bd47a;
+    --bg:#0f1116; --panel:#1b1f2a; --panel2:#232838; --line:#2f3648;
+    --ink:#eef0f6; --dim:#8f97ac; --acc:#f5a524; --acc2:#38bdf8;
+    --bad:#ef4444; --good:#22c55e;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif;}
-  #app{max-width:1060px;margin:0 auto;padding:18px 16px 40px}
-  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
-  h1{margin:0;font-size:34px;letter-spacing:-1px;font-weight:800}
-  h1 span{color:var(--acc)}
-  .sub{color:var(--dim);font-size:13px}
-  #stage{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
-  #board{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:10px;box-shadow:0 10px 30px #0007}
-  canvas{display:block;max-width:100%;height:auto;border-radius:8px;cursor:pointer}
-  aside{flex:1;min-width:250px;display:flex;flex-direction:column;gap:12px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .card h3{margin:0 0 8px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);font-weight:700}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1d2130,var(--bg));
+    color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  #app{max-width:1190px;margin:0 auto;padding:16px 16px 34px}
+
+  header{display:flex;align-items:center;gap:14px;margin-bottom:13px;flex-wrap:wrap}
+  .logo{font-size:30px;font-weight:900;letter-spacing:-1.5px;line-height:1}
+  .logo b{color:var(--acc)}
+  .tagline{color:var(--dim);font-size:12.5px;border-left:1px solid var(--line);padding-left:14px}
+  .scen{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px;font-size:12px;color:var(--dim);white-space:nowrap}
+  .chip b{color:var(--ink)}
+
+  #stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  #boardwrap{position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:10px;box-shadow:0 20px 50px #0009,inset 0 1px 0 #ffffff0d}
+  canvas{display:block;max-width:100%;height:auto;border-radius:9px;cursor:pointer;background:#b9b3a6}
+
+  /* ---------- tablero del jugador ---------- */
+  #tray{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .traybox{flex:1;min-width:250px;background:#141821;border:1px solid var(--line);
+    border-radius:11px;padding:9px 11px}
+  .traybox h4{margin:0 0 8px;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--dim);font-weight:800;display:flex;justify-content:space-between}
+  .slots{display:flex;gap:7px}
+  .slot{flex:1;border-radius:9px;padding:7px 6px;text-align:center;min-height:64px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    border:1px dashed #3a4256;background:#0f131b;transition:.18s}
+  .slot .ic{font-size:19px;line-height:1}
+  .slot .nm{font-size:10.5px;font-weight:800;letter-spacing:.2px}
+  .slot .st{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+  .slot.empty .ic{opacity:.25;filter:grayscale(1)}
+  .slot.empty .nm{color:#4c556b}
+  /* informe impreso / en mano */
+  .slot.hand{border-style:solid;box-shadow:0 0 0 1px #0006,0 4px 12px #0007;
+    animation:pop .32s ease-out}
+  .slot.hand .st{color:#0d1117;opacity:.7;font-weight:800}
+  .slot.hand .nm{color:#0d1117}
+  .slot.done{border-style:solid;border-color:var(--good);background:#0e2318}
+  .slot.done .nm{color:var(--good)}
+  /* recompensas */
+  .slot.got{border-style:solid;border-color:var(--acc);background:#241c0c;cursor:pointer}
+  .slot.got:hover{transform:translateY(-2px);box-shadow:0 6px 16px #0008}
+  .slot.got .nm{color:var(--acc)}
+  .slot.used{border-color:var(--line);background:#171a22;cursor:default}
+  .slot.used .ic{filter:grayscale(1);opacity:.35}
+  .slot.used .nm{color:#4c556b;text-decoration:line-through}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+  aside{flex:1;min-width:265px;max-width:320px;display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--dim);font-weight:800}
   .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .big{font-size:20px;font-weight:700}
-  .bar{height:12px;border-radius:6px;background:var(--panel2);overflow:hidden;margin-top:6px}
-  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4bd47a,#ffcc33,#e04b4b);
-    transition:width .25s}
-  .dots{display:flex;gap:5px;margin-top:4px}
-  .dot{width:14px;height:14px;border-radius:50%;background:var(--panel2);border:1px solid var(--line)}
-  .dot.on{background:var(--acc);border-color:var(--acc)}
-  .items{display:flex;flex-direction:column;gap:6px}
-  .item{display:flex;gap:9px;align-items:center;background:var(--panel2);border:1px solid var(--line);
-    border-radius:8px;padding:7px 9px;cursor:pointer;transition:.12s}
-  .item:hover{border-color:var(--acc);transform:translateX(2px)}
-  .item .e{font-size:19px}
-  .item b{font-size:12.5px;display:block}
-  .item small{color:var(--dim);font-size:11px}
-  .item .k{margin-left:auto;color:var(--dim);font-size:10px;border:1px solid var(--line);
-    border-radius:4px;padding:1px 5px}
-  .empty{color:var(--dim);font-size:12px;font-style:italic}
-  #card-jefe{border-left:3px solid var(--bad)}
-  #log{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:10px 14px;font:12px/1.7 ui-monospace,Consolas,monospace;color:var(--dim);
-    height:132px;overflow-y:auto}
-  #log b{color:var(--ink)}
-  #log .r{color:var(--bad)} #log .g{color:var(--good)} #log .y{color:var(--acc)}
-  .keys{color:var(--dim);font-size:11.5px;margin-top:12px;line-height:1.9}
-  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
-    padding:1px 6px;font:11px ui-monospace,monospace;color:var(--ink)}
-  #overlay{position:fixed;inset:0;background:#0d0e11e8;display:flex;align-items:center;
-    justify-content:center;padding:20px;z-index:9}
+  .row+.row{margin-top:7px}
+  .big{font-size:17px;font-weight:800}
+
+  .goal{display:flex;align-items:center;gap:9px;padding:6px 0}
+  .goal+.goal{border-top:1px solid var(--line)}
+  .goal .n{width:20px;height:20px;border-radius:50%;background:var(--panel2);
+    border:1px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:800;
+    color:var(--dim);flex:none}
+  .goal.done .n{background:var(--good);border-color:var(--good);color:#06240f}
+  .goal .t{font-size:12.5px;flex:1}
+  .goal.done .t{color:var(--dim);text-decoration:line-through}
+  .goal .v{font-weight:800;font-size:13px}
+
+  .meter{height:9px;border-radius:5px;background:var(--panel2);overflow:hidden;margin-top:6px;
+    border:1px solid var(--line)}
+  .meter>i{display:block;height:100%;width:0;transition:width .3s;
+    background:linear-gradient(90deg,#f5a524,#ef4444)}
+  .pips{display:flex;gap:5px}
+  .pip{width:16px;height:16px;border-radius:4px;background:var(--panel2);border:1px solid var(--line)}
+  .pip.on{background:var(--bad);border-color:var(--bad)}
+  .pip.mp{border-radius:50%;width:13px;height:13px}
+  .pip.mp.on{background:var(--acc2);border-color:var(--acc2)}
+
+  #bosscard{border-left:3px solid var(--bad)}
+  #bosscard .name{font-size:14px;font-weight:800;margin-bottom:2px}
+  #bosscard .desc{color:var(--dim);font-size:11.5px;line-height:1.4;min-height:32px}
+  .deckcount{color:var(--dim);font-size:11px;margin-top:7px;display:flex;
+    justify-content:space-between;border-top:1px solid var(--line);padding-top:6px}
+
+  #log{margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:9px 13px;font:12px/1.7 ui-monospace,Consolas,monospace;color:var(--dim);
+    height:112px;overflow-y:auto}
+  #log b{color:var(--ink)} #log .r{color:var(--bad)} #log .g{color:var(--good)} #log .y{color:var(--acc)}
+  #log .sep{color:#3c4458}
+
+  .keys{color:var(--dim);font-size:11.5px;margin-top:10px;line-height:2}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:4px;padding:1px 6px;font:11px ui-monospace,monospace;color:var(--ink)}
+
+  #overlay{position:fixed;inset:0;background:#080a0ee8;display:flex;align-items:center;
+    justify-content:center;padding:20px;z-index:20;overflow-y:auto}
   #overlay.off{display:none}
-  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 30px;
-    max-width:460px;text-align:center;box-shadow:0 20px 60px #000a}
-  .modal h2{margin:0 0 6px;font-size:26px}
-  .modal p{color:var(--dim);margin:0 0 18px;font-size:13.5px}
-  .btn{background:var(--acc);color:#1a1a1a;border:0;border-radius:9px;padding:11px 18px;
-    font:700 14px/1 inherit;cursor:pointer;margin:4px}
-  .btn:hover{filter:brightness(1.1)}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    padding:24px 28px;max-width:540px;width:100%;box-shadow:0 30px 80px #000c}
+  .modal h2{margin:0 0 4px;font-size:27px;letter-spacing:-.5px}
+  .modal .lead{color:var(--dim);font-size:13px;margin:0 0 14px;line-height:1.6}
+  .scenlist{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .sc{display:flex;gap:12px;align-items:center;background:var(--panel2);border:1px solid var(--line);
+    border-radius:11px;padding:11px 14px;cursor:pointer;transition:.12s;text-align:left}
+  .sc:hover{border-color:var(--acc);transform:translateX(3px)}
+  .sc .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .sc b{display:block;font-size:14.5px}
+  .sc small{color:var(--dim);font-size:11.5px}
+  .btn{background:var(--acc);color:#20160a;border:0;border-radius:10px;padding:11px 18px;
+    font:800 14px/1 inherit;cursor:pointer;margin:4px 4px 0 0}
+  .btn:hover{filter:brightness(1.08)}
   .btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-  .diffs{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;text-align:left}
-  .diff{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer}
-  .diff:hover{border-color:var(--acc)}
-  .diff b{display:block;font-size:15px} .diff small{color:var(--dim);font-size:11.5px}
+  .rules{font-size:12.5px;color:var(--dim);line-height:1.75;border-top:1px solid var(--line);
+    padding-top:12px;margin-top:12px}
+  .rules b{color:var(--ink)}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>LU<span>NES</span></h1>
-    <div class="sub">Soborná a tus colegas y escapá del trabajo antes de que te encuentre el jefe.</div>
+    <div class="logo">LU<b>NES</b></div>
+    <div class="tagline">Robá los informes, entregáselos a tus compañeros, cobrá las recompensas<br>y rajá por la escalera antes de que el Jefe te agarre holgazaneando.</div>
+    <div class="scen"><span class="chip" id="scenchip">—</span><span class="chip" id="turnchip">Ronda 1</span></div>
   </header>
 
   <div id="stage">
-    <div id="board"><canvas id="c" width="720" height="480"></canvas></div>
+    <div>
+      <div id="boardwrap">
+        <canvas id="c" width="660" height="480"></canvas>
+        <div id="tray">
+          <div class="traybox">
+            <h4><span>Informes</span><span id="pilen"></span></h4>
+            <div class="slots" id="docslots"></div>
+          </div>
+          <div class="traybox">
+            <h4><span>Fichas de recompensa</span><span id="rwn"></span></h4>
+            <div class="slots" id="rwslots"></div>
+          </div>
+        </div>
+      </div>
+      <div id="log"></div>
+      <div class="keys">
+        <kbd>← ↑ → ↓</kbd> / <kbd>WASD</kbd> moverte (2 casillas por ronda) &nbsp;·&nbsp;
+        <kbd>Espacio</kbd> terminar la ronda &nbsp;·&nbsp; <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> usar recompensa &nbsp;·&nbsp;
+        <kbd>R</kbd> reiniciar &nbsp;·&nbsp; <kbd>Esc</kbd> menú
+        <br>También podés hacer clic en las casillas resaltadas.
+      </div>
+    </div>
+
     <aside>
       <div class="card">
-        <div class="row"><span>Ira del jefe</span><span class="big" id="rage">0</span></div>
-        <div class="bar"><i id="ragebar"></i></div>
+        <h3>Objetivos (en este orden)</h3>
+        <div class="goal" id="g1"><div class="n">1</div><div class="t">Entregar los 3 informes</div><div class="v" id="g1v">0/3</div></div>
+        <div class="goal" id="g2"><div class="n">2</div><div class="t">Conseguir las 3 recompensas</div><div class="v" id="g2v">0/3</div></div>
+        <div class="goal" id="g3"><div class="n">3</div><div class="t">Escalera de emergencia</div><div class="v" id="g3v">🔒</div></div>
       </div>
+
       <div class="card">
-        <div class="row"><span>Informes impresos</span><span class="big" id="reports">0/3</span></div>
-        <div class="row" style="margin-top:8px"><span>Cafés (soborno)</span><span class="big" id="coffee">0</span></div>
-        <div class="row" style="margin-top:8px"><span>Acciones</span><span id="turn" style="color:var(--dim)">Turno 1</span></div>
-        <div class="dots" id="apdots"></div>
+        <div class="row"><span>Movimiento</span><div class="pips" id="mp"></div></div>
+        <div class="row"><span>Ira del Jefe</span><span class="big" id="ragev">1</span></div>
+        <div class="meter"><i id="ragebar"></i></div>
+        <div class="row"><span>Amonestaciones</span><div class="pips" id="strikes"></div></div>
+        <div class="row"><span style="color:var(--dim);font-size:11.5px">Velocidad del Jefe</span><span id="bspeed" style="font-size:12px">1 casilla/ronda</span></div>
       </div>
-      <div class="card" id="card-jefe">
-        <h3>Última acción del jefe</h3>
-        <div id="bosscard" class="big" style="font-size:15px">—</div>
-        <small id="bossdesc" style="color:var(--dim)"></small>
+
+      <div class="card" id="bosscard">
+        <h3>Última carta del Jefe</h3>
+        <div class="name" id="bcn">—</div>
+        <div class="desc" id="bcd">Todavía no jugó.</div>
+        <div class="deckcount"><span>Mazo de acciones</span><span id="deckn">—</span></div>
       </div>
+
       <div class="card">
-        <h3>Objetos recompensa</h3>
-        <div class="items" id="inv"><div class="empty">Soborná a un colega para conseguir objetos.</div></div>
+        <h3>Compañeros</h3>
+        <div id="colls" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
     </aside>
-  </div>
-
-  <div id="log"></div>
-  <div class="keys">
-    <kbd>← ↑ → ↓</kbd> / <kbd>WASD</kbd> moverse &nbsp;·&nbsp; <kbd>E</kbd> interactuar (imprimir · café · sobornar · salir)
-    &nbsp;·&nbsp; <kbd>1</kbd>–<kbd>5</kbd> usar objeto &nbsp;·&nbsp; <kbd>Espacio</kbd> terminar turno &nbsp;·&nbsp; <kbd>R</kbd> reiniciar
-    <br>También podés <b>hacer clic</b> en una casilla contigua para moverte, o en la tuya para interactuar.
   </div>
 </div>
 
 <div id="overlay"><div class="modal" id="modal"></div></div>
 <script>
-/* ============================================================
-   LUNES — versión PC  ·  motor de juego
-   Tablero: 6 losetas de oficina (3x2), cada una de 4x4 casillas.
-   ============================================================ */
+/* ==========================================================================
+   LUNES · motor de juego
+   Reglas según el manual: 2 puntos de movimiento exactos, el Jefe persigue por
+   camino más corto, la Ira sube al agotarse su mazo y acelera su movimiento
+   base. Se gana entregando 3 informes, juntando 3 recompensas y saliendo por
+   la escalera. Se pierde si te alcanza sin informes, si te amonesta de más o
+   si la Ira llega al tope.
+   Capas: DATOS -> ESTADO -> LÓGICA (este archivo) -> RENDER -> INPUT.
+   ========================================================================== */
 
-const TS = 4, TW = 3, TH = 2;            // loseta 4x4, 3x2 losetas
-const W = TW * TS, H = TH * TS;          // 12 x 8 casillas
-const CS = 60;                           // píxeles por casilla
-const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];// N E S O
+/* --- parámetros de balance, todos editables desde acá --- */
+const TUNE = {
+  mpPerRound      : 2,     // puntos de movimiento por ronda (manual: 2 exactos)
+  bossSpeedStep   : 2,     // cada cuántos niveles de Ira el Jefe gana una casilla
+  printerCooldown : 3,     // rondas que una impresora queda sin tinta
+  coffeeCooldown  : 2,     // rondas que una cafetera queda vacía
+  coffeeBonusMP   : 3,     // movimiento extra que da un café
+  donutTurns      : 3,     // rondas que las donas distraen al Jefe
+  moveMs          : 120,   // duración de la interpolación de un paso
+  shakeMs         : 360,
+};
 
-/* --- 6 losetas de oficina. '#' mueble/pared, '.' pasillo, 'h' escondite.
-   El borde queda siempre libre para que las losetas conecten entre sí. --- */
-const TILES = [
-  ["....",".##.",".##.","...."],
-  ["....",".#h.",".#..","...."],
-  ["....","..#.",".h#.","...."],
-  ["....","....",".##.","...."],
-  ["....",".#..","..#.","...."],
-  ["....",".h#.",".#..","...."],
+const W = 11, H =  8, CS = 60;                 // rejilla y tamaño de casilla
+const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];      // N E S O
+const key = (x,y) => y*W + x;
+const inside = (x,y) => x>=0 && y>=0 && x<W && y<H;
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+/* --- los 3 informes: cada compañero pide uno y lleva su color --- */
+const REPORTS = [
+  {id:"a", name:"Ventas",       color:"#3b82f6", ink:"#0b2f66"},
+  {id:"b", name:"Contabilidad", color:"#ef4444", ink:"#611414"},
+  {id:"c", name:"RR.HH.",       color:"#22c55e", ink:"#0d3d20"},
 ];
+const REP = Object.fromEntries(REPORTS.map(r=>[r.id,r]));
 
-const DIFFS = {
-  becario : {label:"Becario",  desc:"Ira 14 · el jefe ve poco y camina lento · 4 acciones", rageMax:14, vision:4, chase:1, ap:4},
-  empleado: {label:"Empleado", desc:"Ira 11 · el jefe ve 5 casillas · 3 acciones",         rageMax:11, vision:5, chase:2, ap:3},
-  gerente : {label:"Gerente",  desc:"Ira 9 · vista de halcón y te persigue sin piedad",    rageMax:9,  vision:6, chase:2, ap:3},
+/* --- fichas de recompensa: se sortean 3 por partida --- */
+const REWARDS = {
+  cafe  : {ic:"☕",  n:"Café",     d:"+2 puntos de movimiento en tu próxima ronda"},
+  whisky: {ic:"🥃",  n:"Whisky",   d:"El Jefe pierde su próxima ronda entera"},
+  donas : {ic:"🍩",  n:"Donas",    d:"Dejás la caja: el Jefe va hacia ella 3 rondas"},
+  llave : {ic:"🗝️", n:"Llave",    d:"Tu próximo paso atraviesa un escritorio"},
+  alarma: {ic:"🧯",  n:"Simulacro", d:"El Jefe vuelve de golpe a su casilla inicial"},
 };
 
-const ITEMS = {
-  cafe3: {e:"☕", n:"Café triple",      d:"+2 acciones en este turno"},
-  auri : {e:"🎧", n:"Auriculares",      d:"El jefe no te ve durante 2 turnos"},
-  llave: {e:"🗝️", n:"Llave maestra",    d:"Tu próximo paso atraviesa un mueble"},
-  falso: {e:"📄", n:"Informe falso",    d:"-3 de ira del jefe"},
-  silla: {e:"🪑", n:"Silla con ruedas", d:"Te deslizás hasta 3 casillas seguidas"},
-};
-const ITEM_KEYS = Object.keys(ITEMS);
-
-/* --- 9 acciones del jefe (mazo que se baraja y se repone) --- */
+/* --- mazo de acciones del Jefe (9 cartas) --- */
 const BOSS_DECK = [
-  {n:"Patrulla",                 d:"Recorre el pasillo 2 casillas.",                    f:s=>bossWalk(s,2)},
-  {n:"Paso largo",               d:"Avanza 3 casillas de una.",                         f:s=>bossWalk(s,3)},
-  {n:"Ronda de reconocimiento",  d:"Gira en una esquina y avanza.",                     f:s=>{s.boss.dir=(s.boss.dir+1)%4; bossWalk(s,2);}},
-  {n:"¿Dónde está ese informe?", d:"Va derecho hacia la impresora más cercana.",         f:s=>bossSeek(s,"printer",2)},
-  {n:"Necesito un café",         d:"Se desvía hacia la máquina de café.",               f:s=>bossSeek(s,"coffee",2)},
-  {n:"¡A ver esos números!",     d:"Pega un grito: +1 de ira y se queda vigilando.",     f:s=>{s.rage++; s.visionBonus=2;}},
-  {n:"Reunión sorpresa",         d:"Aparece en otra parte de la oficina.",              f:s=>bossTeleport(s)},
-  {n:"Vigilancia",               d:"No se mueve, pero mira el doble de lejos.",          f:s=>{s.visionBonus=3;}},
-  {n:"¡Deadline!",               d:"Se acuerda del cierre de mes: +2 de ira.",           f:s=>{s.rage+=2;}},
+  {n:"Paso firme",          d:"Avanza 1 casilla extra hacia vos.",                  k:"chase", v:1},
+  {n:"Zancada",             d:"Avanza 2 casillas extra hacia vos.",                 k:"chase", v:2},
+  {n:"Mira el celular",     d:"Se distrae con el grupo de la oficina. No avanza.",   k:"none"},
+  {n:"Va por un café",      d:"Se desvía 2 casillas hacia la cafetera más cercana.", k:"seek", v:2, t:"coffee"},
+  {n:"Ronda de control",    d:"Avanza 2 casillas en línea recta, sin buscarte.",     k:"straight", v:2},
+  {n:"¡Reunión sorpresa!",  d:"Aparece de golpe en otra impresora de la oficina.",   k:"warp"},
+  {n:"Se acabó el tóner",   d:"Evento de oficina: todas las impresoras se recargan.",k:"refill"},
+  {n:"Llamada del directorio", d:"Lo agarra el teléfono: pierde la próxima ronda.",  k:"stun"},
+  {n:"Papeleo urgente",     d:"Se sienta a firmar carpetas. No avanza.",            k:"none"},
 ];
 
-let S = null;                            // estado global
-const $ = id => document.getElementById(id);
+/* --- escenarios: mapas fijos del manual + oficina al azar ---
+   #=escritorio/pared  .=piso  P=impresora  C=compañero  K=cafetera
+   E=escalera  @=empleado  J=jefe                                          --- */
+const SCENARIOS = {
+  planta: {
+    name:"La planta baja", diff:"Fácil", color:"#22c55e", rageMax:5, strikes:4,
+    desc:"Dos anillos de pasillo y mucho margen. Ideal para aprender el ritmo.",
+    map:[
+      "###########",
+      "#.P..J..C.#",
+      "#.###.###.#",
+      "#.#.P.C.#.#",
+      "E.#K###K#.#",
+      "#.#.....#.#",
+      "#.C..@..P.#",
+      "###########",
+    ]},
+  abierta: {
+    name:"Oficina abierta", diff:"Media", color:"#f5a524", rageMax:6, strikes:3,
+    desc:"Cubículos y recovecos: más vueltas para llegar a todos lados.",
+    map:[
+      "###########",
+      "#.P..#.P..#",
+      "#K##.#.##.#",
+      "#.#.C.J.#.#",
+      "E...###...#",
+      "#.#..C..#K#",
+      "#.C#.P.#.@#",
+      "###########",
+    ]},
+  ejecutivo: {
+    name:"Piso ejecutivo", diff:"Difícil", color:"#ef4444", rageMax:5, strikes:2,
+    desc:"Circuito angosto, sin atajos y con solo dos amonestaciones.",
+    map:[
+      "###########",
+      "#P.K.....P#",
+      "#.#######.#",
+      "#.#J.P..#.#",
+      "E...#K#...#",
+      "#.#...C.#.#",
+      "#C...@...C#",
+      "###########",
+    ]},
+  azar: {
+    name:"Oficina al azar", diff:"Variable", color:"#a855f7", rageMax:5, strikes:3,
+    desc:"El plano se sortea en cada partida y se valida que sea jugable.",
+    map:null},
+};
 
-/* ---------- generación de la oficina ---------- */
-function rot(t){ // gira una loseta 90°
-  const o=[];
-  for(let y=0;y<TS;y++){ let r=""; for(let x=0;x<TS;x++) r+=t[TS-1-x][y]; o.push(r); }
-  return o;
-}
-function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
-const key = (x,y)=>y*W+x;
-const inside = (x,y)=>x>=0&&y>=0&&x<W&&y<H;
+/* ---------- estado ---------- */
+let S = null;
+const fx = { floats:[], shake:0, pulse:0 };     // capa de juice, no afecta la lógica
 
-function buildOffice(){
-  const grid=[];
-  for(let y=0;y<H;y++){ grid.push([]); for(let x=0;x<W;x++) grid[y].push({wall:false,hide:false,feat:null}); }
+/* La Ira acelera al Jefe, pero de a poco: si igualara tu velocidad de entrada
+   la partida se vuelve imposible. Ira 1 -> 1 casilla, 2-3 -> 2, 4-5 -> 3. */
+function bossSpeed(){ return 1 + Math.floor(S.rage / TUNE.bossSpeedStep); }
 
-  const bag = shuffle([0,1,2,3,4,5]);          // el azar es el arquitecto de tu oficina
-  for(let t=0;t<6;t++){
-    let tile = TILES[bag[t]];
-    const turns = (Math.random()*4)|0;
-    for(let i=0;i<turns;i++) tile = rot(tile);
-    const ox=(t%TW)*TS, oy=((t/TW)|0)*TS;
-    for(let y=0;y<TS;y++) for(let x=0;x<TS;x++){
-      const ch=tile[y][x], c=grid[oy+y][ox+x];
-      c.wall = ch==="#"; c.hide = ch==="h";
+/* ---------- construcción del mapa ---------- */
+function parseMap(rows){
+  const grid=[], marks={printers:[],colls:[],coffees:[]};
+  let exit=null, start=null, bossStart=null;
+  for(let y=0;y<H;y++){
+    grid.push([]);
+    for(let x=0;x<W;x++){
+      const ch = rows[y][x];
+      const c = {wall: ch==="#", type:null, cd:0, deco:(x*7+y*13)%3};
+      if(ch==="P"){ c.type="printer"; marks.printers.push({x,y}); }
+      if(ch==="C"){ c.type="colleague"; marks.colls.push({x,y}); }
+      if(ch==="K"){ c.type="coffee"; marks.coffees.push({x,y}); }
+      if(ch==="E"){ c.type="exit"; exit={x,y}; }
+      if(ch==="@") start={x,y};
+      if(ch==="J") bossStart={x,y};
+      grid[y].push(c);
     }
   }
-  return grid;
+  return {grid, marks, exit, start, bossStart};
 }
 
-function placeFeatures(grid){
-  const free = [];
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(!grid[y][x].wall && !grid[y][x].hide) free.push({x,y});
-
-  // La salida va siempre en la columna izquierda (la puerta de la oficina)
-  const doors = free.filter(c=>c.x===0);
-  const exit  = doors[(Math.random()*doors.length)|0];
-  grid[exit.y][exit.x].feat = {t:"exit"};
-
-  const used = [exit];
-  const far  = (c,dist)=>used.every(u=>Math.abs(u.x-c.x)+Math.abs(u.y-c.y)>=dist);
-  const take = (type,n,dist,minX)=>{
-    for(let i=0;i<n;i++){
-      const pool = shuffle(free.filter(c=>!grid[c.y][c.x].feat && c.x>=(minX||0) && far(c,dist)))
-                || [];
-      const c = pool[0] || free.filter(c=>!grid[c.y][c.x].feat)[0];
-      if(!c) continue;
-      grid[c.y][c.x].feat = {t:type, done:false};
-      used.push(c);
-    }
-  };
-  take("printer", 3, 4, 2);   // 3 informes, repartidos y lejos de la puerta
-  take("colleague", 3, 3, 1); // colegas a sobornar
-  take("coffee", 2, 3, 1);    // máquinas de café
-
-  // el empleado arranca lo más lejos posible de la salida
-  const start = free.filter(c=>!grid[c.y][c.x].feat).sort((a,b)=>b.x-a.x)[0];
-  return {exit, start};
+/* oficina aleatoria: paredes en bloques + validación de conectividad */
+function randomMapRows(){
+  const g = Array.from({length:H},(_,y)=>Array.from({length:W},(_,x)=>
+    (x===0||y===0||x===W-1||y===H-1) ? "#" : "."));
+  // islas de escritorios de 1x2 / 2x1, sin tocar el borde interior
+  for(let i=0;i<9;i++){
+    const x=1+((Math.random()*(W-3))|0), y=1+((Math.random()*(H-3))|0);
+    const horiz=Math.random()<.5;
+    g[y][x]="#";
+    const nx=x+(horiz?1:0), ny=y+(horiz?0:1);
+    if(nx<W-1 && ny<H-1) g[ny][nx]="#";
+  }
+  const free=[];
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++) if(g[y][x]===".") free.push({x,y});
+  shuffle(free);
+  const put = ch => { const c=free.pop(); if(c) g[c.y][c.x]=ch; return c; };
+  // la escalera va sobre el muro izquierdo, pegada a un piso libre
+  const doorRows = [];
+  for(let y=1;y<H-1;y++) if(g[y][1]===".") doorRows.push(y);
+  if(!doorRows.length){                       // si el azar tapó toda la columna, se despeja una
+    const y = 1 + ((Math.random()*(H-2))|0);
+    g[y][1] = "."; doorRows.push(y);
+  }
+  g[doorRows[(Math.random()*doorRows.length)|0]][0] = "E";
+  for(let i=0;i<3;i++) put("P");
+  for(let i=0;i<3;i++) put("C");
+  for(let i=0;i<2;i++) put("K");
+  put("@"); put("J");
+  return g.map(r=>r.join(""));
 }
 
-/* ---------- utilidades de tablero ---------- */
-function cell(x,y){ return inside(x,y) ? S.grid[y][x] : null; }
-function blocked(x,y){
-  const c = cell(x,y);
-  if(!c) return true;
-  if(c.wall) return true;
-  if(c.feat && c.feat.t==="colleague") return true;  // el colega ocupa su escritorio
-  return false;
-}
-
-function bfs(from){                       // distancias desde una casilla
-  const d = new Array(W*H).fill(-1);
-  d[key(from.x,from.y)] = 0;
+function reachableFrom(grid, from){          // BFS ignorando entidades móviles
+  const d=new Array(W*H).fill(-1); d[key(from.x,from.y)]=0;
   const q=[from];
   while(q.length){
     const c=q.shift();
     for(const [dx,dy] of DIRS){
       const nx=c.x+dx, ny=c.y+dy;
-      if(blocked(nx,ny) || d[key(nx,ny)]!==-1) continue;
-      d[key(nx,ny)] = d[key(c.x,c.y)]+1;
-      q.push({x:nx,y:ny});
+      if(!inside(nx,ny) || grid[ny][nx].wall || d[key(nx,ny)]!==-1) continue;
+      d[key(nx,ny)] = d[key(c.x,c.y)]+1; q.push({x:nx,y:ny});
     }
   }
   return d;
 }
 
-function lineOfSight(a,b){                // Bresenham: ¿hay muebles en medio?
-  let x=a.x,y=a.y;
-  const dx=Math.abs(b.x-x), dy=Math.abs(b.y-y);
-  const sx=x<b.x?1:-1, sy=y<b.y?1:-1;
-  let err=dx-dy;
-  while(!(x===b.x&&y===b.y)){
-    const e2=2*err;
-    if(e2>-dy){err-=dy;x+=sx;}
-    if(e2< dx){err+=dx;y+=sy;}
-    if(x===b.x&&y===b.y) break;
-    const c=cell(x,y);
-    if(!c||c.wall) return false;
-  }
-  return true;
+function mapIsPlayable(p){
+  if(!p.exit || !p.start || !p.bossStart) return false;
+  if(p.marks.printers.length!==3 || p.marks.colls.length!==3) return false;
+  const d = reachableFrom(p.grid, p.start);
+  const all = [p.exit, p.bossStart, ...p.marks.printers, ...p.marks.colls, ...p.marks.coffees];
+  return all.every(c => d[key(c.x,c.y)] >= 0);
 }
 
-function visionCells(){                   // cono de visión del jefe (90°)
-  const out=new Set(), b=S.boss;
-  const [fx,fy]=DIRS[b.dir];
-  const range = S.cfg.vision + S.visionBonus;
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const dx=x-b.x, dy=y-b.y;
-    const fwd = dx*fx + dy*fy;            // distancia hacia adelante
-    const lat = Math.abs(dx*fy - dy*fx);  // desvío lateral
-    if(fwd<=0 || fwd>range || lat>fwd) continue;
-    if(cell(x,y).wall) continue;
-    if(lineOfSight(b,{x,y})) out.add(key(x,y));
-  }
-  return out;
-}
+/* ---------- preparación de la partida (set-up del manual) ---------- */
+function newGame(scenKey){
+  const sc = SCENARIOS[scenKey];
+  let p;
+  if(sc.map){ p = parseMap(sc.map); }
+  else { let n=0; do { p = parseMap(randomMapRows()); } while(!mapIsPlayable(p) && ++n<200); }
 
-/* ---------- arranque de partida ---------- */
-function officeValid(start, exit){   // toda oficina tiene que ser jugable
-  const d = bfs(start);
-  if(d[key(exit.x,exit.y)] < 0) return false;
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const f = S.grid[y][x].feat;
-    if(!f) continue;
-    if(f.t==="colleague"){          // al colega alcanza con poder hablarle de al lado
-      if(!DIRS.some(([dx,dy])=>inside(x+dx,y+dy) && d[key(x+dx,y+dy)]>=0)) return false;
-    }else if(d[key(x,y)] < 0) return false;
-  }
-  return true;
-}
+  // los 3 informes se mezclan boca abajo; cada compañero pide uno
+  const pile = shuffle(REPORTS.map(r=>r.id));
+  const wants = shuffle(REPORTS.map(r=>r.id));
+  p.marks.colls.forEach((c,i)=>{
+    p.grid[c.y][c.x].want = wants[i];
+    p.grid[c.y][c.x].done = false;
+  });
 
-function newGame(diff){
-  let grid, exit, start;
-  for(let tries=0; tries<80; tries++){        // si el azar arma una oficina imposible, se rearma
-    grid = buildOffice();
-    S = {grid};                              // blocked() y bfs() leen S.grid
-    ({exit, start} = placeFeatures(grid));
-    if(officeValid(start, exit)) break;
-  }
   S = {
-    cfg: DIFFS[diff], diff,
-    grid, exit,
-    player: {x:start.x, y:start.y},
-    boss:   {x:(W/2)|0, y:(H/2)|0, dir:3},
-    rage:0, reports:0, coffee:1, inv:[],
-    ap: DIFFS[diff].ap, turn:1,
-    alert:0, invisible:0, ghostStep:false, slide:0, ending:false,
-    visionBonus:0, deck:[], lastCard:null,
-    over:null, log:[],
+    scenKey, sc, grid:p.grid, marks:p.marks,
+    exit:p.exit, start:p.start,
+    player:{x:p.start.x, y:p.start.y, px:p.start.x, py:p.start.y, face:1, bob:0},
+    boss  :{x:p.bossStart.x, y:p.bossStart.y, px:p.bossStart.x, py:p.bossStart.y,
+            home:{...p.bossStart}, face:3, bob:0},
+    pile,                                   // informes sin imprimir
+    hand:[],                                // informes encima
+    delivered:[],                           // informes entregados
+    rewardPool: shuffle(Object.keys(REWARDS)).slice(0,3),  // las 3 fichas de esta partida
+    rewardsGot:0, rewardsUsed:[],
+    rage:1, strikes:0, round:1,
+    mp:TUNE.mpPerRound, mpBonus:0,
+    deck: shuffle(BOSS_DECK.slice()), lastCard:null,
+    stun:0, donuts:null, donutTurns:0, ghostStep:false,
+    over:null, busy:false, log:[],
   };
-  while(blocked(S.boss.x,S.boss.y)) S.boss.x = (S.boss.x+1)%W;
-  say(`Lunes, 8:57. Estás en la oficina. Imprimí <b>3 informes</b> y escapá por la <b>puerta</b>.`,"y");
-  draw(); ui();
-}
 
-function drawCard(){
-  if(!S.deck.length) S.deck = shuffle(BOSS_DECK.slice());
-  return S.deck.pop();
+  fx.floats.length=0; fx.shake=0;
+  buildFloorLayer();                      // la alfombra y los muebles no cambian: se cachean
+  say(`<b>${sc.name}</b> · Ira máxima ${sc.rageMax} · ${sc.strikes} amonestación${sc.strikes>1?"es":""}`,"y");
+  say(`Imprimí los informes y entregáselos al compañero del mismo color.`);
+  syncUI();
 }
 
 function say(t,cls){
   S.log.push(`<span class="${cls||""}">${t}</span>`);
-  const el=$("log");
-  el.innerHTML = S.log.slice(-40).join("<br>");
+  const el=document.getElementById("log");
+  el.innerHTML = S.log.slice(-60).join("<br>");
   el.scrollTop = el.scrollHeight;
 }
+function float(x,y,txt,color){ fx.floats.push({x,y,txt,color:color||"#fff",t:0}); }
 
-/* ---------- acciones del jefe ---------- */
-function bossWalk(s,n){
-  for(let i=0;i<n;i++){
-    let moved=false;
-    for(let t=0;t<4;t++){                       // si choca, gira y sigue
-      const [dx,dy]=DIRS[s.boss.dir];
-      if(!blocked(s.boss.x+dx, s.boss.y+dy)){ s.boss.x+=dx; s.boss.y+=dy; moved=true; break; }
-      s.boss.dir=(s.boss.dir+1)%4;
+/* ---------- consultas de tablero ---------- */
+const cellAt = (x,y) => inside(x,y) ? S.grid[y][x] : null;
+const isWall = (x,y) => !inside(x,y) || S.grid[y][x].wall;
+
+function bfsFrom(from){                       // distancias para el Jefe
+  const d=new Array(W*H).fill(-1); d[key(from.x,from.y)]=0;
+  const q=[from];
+  while(q.length){
+    const c=q.shift();
+    for(const [dx,dy] of DIRS){
+      const nx=c.x+dx, ny=c.y+dy;
+      if(isWall(nx,ny) || d[key(nx,ny)]!==-1) continue;
+      d[key(nx,ny)] = d[key(c.x,c.y)]+1; q.push({x:nx,y:ny});
     }
-    if(!moved) break;
+  }
+  return d;
+}
+
+function reachableCells(steps){               // casillas a las que podés llegar
+  const d=new Array(W*H).fill(-1); d[key(S.player.x,S.player.y)]=0;
+  const q=[{x:S.player.x,y:S.player.y}], out=new Map();
+  while(q.length){
+    const c=q.shift(), dist=d[key(c.x,c.y)];
+    if(dist>=steps) continue;
+    for(const [dx,dy] of DIRS){
+      const nx=c.x+dx, ny=c.y+dy;
+      if(isWall(nx,ny) || d[key(nx,ny)]!==-1) continue;
+      d[key(nx,ny)]=dist+1; out.set(key(nx,ny),dist+1); q.push({x:nx,y:ny});
+    }
+  }
+  return out;
+}
+
+/* ---------- fase 1: turno del empleado ---------- */
+function step(dx,dy){
+  if(!S || S.over || S.busy || S.mp<=0) return;
+  const nx=S.player.x+dx, ny=S.player.y+dy;
+  if(!inside(nx,ny)) return;
+  if(isWall(nx,ny)){
+    if(!S.ghostStep) return;
+    S.ghostStep=false;
+    float(nx,ny,"🗝️","#f5a524");
+  }
+  S.player.x=nx; S.player.y=ny;
+  S.player.face = dx>0?1 : dx<0?3 : dy>0?2:0;
+  S.mp--;
+  if(S.mp<=0){ S.busy=true; setTimeout(endPlayerPhase, TUNE.moveMs+90); }
+  syncUI();
+}
+
+/* interacción automática: se resuelve al terminar el movimiento */
+function resolveTile(){
+  const c = S.grid[S.player.y][S.player.x];
+  if(!c.type) return;
+
+  if(c.type==="printer"){
+    if(c.cd>0){ say(`La impresora sigue sin tóner (${c.cd}).`); return; }
+    if(!S.pile.length){ say("Ya no quedan informes para imprimir."); return; }
+    const id=S.pile.pop(); S.hand.push(id); c.cd=TUNE.printerCooldown;
+    float(S.player.x,S.player.y,"+ INFORME",REP[id].color);
+    say(`🖨️ Imprimiste el informe de <b>${REP[id].name}</b>. Buscá al compañero de ese color.`,"y");
+  }
+  else if(c.type==="colleague" && !c.done){
+    const i = S.hand.indexOf(c.want);
+    if(i<0){ say(`Ese compañero espera el informe de <b>${REP[c.want].name}</b>.`); return; }
+    S.hand.splice(i,1); S.delivered.push(c.want); c.done=true;
+    const rw = S.rewardPool[S.rewardsGot++];
+    float(S.player.x,S.player.y,REWARDS[rw].ic+" "+REWARDS[rw].n,"#f5a524");
+    say(`🤝 Entregaste <b>${REP[c.want].name}</b>. Te dio la ficha <b>${REWARDS[rw].n}</b>: ${REWARDS[rw].d.toLowerCase()}.`,"g");
+  }
+  else if(c.type==="coffee"){
+    if(c.cd>0){ say("Esa cafetera está vacía."); return; }
+    c.cd=TUNE.coffeeCooldown; S.mpBonus+=TUNE.coffeeBonusMP;
+    float(S.player.x,S.player.y,"+"+TUNE.coffeeBonusMP+" MOV","#38bdf8");
+    say(`☕ Café cargado: +${TUNE.coffeeBonusMP} de movimiento la próxima ronda.`,"g");
+  }
+  else if(c.type==="exit"){
+    if(S.delivered.length<3){ say(`🔒 No podés irte sin entregar los 3 informes (${S.delivered.length}/3).`,"r"); return; }
+    if(S.rewardsGot<3){ say(`🔒 Te faltan recompensas (${S.rewardsGot}/3).`,"r"); return; }
+    return gameWin();
   }
 }
-function bossStepTo(s,target,n){
-  const d = bfs(target);
+
+function endRound(){                          // Espacio: terminar la ronda a mano
+  if(!S || S.over || S.busy) return;
+  S.busy=true; S.mp=0; syncUI();
+  setTimeout(endPlayerPhase, 80);
+}
+
+function endPlayerPhase(){
+  if(S.over) return;
+  resolveTile();
+  if(S.over) return;
+  setTimeout(bossPhase, 260);
+}
+
+/* ---------- fase 2: turno del Jefe ---------- */
+function bossTarget(){
+  if(S.donutTurns>0 && S.donuts) return S.donuts;
+  return {x:S.player.x, y:S.player.y};
+}
+
+function bossAdvance(n, target){
+  const t = target || bossTarget();
+  const d = bfsFrom(t);
   for(let i=0;i<n;i++){
-    let best=null, bd=d[key(s.boss.x,s.boss.y)];
+    let best=null, bd=d[key(S.boss.x,S.boss.y)];
     for(let k=0;k<4;k++){
-      const [dx,dy]=DIRS[k], nx=s.boss.x+dx, ny=s.boss.y+dy;
-      if(blocked(nx,ny)) continue;
+      const [dx,dy]=DIRS[k], nx=S.boss.x+dx, ny=S.boss.y+dy;
+      if(isWall(nx,ny)) continue;
       const v=d[key(nx,ny)];
-      if(v>=0 && (bd<0 || v<bd)){ bd=v; best={x:nx,y:ny,dir:k}; }
+      if(v>=0 && (bd<0 || v<bd)){ bd=v; best={x:nx,y:ny,f:k}; }
     }
     if(!best) break;
-    s.boss.x=best.x; s.boss.y=best.y; s.boss.dir=best.dir;
+    S.boss.x=best.x; S.boss.y=best.y; S.boss.face=best.f;
+    if(checkCatch()) return true;
   }
+  return false;
 }
-function bossSeek(s,type,n){
-  let target=null, bestD=1e9;
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const f=s.grid[y][x].feat;
-    if(f && f.t===type && !f.done){
-      const dd=Math.abs(x-s.boss.x)+Math.abs(y-s.boss.y);
-      if(dd<bestD){bestD=dd; target={x,y};}
+
+function bossStraight(n){
+  for(let i=0;i<n;i++){
+    let moved=false;
+    for(let t=0;t<4;t++){
+      const [dx,dy]=DIRS[S.boss.face];
+      if(!isWall(S.boss.x+dx,S.boss.y+dy)){ S.boss.x+=dx; S.boss.y+=dy; moved=true; break; }
+      S.boss.face=(S.boss.face+1)%4;
     }
+    if(!moved) break;
+    if(checkCatch()) return true;
   }
-  target ? bossStepTo(s,target,n) : bossWalk(s,n);
-}
-function bossTeleport(s){
-  const spots=[];
-  for(let t=0;t<6;t++){
-    const x=(t%TW)*TS+1+((Math.random()*2)|0), y=((t/TW)|0)*TS+1+((Math.random()*2)|0);
-    if(!blocked(x,y) && Math.abs(x-s.boss.x)+Math.abs(y-s.boss.y)>3) spots.push({x,y});
-  }
-  if(!spots.length) return bossWalk(s,2);
-  const p=spots[(Math.random()*spots.length)|0];
-  s.boss.x=p.x; s.boss.y=p.y; s.boss.dir=(Math.random()*4)|0;
+  return false;
 }
 
-/* ---------- flujo de turno ---------- */
-function endTurn(){
-  if(S.over || S.ending) return;   // evita que el jefe juegue dos veces seguidas
-  S.ending = true;
-  S.visionBonus = 0;
-  S.slide = 0; S.ghostStep = false;
-
-  if(S.alert>0){                                  // te vio: te persigue
-    S.alert--;
-    bossStepTo(S, S.player, S.cfg.chase+1);
-    S.lastCard = {n:"¡Te vi, holgazán!", d:"El jefe viene derecho hacia vos."};
-  }else{
-    const c = drawCard();
-    S.lastCard = c;
-    c.f(S);
+function nearestOfType(type, from, activeOnly){
+  let best=null, bd=1e9;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const c=S.grid[y][x];
+    if(c.type!==type) continue;
+    if(activeOnly && c.cd>0) continue;
+    const dd=Math.abs(x-from.x)+Math.abs(y-from.y);
+    if(dd<bd){ bd=dd; best={x,y}; }
   }
-
-  if(S.boss.x===S.player.x && S.boss.y===S.player.y) return lose("El jefe te encontró en el pasillo.");
-
-  // ¿te ve al terminar su movimiento?
-  const seen = visionCells().has(key(S.player.x,S.player.y));
-  const hidden = S.grid[S.player.y][S.player.x].hide || S.invisible>0;
-  if(seen && !hidden){
-    S.rage++; S.alert = 2;
-    say(`👀 <b>El jefe te vio.</b> +1 de ira, y ahora te sigue.`,"r");
-  }else if(seen && hidden){
-    say(`🤫 Pasó a tu lado y no te vio.`,"g");
-  }
-
-  if(S.invisible>0) S.invisible--;
-  if(S.rage >= S.cfg.rageMax) return lose("La ira del jefe llegó al tope. Te tocó quedarte a hacer horas extra.");
-
-  S.turn++; S.ap = S.cfg.ap; S.ending = false;
-  draw(); ui();
+  return best;
 }
 
-function spend(n){ S.ap-=n; if(S.ap<=0){ draw(); ui(); setTimeout(endTurn,220); } else { draw(); ui(); } }
+function bossPhase(){
+  if(S.over) return;
 
-function lose(reason){
-  S.over="lose";
-  say(`💀 <b>${reason}</b>`,"r");
-  draw(); ui();
-  modal(`<h2>😵 Se acabó</h2><p>${reason}<br>Turnos aguantados: <b>${S.turn}</b> · Informes: <b>${S.reports}/3</b></p>
-    <button class="btn" onclick="newGame('${S.diff}');closeModal()">Otra vez</button>
-    <button class="btn alt" onclick="titleScreen()">Cambiar dificultad</button>`);
+  // cooldowns de oficina
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(S.grid[y][x].cd>0) S.grid[y][x].cd--;
+
+  if(S.stun>0){
+    S.stun--;
+    S.lastCard = {n:"🥃 Mareado", d:"El whisky le pegó fuerte. Pierde la ronda."};
+    say("🥃 El Jefe pierde la ronda entero.","g");
+    return nextRound();
+  }
+
+  // movimiento base: tantas casillas como su nivel de Ira
+  if(bossAdvance(bossSpeed())) return endBossPhase();
+
+  // carta de acción
+  const card = S.deck.pop();
+  S.lastCard = card;
+  let caught=false;
+  switch(card.k){
+    case "chase":    caught = bossAdvance(card.v); break;
+    case "straight": caught = bossStraight(card.v); break;
+    case "seek": {
+      const t = nearestOfType(card.t, S.boss, true);
+      caught = t ? bossAdvance(card.v, t) : bossAdvance(card.v);
+      break; }
+    case "warp": {
+      // reaparece en una impresora al azar, no siempre en la que te tiene cerca
+      const ps = shuffle(S.marks.printers.slice());
+      const t = ps.find(p=>Math.abs(p.x-S.player.x)+Math.abs(p.y-S.player.y) > 2) || ps[0];
+      const spot = t && freeNeighbour(t);
+      if(spot){ S.boss.x=spot.x; S.boss.y=spot.y; S.boss.px=spot.x; S.boss.py=spot.y;
+                caught = checkCatch(); }
+      break; }
+    case "stun": S.stun = 1; break;
+    case "refill":
+      for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(S.grid[y][x].type==="printer") S.grid[y][x].cd=0;
+      say("🖨️ Repusieron el tóner: todas las impresoras funcionan.","g");
+      break;
+    case "rage": raiseRage("El Jefe salió furioso de la junta."); break;
+  }
+  if(!caught && !S.over) say(`<span class="sep">Jefe:</span> <b>${card.n}</b> — ${card.d}`);
+
+  // el mazo se repone SIEMPRE que se agota, aunque la carta haya terminado en captura
+  if(!S.deck.length && !S.over){
+    S.deck = shuffle(BOSS_DECK.slice());
+    raiseRage("Se acabó el mazo del Jefe: se le agota la paciencia.");
+  }
+  endBossPhase();
 }
-function win(){
+
+function endBossPhase(){        // tras una amonestación la ronda sigue; solo la derrota corta
+  if(!S.over) nextRound();
+}
+
+function freeNeighbour(c){
+  for(const [dx,dy] of shuffle(DIRS.slice()))
+    if(!isWall(c.x+dx,c.y+dy)) return {x:c.x+dx, y:c.y+dy};
+  return null;
+}
+
+function raiseRage(why){
+  S.rage++;
+  fx.shake = TUNE.shakeMs;
+  float(S.boss.x,S.boss.y,"IRA +1","#ef4444");
+  say(`🔥 <b>Ira ${S.rage}/${S.sc.rageMax}.</b> ${why} Ahora se mueve ${bossSpeed()} casilla(s) por ronda.`,"r");
+  if(S.rage > S.sc.rageMax) gameLose("La paciencia del Jefe llegó al límite. Te quedaste haciendo horas extra.");
+}
+
+/* ---------- capturas ---------- */
+function checkCatch(){
+  if(S.boss.x!==S.player.x || S.boss.y!==S.player.y) return false;
+  fx.shake = TUNE.shakeMs;
+  if(S.hand.length===0){
+    gameLose("El Jefe te encontró en el pasillo sin ningún informe encima. Holgazaneando.");
+    return true;
+  }
+  S.strikes++;
+  float(S.player.x,S.player.y,"¡AMONESTACIÓN!","#ef4444");
+  if(S.strikes >= S.sc.strikes){
+    gameLose(`Te agarró ${S.strikes} ${S.strikes===1?"vez":"veces"} con informes encima. Se acabó la paciencia.`);
+    return true;
+  }
+  // te acompaña a tu escritorio y se vuelve a su oficina: perdés terreno pero se corta la persecución
+  S.player.x=S.start.x; S.player.y=S.start.y;
+  S.boss.x=S.boss.home.x; S.boss.y=S.boss.home.y;
+  say(`⚠️ <b>Amonestación ${S.strikes}/${S.sc.strikes}.</b> Te acompañó hasta tu escritorio y se volvió a su oficina. Zafaste porque tenías informes en la mano.`,"r");
+  return true;
+}
+
+function nextRound(){
+  if(S.over) return;
+  if(S.donutTurns>0 && --S.donutTurns===0){ S.donuts=null; say("🍩 Se comió todas las donas."); }
+  S.round++;
+  S.mp = TUNE.mpPerRound + S.mpBonus; S.mpBonus = 0;
+  S.busy=false;
+  syncUI();
+}
+
+/* ---------- fichas de recompensa ---------- */
+function useReward(i){
+  if(!S || S.over || S.busy) return;
+  if(i>=S.rewardsGot || S.rewardsUsed.includes(i)) return;
+  const id = S.rewardPool[i];
+  S.rewardsUsed.push(i);
+  if(id==="cafe")  { S.mp+=TUNE.coffeeBonusMP; say("☕ Café: +2 de movimiento ya mismo.","g"); }
+  if(id==="whisky"){ S.stun=1; say("🥃 Le invitaste un whisky: pierde la próxima ronda.","g"); }
+  if(id==="donas") { S.donuts={x:S.player.x,y:S.player.y}; S.donutTurns=TUNE.donutTurns;
+                     say("🍩 Dejaste la caja de donas: el Jefe va para allá.","g"); }
+  if(id==="llave") { S.ghostStep=true; say("🗝️ Llave lista: el próximo paso atraviesa un escritorio.","y"); }
+  if(id==="alarma"){ S.boss.x=S.boss.home.x; S.boss.y=S.boss.home.y;
+                     say("🧯 Simulacro de incendio: el Jefe volvió a su oficina.","g"); }
+  float(S.player.x,S.player.y,REWARDS[id].ic,"#f5a524");
+  syncUI();
+}
+
+/* ---------- fin de partida ---------- */
+function gameWin(){
   S.over="win";
-  modal(`<h2>🎉 ¡Libre!</h2><p>Cruzaste la puerta con los 3 informes en la mano y el jefe sin enterarse.<br>
-    Turnos: <b>${S.turn}</b> · Ira final: <b>${S.rage}/${S.cfg.rageMax}</b> · Dificultad: <b>${S.cfg.label}</b></p>
-    <button class="btn" onclick="newGame('${S.diff}');closeModal()">Jugar de nuevo</button>
-    <button class="btn alt" onclick="titleScreen()">Cambiar dificultad</button>`);
+  float(S.exit.x,S.exit.y,"¡LIBRE!","#22c55e");
+  showModal(`<h2>🎉 Fichaste y te fuiste</h2>
+    <p class="lead">Tres informes entregados, tres recompensas en el bolsillo y la escalera de emergencia.
+    El Jefe se quedó con la Ira en ${S.rage}/${S.sc.rageMax}.</p>
+    <div class="rules"><b>Ronda final:</b> ${S.round} &nbsp;·&nbsp; <b>Amonestaciones:</b> ${S.strikes}/${S.sc.strikes}
+    &nbsp;·&nbsp; <b>Escenario:</b> ${S.sc.name}</div>
+    <button class="btn" onclick="newGame('${S.scenKey}');closeModal()">Otra ronda</button>
+    <button class="btn alt" onclick="menu()">Cambiar escenario</button>`);
+}
+function gameLose(reason){
+  S.over="lose"; fx.shake=TUNE.shakeMs*1.6;
+  say(`💼 <b>${reason}</b>`,"r");
+  showModal(`<h2>💼 Te quedaste en la oficina</h2>
+    <p class="lead">${reason}</p>
+    <div class="rules"><b>Rondas:</b> ${S.round} &nbsp;·&nbsp; <b>Informes entregados:</b> ${S.delivered.length}/3
+    &nbsp;·&nbsp; <b>Recompensas:</b> ${S.rewardsGot}/3</div>
+    <button class="btn" onclick="newGame('${S.scenKey}');closeModal()">Revancha</button>
+    <button class="btn alt" onclick="menu()">Cambiar escenario</button>`);
 }
 
-/* ---------- acciones del jugador ---------- */
-function move(dx,dy){
-  if(S.over || S.ap<=0) return;
-  const steps = S.slide>0 ? S.slide : 1;
-  let moved=0;
-  for(let i=0;i<steps;i++){
-    const nx=S.player.x+dx, ny=S.player.y+dy;
-    if(!inside(nx,ny)) break;
-    if(blocked(nx,ny)){
-      if(S.ghostStep && cell(nx,ny).wall){        // llave maestra
-        S.ghostStep=false; say(`🗝️ Atravesaste el mueble como si nada.`,"y");
-      }else break;
-    }
-    S.player.x=nx; S.player.y=ny; moved++;
-    if(S.boss.x===nx && S.boss.y===ny) return lose("Te chocaste de frente con el jefe.");
-  }
-  if(!moved) return;
-  S.slide=0;
-  spend(1);
+/* ==========================================================================
+   RENDER · todo dibujado a mano en canvas (sin imágenes ni emojis en el mapa)
+   Los sprites se dibujan en un espacio de casilla de 48 unidades y se escalan
+   con translate+scale, así CS se puede cambiar sin retocar una sola coordenada.
+   El piso y los muebles son estáticos: se cachean en un canvas aparte.
+   ========================================================================== */
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const U = CS/48;                                   // escala del arte
+let floorLayer = null;
+let mouseCell = null;
+
+const rr = (c,x,y,w,h,r)=>{ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
+const rnd = (x,y,n)=>{ const s=Math.sin(x*127.1+y*311.7+n*74.7)*43758.5453; return s-Math.floor(s); };
+
+/* dibuja fn() en el espacio de 48u de la casilla (x,y) */
+function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g); g.restore(); }
+/* dibuja fn() centrado en una posición flotante del tablero */
+function atPos(g,fx,fy,fn){
+  g.save(); g.translate(fx*CS+CS/2, fy*CS+CS/2+6*U); g.scale(U,U); fn(g); g.restore();
 }
 
-function interact(){
-  if(S.over || S.ap<=0) return;
-  const here = S.grid[S.player.y][S.player.x];
-  const f = here.feat;
-
-  if(f && f.t==="printer"){
-    if(f.done) return say("Esa impresora ya escupió su informe.");
-    f.done=true; S.reports++; S.rage+=2;
-    say(`🖨️ <b>Informe ${S.reports}/3 impreso.</b> La impresora hace un ruido bárbaro: +2 de ira.`,"y");
-    if(S.reports===3) say(`✅ Ya tenés los 3 informes. <b>Corré a la puerta 🚪.</b>`,"g");
-    return spend(1);
-  }
-  if(f && f.t==="coffee"){
-    if(S.coffee>=3) return say("No te entra más café en las manos.");
-    S.coffee++; say(`☕ Cargaste un café. Te sirve para sobornar colegas.`,"g");
-    return spend(1);
-  }
-  if(f && f.t==="exit"){
-    if(S.reports<3) return say(`🔒 La puerta está ahí, pero sin los 3 informes el jefe te caza igual. (${S.reports}/3)`,"r");
-    return win();
-  }
-  // colega adyacente
-  for(const [dx,dy] of DIRS){
-    const c = cell(S.player.x+dx, S.player.y+dy);
-    if(c && c.feat && c.feat.t==="colleague" && !c.feat.done){
-      if(S.coffee<1) return say("Ese colega no mueve un dedo sin un café de por medio. ☕");
-      c.feat.done=true; S.coffee--;
-      const it = ITEM_KEYS[(Math.random()*ITEM_KEYS.length)|0];
-      S.inv.push(it);
-      S.rage = Math.max(0, S.rage-1);
-      say(`🤝 Sobornaste a un colega: te cubre (-1 de ira) y te pasa <b>${ITEMS[it].e} ${ITEMS[it].n}</b>.`,"g");
-      return spend(1);
-    }
-  }
-  say("Acá no hay nada que hacer.");
-}
-
-function useItem(i){
-  if(S.over || !S.inv[i]) return;
-  const id = S.inv[i];
-  if(id==="cafe3"){ S.ap+=2; say("☕☕☕ Café triple: +2 acciones.","y"); }
-  if(id==="auri"){ S.invisible=2; say("🎧 Auriculares puestos: el jefe no te registra por 2 turnos.","g"); }
-  if(id==="llave"){ S.ghostStep=true; say("🗝️ Llave maestra lista: tu próximo paso atraviesa un mueble.","y"); }
-  if(id==="falso"){ S.rage=Math.max(0,S.rage-3); say("📄 Le dejaste un informe falso en el escritorio: -3 de ira.","g"); }
-  if(id==="silla"){ S.slide=3; say("🪑 Sentado en la silla: el próximo movimiento te lleva hasta 3 casillas.","y"); }
-  S.inv.splice(i,1);
-  draw(); ui();
-}
-
-/* ---------- dibujo ---------- */
-const cv = $("c"), ctx = cv.getContext("2d");
-const FEAT_ICON = {printer:"🖨️", coffee:"☕", colleague:"🧑‍💻", exit:"🚪"};
-
-function draw(){
-  if(!S) return;
-  ctx.clearRect(0,0,cv.width,cv.height);
-  const vis = S.over ? new Set() : visionCells();
+/* ---------- capa estática: alfombra + muebles ---------- */
+function buildFloorLayer(){
+  floorLayer = document.createElement("canvas");
+  floorLayer.width = W*CS; floorLayer.height = H*CS;
+  const g = floorLayer.getContext("2d");
 
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const c=S.grid[y][x], px=x*CS, py=y*CS;
+    const px=x*CS, py=y*CS;
+    g.fillStyle = (x+y)%2 ? "#c3bdaf" : "#bdb7a8";      // alfombra industrial
+    g.fillRect(px,py,CS,CS);
+    for(let i=0;i<12;i++){                              // motas
+      const a=rnd(x,y,i), b=rnd(x,y,i+40);
+      g.fillStyle = a>.5 ? "#00000012" : "#ffffff14";
+      g.fillRect(px+a*CS, py+b*CS, 2, 2);
+    }
+    g.strokeStyle="#0000000e"; g.lineWidth=1;
+    g.strokeRect(px+.5,py+.5,CS,CS);
+  }
+  for(let y=1;y<H;y+=3) for(let x=1;x<W;x+=4){          // luz de los tubos
+    const cx=x*CS+CS, cy=y*CS+CS;
+    const gr=g.createRadialGradient(cx,cy,4,cx,cy,CS*2.4);
+    gr.addColorStop(0,"#ffffff26"); gr.addColorStop(1,"#ffffff00");
+    g.fillStyle=gr; g.fillRect(cx-CS*2.4,cy-CS*2.4,CS*4.8,CS*4.8);
+  }
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++)
+    if(S.grid[y][x].wall) inCell(g,x,y,gg=>drawFurniture(gg,x,y));
+}
 
-    ctx.fillStyle = c.hide ? "#dfe6d8" : "#f0ede6";
-    ctx.fillRect(px,py,CS,CS);
+function drawFurniture(g,x,y){
+  // el perímetro es pared de verdad, no mueble
+  if(x===0||y===0||x===W-1||y===H-1){
+    g.fillStyle="#6f7480"; g.fillRect(0,0,48,48);
+    g.fillStyle="#7d8290"; g.fillRect(0,0,48,5);
+    g.fillStyle="#00000022";
+    for(let i=0;i<48;i+=12) g.fillRect(0,i,48,1);
+    return;
+  }
+  const kind = S.grid[y][x].deco;
+  g.fillStyle="#00000030"; rr(g,5,7,40,40,6); g.fill();          // sombra
 
-    if(c.wall){                                    // escritorio / mueble
-      ctx.fillStyle="#7a6650"; ctx.fillRect(px+3,py+3,CS-6,CS-6);
-      ctx.fillStyle="#8e785e"; ctx.fillRect(px+3,py+3,CS-6,10);
-      ctx.strokeStyle="#5e4c3a"; ctx.lineWidth=1;
-      ctx.strokeRect(px+3.5,py+3.5,CS-7,CS-7);
-    }else{
-      ctx.strokeStyle="#e0dbd0"; ctx.lineWidth=1;
-      ctx.strokeRect(px+.5,py+.5,CS,CS);
-    }
-    if(c.hide && !c.wall){                          // escondite
-      ctx.font="22px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.globalAlpha=.75; ctx.fillText("🪴",px+CS/2,py+CS/2+1); ctx.globalAlpha=1;
-    }
-    if(vis.has(key(x,y))){                          // cono de visión del jefe
-      ctx.fillStyle="rgba(224,75,75,.20)"; ctx.fillRect(px,py,CS,CS);
-    }
-    if(c.feat){
-      const f=c.feat;
-      ctx.font="27px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.globalAlpha = f.done ? .35 : 1;
-      let icon = FEAT_ICON[f.t];
-      if(f.t==="exit") icon = S.reports>=3 ? "🚪" : "🔒";
-      ctx.fillText(icon, px+CS/2, py+CS/2+2);
-      ctx.globalAlpha=1;
-      if(f.t==="printer" && f.done){
-        ctx.font="15px serif"; ctx.fillText("✅", px+CS-13, py+13);
-      }
-    }
+  if(kind===0){                                                   // escritorio con monitor
+    g.fillStyle="#9c7448"; rr(g,3,4,42,36,5); g.fill();
+    g.fillStyle="#b08a58"; rr(g,3,4,42,10,5); g.fill();
+    g.fillStyle="#00000025"; g.fillRect(3,38,42,3);
+    g.fillStyle="#2a2e38"; rr(g,13,9,22,15,2); g.fill();
+    g.fillStyle="#5fa8d3"; g.fillRect(15,11,18,11);
+    g.fillStyle="#ffffff33"; g.fillRect(15,11,18,4);
+    g.fillStyle="#2a2e38"; g.fillRect(21,24,6,3);
+    g.fillStyle="#d8d2c6"; rr(g,14,29,20,6,2); g.fill();
+  }else if(kind===1){                                             // archivador
+    g.fillStyle="#8d94a1"; rr(g,5,4,38,40,4); g.fill();
+    g.fillStyle="#a2a9b6"; rr(g,5,4,38,8,4); g.fill();
+    g.strokeStyle="#5f6674"; g.lineWidth=1.5;
+    for(let i=1;i<=3;i++){ const yy=4+i*10;
+      g.beginPath(); g.moveTo(6,yy); g.lineTo(42,yy); g.stroke();
+      g.fillStyle="#5f6674"; g.fillRect(19,yy-4,10,2.5); }
+  }else{                                                          // planta
+    g.fillStyle="#8f8578"; rr(g,8,6,32,34,4); g.fill();
+    g.fillStyle="#b9704a"; rr(g,14,26,20,14,3); g.fill();
+    g.fillStyle="#a25f3c"; g.fillRect(14,26,20,4);
+    g.fillStyle="#2f7d4f";
+    [[24,16,11],[16,20,8],[32,20,8],[20,10,7],[29,11,7]].forEach(([cx,cy,r])=>{
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
+    g.fillStyle="#3f9c63";
+    [[21,14,5],[28,17,5]].forEach(([cx,cy,r])=>{ g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
+  }
+}
+
+/* ---------- elementos dinámicos (todos en espacio 48u) ---------- */
+function drawPrinter(g,c){
+  const on = c.cd===0;
+  g.fillStyle="#00000030"; rr(g,8,32,32,7,3); g.fill();
+  g.fillStyle=on?"#e7e9ee":"#a8abb2"; rr(g,8,14,32,20,4); g.fill();
+  g.fillStyle=on?"#cfd3da":"#94979e"; rr(g,8,14,32,7,4); g.fill();
+  g.fillStyle="#3a3f4a"; g.fillRect(12,24,24,4);
+  if(on){                                                         // hoja saliendo
+    g.save(); g.translate(24,13); g.rotate(-.08);
+    g.fillStyle="#00000022"; g.fillRect(-10,-11,21,13);
+    g.fillStyle="#fdfdfb"; g.fillRect(-11,-12,21,13);
+    g.fillStyle="#c9ccd3"; for(let i=0;i<3;i++) g.fillRect(-8,-9+i*3.4,15,1.4);
+    g.restore();
+  }
+  g.fillStyle = on ? "#2ee06a" : "#e04b4b";
+  g.beginPath(); g.arc(35,18,2.4,0,7); g.fill();
+  if(on){ g.fillStyle="#2ee06a44"; g.beginPath(); g.arc(35,18,5,0,7); g.fill(); }
+}
+
+function drawCoffee(g,c){
+  const on = c.cd===0;
+  g.fillStyle="#00000030"; rr(g,11,34,26,6,3); g.fill();
+  g.fillStyle=on?"#3a3f4a":"#5b5f68"; rr(g,11,9,26,27,4); g.fill();
+  g.fillStyle="#585d6a"; rr(g,13,11,22,9,3); g.fill();
+  g.fillStyle=on?"#8b5a2b":"#4a4a4a"; g.fillRect(16,22,16,7);
+  g.fillStyle="#f2f2f0"; rr(g,19,27,10,7,2); g.fill();
+  if(on){
+    g.strokeStyle="#ffffff66"; g.lineWidth=1.6; g.beginPath();
+    const t=performance.now()/380;
+    for(let i=0;i<2;i++){ const bx=21+i*5;
+      g.moveTo(bx,25); g.quadraticCurveTo(bx+Math.sin(t+i)*3,21,bx,17); }
+    g.stroke();
+  }
+}
+
+function drawColleague(g,c){
+  const rep = REP[c.want];
+  g.fillStyle="#00000030"; rr(g,10,33,28,7,3); g.fill();
+  g.fillStyle="#3b414e"; rr(g,12,16,24,20,6); g.fill();            // silla
+  g.fillStyle = c.done ? "#7c8798" : rep.color;                     // camisa del color del informe
+  rr(g,15,20,18,15,6); g.fill();
+  g.fillStyle = c.done ? "#98a2b3" : rep.ink; g.fillRect(22,20,4,10);
+  g.fillStyle="#f0c08a"; g.beginPath(); g.arc(24,16,7.5,0,7); g.fill();
+  g.fillStyle="#3b2f26"; g.beginPath(); g.arc(24,13.5,7.5,Math.PI,0); g.fill();
+  g.fillStyle="#1c1f26";
+  g.beginPath(); g.arc(21.5,17,1.1,0,7); g.fill();
+  g.beginPath(); g.arc(26.5,17,1.1,0,7); g.fill();
+
+  const bx=32, by=2;                                               // globo con lo que pide
+  g.fillStyle="#00000035"; rr(g,bx-11,by+1,23,17,5); g.fill();
+  g.fillStyle="#fbfbf9"; rr(g,bx-12,by,23,17,5); g.fill();
+  g.beginPath(); g.moveTo(bx-6,by+16); g.lineTo(bx-2,by+21); g.lineTo(bx-1,by+16); g.fill();
+  if(c.done){
+    g.strokeStyle="#22c55e"; g.lineWidth=2.6; g.lineCap="round";
+    g.beginPath(); g.moveTo(bx-7,by+8); g.lineTo(bx-3,by+12); g.lineTo(bx+5,by+3); g.stroke();
+  }else{
+    g.fillStyle=rep.color; rr(g,bx-7,by+3,14,11,2); g.fill();
+    g.fillStyle="#ffffff88"; for(let i=0;i<3;i++) g.fillRect(bx-5,by+5+i*3,10,1.3);
+  }
+}
+
+function drawExit(g){
+  const open = S.delivered.length>=3 && S.rewardsGot>=3;
+  g.fillStyle="#2b303b"; g.fillRect(0,0,48,48);
+  g.fillStyle=open?"#3f4a5c":"#373d49";
+  for(let i=0;i<4;i++) g.fillRect(4,14+i*8, 40-i*4, 6);            // escalones
+  const gr=g.createLinearGradient(0,0,0,12);
+  gr.addColorStop(0, open?"#22c55e":"#5b616e"); gr.addColorStop(1, open?"#15803d":"#464c58");
+  g.fillStyle=gr; rr(g,5,2,38,11,2); g.fill();
+  g.fillStyle=open?"#eafff1":"#9aa0ac"; g.font="bold 8px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText(open?"SALIDA":"CERRADO", 24, 8);
+  if(open){
+    const pulse=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(34,197,94,${.10+pulse*.20})`; g.fillRect(0,0,48,48);
+  }
+}
+
+function drawDonuts(g){
+  g.fillStyle="#00000030"; g.beginPath(); g.ellipse(24,35,13,5,0,0,7); g.fill();
+  g.fillStyle="#e8c39e"; rr(g,11,18,26,16,3); g.fill();
+  g.fillStyle="#d4a574"; rr(g,11,18,26,5,3); g.fill();
+  g.fillStyle="#f2a0c0"; g.beginPath(); g.arc(19,15,6,0,7); g.fill();
+  g.fillStyle="#c47b3f"; g.beginPath(); g.arc(30,16,5.5,0,7); g.fill();
+  g.fillStyle="#b9b3a6"; g.beginPath(); g.arc(19,15,2,0,7); g.fill();
+}
+
+/* ---------- personajes (origen = centro, espacio 48u) ---------- */
+function drawPlayer(g,bob){
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(0,15,12,5,0,0,7); g.fill();
+  g.fillStyle="#2f3a4d"; g.fillRect(-7,4,5,11); g.fillRect(2,4,5,11);
+  g.fillStyle="#4f9ee8"; rr(g,-10,-8+bob,20,15,6); g.fill();
+  g.fillStyle="#3d84c8"; rr(g,-10,-8+bob,20,5,5); g.fill();
+  g.fillStyle="#f0c08a"; g.fillRect(-13,-5+bob,4,10); g.fillRect(9,-5+bob,4,10);
+  g.beginPath(); g.arc(0,-14+bob,8.5,0,7); g.fill();
+  g.fillStyle="#4a3728"; g.beginPath(); g.arc(0,-16.5+bob,8.5,Math.PI,0); g.fill();
+  g.fillStyle="#1c1f26";
+  g.beginPath(); g.arc(-3,-13+bob,1.2,0,7); g.fill();
+  g.beginPath(); g.arc(3,-13+bob,1.2,0,7); g.fill();
+  S.hand.forEach((id,i)=>{                                    // informes en la mano
+    g.save(); g.translate(11+i*3,-2+bob-i*2); g.rotate(.22);
+    g.fillStyle="#00000030"; g.fillRect(-4,-6,11,14);
+    g.fillStyle=REP[id].color; g.fillRect(-5,-7,11,14);
+    g.fillStyle="#ffffff70"; for(let k=0;k<3;k++) g.fillRect(-3,-4+k*3.5,7,1.2);
+    g.restore();
+  });
+}
+
+function drawBoss(g,bob){
+  g.fillStyle="#00000042"; g.beginPath(); g.ellipse(0,16,14,6,0,0,7); g.fill();
+  g.fillStyle="#1b1f2a"; g.fillRect(-8,5,6,12); g.fillRect(2,5,6,12);
+  g.fillStyle="#262b38"; rr(g,-12,-9+bob,24,17,6); g.fill();
+  g.fillStyle="#f5f5f7";
+  g.beginPath(); g.moveTo(-4,-9+bob); g.lineTo(4,-9+bob);
+  g.lineTo(2,2+bob); g.lineTo(-2,2+bob); g.fill();
+  g.fillStyle="#d63d3d";
+  g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(3,-4+bob);
+  g.lineTo(0,4+bob); g.lineTo(-3,-4+bob); g.fill();
+  g.fillStyle="#262b38"; g.fillRect(-15,-6+bob,4,11); g.fillRect(11,-6+bob,4,11);
+  g.fillStyle="#e8b98a"; g.beginPath(); g.arc(0,-16+bob,9,0,7); g.fill();
+  g.fillStyle="#8d939e";
+  g.beginPath(); g.arc(-7,-16+bob,3.4,0,7); g.fill();
+  g.beginPath(); g.arc(7,-16+bob,3.4,0,7); g.fill();
+  g.strokeStyle="#4a4038"; g.lineWidth=2.2; g.lineCap="round";
+  g.beginPath(); g.moveTo(-6,-19+bob); g.lineTo(-2,-17+bob);
+  g.moveTo(6,-19+bob); g.lineTo(2,-17+bob); g.stroke();
+  g.fillStyle="#1c1f26";
+  g.beginPath(); g.arc(-3.2,-15+bob,1.3,0,7); g.fill();
+  g.beginPath(); g.arc(3.2,-15+bob,1.3,0,7); g.fill();
+  if(!S.over && Math.abs(S.boss.x-S.player.x)+Math.abs(S.boss.y-S.player.y) <= 2){
+    const b=Math.sin(performance.now()/150)*2;
+    g.fillStyle="#ef4444"; g.beginPath(); g.arc(15,-26+b,9,0,7); g.fill();
+    g.fillStyle="#fff"; g.font="bold 14px system-ui";
+    g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",15,-26+b);
+  }
+}
+
+/* ---------- bucle ---------- */
+let lastT = performance.now();
+function frame(now){
+  const dt = Math.min(50, now-lastT); lastT = now;
+  requestAnimationFrame(frame);
+  if(!S || !floorLayer) return;
+
+  // lerp exponencial: el suavizado no depende del framerate
+  const k = 1 - Math.pow(0.001, dt/TUNE.moveMs);
+  for(const e of [S.player,S.boss]){
+    e.px += (e.x-e.px)*k; e.py += (e.y-e.py)*k;
+    const moving = Math.abs(e.x-e.px)+Math.abs(e.y-e.py) > .02;
+    e.bob = moving ? Math.sin(now/70)*1.6 : Math.sin(now/520)*.6;
+  }
+  if(fx.shake>0) fx.shake = Math.max(0, fx.shake-dt);
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(fx.shake>0){
+    const m=(fx.shake/TUNE.shakeMs)*7;
+    ctx.translate((Math.random()-.5)*m,(Math.random()-.5)*m);
   }
 
-  // límites de las losetas de oficina
-  ctx.strokeStyle="#c9c2b4"; ctx.lineWidth=2;
-  for(let i=1;i<TW;i++){ ctx.beginPath(); ctx.moveTo(i*TS*CS,0); ctx.lineTo(i*TS*CS,H*CS); ctx.stroke(); }
-  for(let j=1;j<TH;j++){ ctx.beginPath(); ctx.moveTo(0,j*TS*CS); ctx.lineTo(W*CS,j*TS*CS); ctx.stroke(); }
+  ctx.drawImage(floorLayer,0,0);
+  if(!S.over) drawOverlays(now);
 
-  // jefe
-  const b=S.boss;
-  ctx.font="32px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText("👔", b.x*CS+CS/2, b.y*CS+CS/2+2);
-  const [fx,fy]=DIRS[b.dir];                        // hacia dónde mira
-  ctx.fillStyle="#e04b4b";
-  ctx.beginPath();
-  ctx.arc(b.x*CS+CS/2+fx*22, b.y*CS+CS/2+fy*22, 4, 0, 7);
-  ctx.fill();
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const c=S.grid[y][x];
+    if(c.type==="printer")   inCell(ctx,x,y,g=>drawPrinter(g,c));
+    if(c.type==="coffee")    inCell(ctx,x,y,g=>drawCoffee(g,c));
+    if(c.type==="colleague") inCell(ctx,x,y,g=>drawColleague(g,c));
+    if(c.type==="exit")      inCell(ctx,x,y,g=>drawExit(g));
+  }
+  if(S.donuts && S.donutTurns>0) inCell(ctx,S.donuts.x,S.donuts.y,g=>drawDonuts(g));
 
-  // jugador
-  const p=S.player;
-  if(S.invisible>0){ ctx.globalAlpha=.55; }
-  ctx.font="30px serif";
-  ctx.fillText(S.invisible>0 ? "🥷" : "🧑", p.x*CS+CS/2, p.y*CS+CS/2+2);
-  ctx.globalAlpha=1;
-  ctx.strokeStyle="#2f6fd0"; ctx.lineWidth=2.5;
-  ctx.strokeRect(p.x*CS+3, p.y*CS+3, CS-6, CS-6);
+  // el de más abajo se dibuja después, para que tape correctamente
+  const drawP = ()=>atPos(ctx,S.player.px,S.player.py,g=>drawPlayer(g,S.player.bob));
+  const drawB = ()=>atPos(ctx,S.boss.px,  S.boss.py,  g=>drawBoss  (g,S.boss.bob));
+  (S.player.py <= S.boss.py ? [drawP,drawB] : [drawB,drawP]).forEach(f=>f());
+
+  drawFloats(dt);
+  drawVignette();
 }
 
-/* ---------- panel lateral ---------- */
-function ui(){
+function drawOverlays(now){
+  // hasta dónde llega el Jefe en su próxima ronda
+  const speed = bossSpeed();
+  const db = bfsFrom({x:S.boss.x,y:S.boss.y});
+  ctx.fillStyle="#ef444418";
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const d=db[key(x,y)];
+    if(d>0 && d<=speed) ctx.fillRect(x*CS,y*CS,CS,CS);
+  }
+  // casillas alcanzables con el movimiento que te queda
+  if(S.mp>0 && !S.busy){
+    const pulse = (Math.sin(now/420)+1)/2;
+    reachableCells(S.mp).forEach((dist,kk)=>{
+      const x=kk%W, y=(kk/W)|0;
+      ctx.fillStyle = `rgba(255,255,255,${.10+pulse*.07})`;
+      rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,8); ctx.fill();
+      ctx.strokeStyle = `rgba(56,189,248,${.35+pulse*.25})`; ctx.lineWidth=1.6;
+      rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,8); ctx.stroke();
+      if(mouseCell && mouseCell.x===x && mouseCell.y===y){
+        ctx.fillStyle="#38bdf855"; rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,8); ctx.fill();
+      }
+    });
+  }
+}
+
+function drawFloats(dt){
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  for(let i=fx.floats.length-1;i>=0;i--){
+    const f=fx.floats[i]; f.t+=dt;
+    const life=1200, p=f.t/life;
+    if(p>=1){ fx.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.max(0, p<.15 ? p/.15 : 1-(p-.15)/.85);
+    ctx.font="bold 14px system-ui";
+    ctx.lineWidth=3.5; ctx.strokeStyle="#0b0d12cc";
+    const px=f.x*CS+CS/2, py=f.y*CS+CS/2-16-p*28;
+    ctx.strokeText(f.txt,px,py); ctx.fillStyle=f.color; ctx.fillText(f.txt,px,py);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawVignette(){
+  const g=ctx.createRadialGradient(cv.width/2,cv.height/2,cv.height*.42,
+                                   cv.width/2,cv.height/2,cv.height*.92);
+  g.addColorStop(0,"#00000000"); g.addColorStop(1,"#00000055");
+  ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
+}
+
+/* ==========================================================================
+   UI · panel lateral y tablero de jugador
+   ========================================================================== */
+const $ = id => document.getElementById(id);
+
+function syncUI(){
   if(!S) return;
-  $("rage").textContent = `${S.rage}/${S.cfg.rageMax}`;
-  $("ragebar").style.width = Math.min(100, S.rage/S.cfg.rageMax*100) + "%";
-  $("reports").textContent = `${S.reports}/3`;
-  $("coffee").textContent = "☕".repeat(S.coffee) || "—";
-  $("turn").textContent = `Turno ${S.turn}`;
-  $("apdots").innerHTML = Array.from({length:Math.max(S.ap,S.cfg.ap)},(_,i)=>
-    `<span class="dot ${i<S.ap?"on":""}"></span>`).join("");
-  $("bosscard").textContent = S.lastCard ? S.lastCard.n : "—";
-  $("bossdesc").textContent = S.lastCard ? S.lastCard.d : "Todavía no jugó.";
-  $("inv").innerHTML = S.inv.length
-    ? S.inv.map((id,i)=>`<div class="item" onclick="useItem(${i})">
-        <span class="e">${ITEMS[id].e}</span><span><b>${ITEMS[id].n}</b><small>${ITEMS[id].d}</small></span>
-        <span class="k">${i+1}</span></div>`).join("")
-    : `<div class="empty">Soborná a un colega 🧑‍💻 con un café para conseguir objetos.</div>`;
+  $("scenchip").innerHTML = `<b>${S.sc.name}</b> · ${S.sc.diff}`;
+  $("turnchip").textContent = `Ronda ${S.round}`;
+
+  setGoal("g1", S.delivered.length>=3, `${S.delivered.length}/3`);
+  setGoal("g2", S.rewardsGot>=3, `${S.rewardsGot}/3`);
+  const open = S.delivered.length>=3 && S.rewardsGot>=3;
+  setGoal("g3", false, open?"🚪 abierta":"🔒");
+
+  $("mp").innerHTML = Array.from({length:Math.max(S.mp,TUNE.mpPerRound)},(_,i)=>
+    `<span class="pip mp ${i<S.mp?"on":""}"></span>`).join("");
+  $("ragev").textContent = `${S.rage}/${S.sc.rageMax}`;
+  $("ragebar").style.width = Math.min(100, S.rage/S.sc.rageMax*100)+"%";
+  $("strikes").innerHTML = Array.from({length:S.sc.strikes},(_,i)=>
+    `<span class="pip ${i<S.strikes?"on":""}"></span>`).join("");
+  const sp = bossSpeed();
+  $("bspeed").textContent = `${sp} casilla${sp>1?"s":""}/ronda`;
+
+  $("bcn").textContent = S.lastCard ? S.lastCard.n : "—";
+  $("bcd").textContent = S.lastCard ? S.lastCard.d : "Todavía no jugó.";
+  $("deckn").textContent = `${S.deck.length}/9 · al agotarse sube la Ira`;
+
+  $("pilen").textContent = `${S.delivered.length}/3 entregados`;
+  $("docslots").innerHTML = REPORTS.map(r=>{
+    if(S.delivered.includes(r.id))
+      return `<div class="slot done"><div class="ic">✓</div><div class="nm">${r.name}</div>
+              <div class="st">entregado</div></div>`;
+    if(S.hand.includes(r.id))
+      return `<div class="slot hand" style="background:${r.color};border-color:${r.ink}">
+              <div class="ic">📄</div><div class="nm">${r.name}</div><div class="st">en mano</div></div>`;
+    return `<div class="slot empty"><div class="ic">📄</div><div class="nm">${r.name}</div>
+            <div class="st">sin imprimir</div></div>`;
+  }).join("");
+
+  $("rwn").textContent = `${S.rewardsGot}/3`;
+  $("rwslots").innerHTML = S.rewardPool.map((id,i)=>{
+    const rw=REWARDS[id];
+    if(i>=S.rewardsGot)
+      return `<div class="slot empty" title="Se desbloquea al entregar un informe">
+              <div class="ic">🎁</div><div class="nm">?</div><div class="st">bloqueada</div></div>`;
+    const used = S.rewardsUsed.includes(i);
+    return `<div class="slot ${used?"used":"got"}" ${used?"":`onclick="useReward(${i})"`} title="${rw.d}">
+            <div class="ic">${rw.ic}</div><div class="nm">${rw.n}</div>
+            <div class="st">${used?"usada":"tecla "+(i+1)}</div></div>`;
+  }).join("");
+
+  $("colls").innerHTML = S.marks.colls.map(c=>{
+    const cell=S.grid[c.y][c.x], r=REP[cell.want];
+    return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;
+            ${cell.done?"opacity:.45":""}">
+            <span style="width:11px;height:11px;border-radius:3px;background:${r.color};
+              flex:none;box-shadow:0 0 0 1px #0006"></span>
+            <span style="flex:1">Pide <b>${r.name}</b></span>
+            <span style="color:${cell.done?"var(--good)":"var(--dim)"};font-size:11px">
+              ${cell.done?"✓ listo":"pendiente"}</span></div>`;
+  }).join("");
 }
 
-/* ---------- entrada ---------- */
-const KEYMAP = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
-                w:[0,-1],d:[1,0],s:[0,1],a:[-1,0],W:[0,-1],D:[1,0],S:[0,1],A:[-1,0]};
+function setGoal(id,done,val){
+  const el=$(id); el.classList.toggle("done",done); el.querySelector(".v").textContent=val;
+}
+
+/* ==========================================================================
+   INPUT · teclado y mouse. El controlador solo llama a la lógica, nunca dibuja.
+   ========================================================================== */
+const KEYS = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
+              w:[0,-1],d:[1,0],s:[0,1],a:[-1,0]};
 
 addEventListener("keydown", e=>{
-  if(!S) return;
-  if(e.key==="r"||e.key==="R"){ newGame(S.diff); closeModal(); return; }
-  if(S.over) return;
-  if(KEYMAP[e.key]){ e.preventDefault(); move(...KEYMAP[e.key]); return; }
-  if(e.key==="e"||e.key==="E"){ interact(); return; }
-  if(e.key===" "){ e.preventDefault(); draw(); ui(); endTurn(); return; }
-  if(/^[1-5]$/.test(e.key)) useItem(+e.key-1);
+  const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
+  if(k==="r"){ if(S){ newGame(S.scenKey); closeModal(); } return; }
+  if(k==="Escape"){ menu(); return; }
+  if(!S || S.over || S.busy || walking) return;
+  if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
+  if(k===" "){ e.preventDefault(); endRound(); return; }
+  if(/^[123]$/.test(k)) useReward(+k-1);
 });
 
-cv.addEventListener("click", e=>{
-  if(!S || S.over) return;
+function cellFromEvent(e){
   const r = cv.getBoundingClientRect();
-  const x = Math.floor((e.clientX-r.left)/(r.width/W));
+  const x = Math.floor((e.clientX-r.left)/(r.width /W));
   const y = Math.floor((e.clientY-r.top )/(r.height/H));
-  const dx = x-S.player.x, dy = y-S.player.y;
-  if(dx===0 && dy===0) return interact();
-  if(Math.abs(dx)+Math.abs(dy)===1) return move(dx,dy);
-  // un clic en un colega contiguo en diagonal también intenta sobornarlo
-  const c = cell(x,y);
-  if(c && c.feat && c.feat.t==="colleague" && Math.abs(dx)<=1 && Math.abs(dy)<=1) interact();
+  return inside(x,y) ? {x,y} : null;
+}
+cv.addEventListener("mousemove", e=>{ mouseCell = cellFromEvent(e); });
+cv.addEventListener("mouseleave", ()=>{ mouseCell = null; });
+
+/* clic en una casilla resaltada: camina el trayecto paso a paso */
+cv.addEventListener("click", e=>{
+  if(!S || S.over || S.busy || walking || S.mp<=0) return;
+  const t = cellFromEvent(e);
+  if(!t) return;
+  const path = pathTo(t, S.mp);
+  if(!path) return;
+  walkPath(path);
 });
 
-/* ---------- pantallas ---------- */
-function modal(html){ $("modal").innerHTML=html; $("overlay").classList.remove("off"); }
+function pathTo(target, maxSteps){
+  if(isWall(target.x,target.y)) return null;
+  const prev = new Map(), seen = new Set([key(S.player.x,S.player.y)]);
+  let frontier = [{x:S.player.x,y:S.player.y}];
+  for(let depth=0; depth<maxSteps; depth++){
+    const next=[];
+    for(const c of frontier) for(const [dx,dy] of DIRS){
+      const nx=c.x+dx, ny=c.y+dy, kk=key(nx,ny);
+      if(isWall(nx,ny) || seen.has(kk)) continue;
+      seen.add(kk); prev.set(kk,{from:c, d:[dx,dy]}); next.push({x:nx,y:ny});
+    }
+    frontier = next;
+    if(seen.has(key(target.x,target.y))) break;
+  }
+  if(!prev.has(key(target.x,target.y))) return null;
+  const out=[]; let cur=target;
+  while(prev.has(key(cur.x,cur.y))){
+    const p=prev.get(key(cur.x,cur.y));
+    out.unshift(p.d); cur=p.from;
+  }
+  return out.length && out.length<=maxSteps ? out : null;
+}
+
+let walking = false;                            // bloquea el teclado mientras camina solo
+function walkPath(path){
+  if(walking) return;
+  walking = true;
+  let i = 0;
+  (function go(){
+    if(!S || S.over || i>=path.length || S.mp<=0){ walking=false; return; }
+    step(...path[i++]);                         // step() encadena el fin de ronda si llega a 0
+    if(S && !S.over && S.mp>0 && i<path.length) setTimeout(go, TUNE.moveMs+40);
+    else walking = false;
+  })();
+}
+
+/* ==========================================================================
+   PANTALLAS
+   ========================================================================== */
+function showModal(html){ $("modal").innerHTML=html; $("overlay").classList.remove("off"); }
 function closeModal(){ $("overlay").classList.add("off"); }
 
-function titleScreen(){
-  modal(`<h2>LUNES</h2>
-    <p>Sos un empleado holgazán. Objetivo: imprimir <b>3 informes</b> y salir por la puerta
-       antes de que la <b>ira del jefe</b> llegue al tope — o de que te encuentre en un pasillo.<br>
-       Cada partida arma una oficina distinta con las 6 losetas.</p>
-    <div class="diffs">
-      ${Object.entries(DIFFS).map(([k,v])=>
-        `<div class="diff" onclick="newGame('${k}');closeModal()"><b>${v.label}</b><small>${v.desc}</small></div>`
-      ).join("")}
+function menu(){
+  showModal(`
+    <h2>LUNES</h2>
+    <p class="lead">Sos un empleado holgazán y hoy es lunes. Robá los informes de las impresoras,
+    entregáselos al compañero que lleva <b>ese mismo color</b>, cobrá las tres fichas de recompensa
+    y escapá por la escalera de emergencia antes de que el Jefe te agarre.</p>
+
+    <div class="scenlist">
+      ${Object.entries(SCENARIOS).map(([k,v])=>`
+        <div class="sc" onclick="startGame('${k}')">
+          <span class="dot" style="background:${v.color}"></span>
+          <div><b>${v.name} <span style="color:${v.color};font-size:11.5px">· ${v.diff}</span></b>
+          <small>${v.desc}</small></div>
+        </div>`).join("")}
+    </div>
+
+    <div class="rules">
+      <b>Cada ronda:</b> movés exactamente <b>2 casillas</b> (o menos) y después juega el Jefe.
+      Las interacciones son automáticas: pasa lo que corresponda según dónde <b>termines</b> el movimiento.<br>
+      <b>El Jefe</b> avanza hacia vos por el camino más corto tantas casillas como su nivel de <b>Ira</b>,
+      y después da vuelta una carta de su mazo. Cuando el mazo se agota, se baraja y la <b>Ira sube 1</b>.<br>
+      <b>Perdés</b> si te alcanza <b>sin ningún informe encima</b>, si te amonesta más veces de las que
+      aguanta el escenario, o si la Ira llega al máximo.<br>
+      <b>La zona roja</b> del mapa es hasta dónde puede llegar el Jefe en su próxima ronda.
     </div>`);
 }
 
-titleScreen();
+function startGame(k){ newGame(k); closeModal(); }
+
+/* ---------- arranque ---------- */
+requestAnimationFrame(frame);
+menu();
 </script>
 </body>
 </html>
