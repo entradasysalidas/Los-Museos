@@ -15,13 +15,14 @@
     --alarm:#E86B5E; --patina:#7FB6A4;
     --shadow:0 18px 44px #000a;
   }
+  /* interfaz clara: neutros fríos. El acento lo pone cada sala. */
   body.claro{
-    --bg:#E9E8E3; --panel:#F7F6F3; --panel2:#EDEBE6; --sunk:#DFDDD6;
-    --line:#CFCCC4; --hair:#B8B4AA;
-    --ink:#191B20; --body:#3C4048; --dim:#6E727C;
-    --brass:#8A6420; --brass-dim:#B99552; --brass-soft:#F2EADA;
-    --alarm:#B03A2E; --patina:#3E7A66;
-    --shadow:0 16px 36px #0002;
+    --bg:#ECEBF0; --panel:#FBFBFD; --panel2:#F1F0F5; --sunk:#E3E2EB;
+    --line:#D5D3E0; --hair:#BAB7C8;
+    --ink:#1A1926; --body:#3D3B4E; --dim:#6C6980;
+    --brass:#5F3FC4; --brass-dim:#A08FE0; --brass-soft:#EDE8FC;
+    --alarm:#C0392B; --patina:#2E7D6B;
+    --shadow:0 16px 36px #2a206012;
   }
 
   *{box-sizing:border-box}
@@ -104,7 +105,7 @@
   .deckback{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--hair)}
   .deckback:nth-child(1){transform:translate(6px,6px)}
   .deckback:nth-child(2){transform:translate(3px,3px)}
-  .deckcard{position:relative;background:var(--sunk);border:1px solid var(--brass-dim);
+  .deckcard{position:relative;background:var(--brass-soft);border:1px solid var(--brass-dim);
     padding:12px 14px;min-height:104px;display:flex;gap:12px;align-items:flex-start;
     animation:flip .35s ease-out}
   .deckcard.rush{border-color:var(--alarm)}
@@ -518,61 +519,61 @@ const THEMES = {
    w: paredes, en aristas. Se dibujan con el editor y se guardan acá.        --- */
 const L = (s)=>s.trim().split("\n").map(r=>r.trim());
 const SALAS = {
-  tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris",
+  tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris", ac:["#4B44B8","#9A95E2","#EAE8FB"],
     hero:"negro", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`A....A
          .C.D.P
          .M.M..
          T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:6:3","v:5:5","v:2:0","v:3:0","h:5:1","h:4:1","v:3:7"] },
-  n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris",
+  n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris", ac:["#B4531A","#E0A077","#FBEDE3"],
     hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`D.P.P.
          ..A.M.
          .A..P.
          C.TM..`), w:["v:1:2","v:2:2","h:3:2","h:5:2","v:3:5","h:4:4","h:5:4","h:1:4"] },
-  n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris",
+  n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris", ac:["#1E7A72","#86C4BE","#E3F3F1"],
     hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
     e:L(`MPP..P
          ..A...
          T.A...
          M..C.D`), w:["v:1:2","v:2:2","h:3:2","h:1:4","v:1:5","v:3:5","v:5:5","v:5:2"] },
-  n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris",
+  n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris", ac:["#2A5CA8","#91B2DE","#E6EDF8"],
     hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
     e:L(`.AD.MP
          .C....
          ......
          P.TMPA`), w:["v:1:4","v:3:5","h:4:4","v:4:5","v:5:5","v:5:2","v:3:2","h:1:2"] },
-  n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris",
+  n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris", ac:["#A81E6E","#DE8FBC","#FAE6F1"],
     hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
     e:L(`...DP.
          P...M.
          .M..A.
          .TPA.C`), w:["v:1:3","v:1:4","h:2:4","v:2:5","v:3:5","v:5:5","h:4:2","h:5:2"] },
-  n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera",
+  n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera", ac:["#4FC3D9","#2C6B78","#0E2429"],
     hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
     e:L(`LTP.AC
          ...PAP
          ..L...
          D.....`), w:["h:2:2","h:3:2","h:4:3","v:4:4","h:4:4","v:5:3","v:5:4","v:2:2","h:1:3"] },
-  n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera",
+  n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera", ac:["#6FCB6A","#3A6E38","#10240F"],
     hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
     e:L(`P.P.LT
          A.....
          .DL...
          ...PAC`), w:["h:1:2","v:2:2","h:3:2","h:6:2","v:3:5","v:5:5","h:4:3","h:5:3"] },
-  n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera",
+  n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera", ac:["#58D0B4","#2E6F60","#0D2621"],
     hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
     e:L(`.....A
          T.L.PC
          ..L...
          P.A.PD`), w:["h:1:2","h:1:3","h:5:2","v:1:5","v:3:5","h:4:2","v:4:3","h:4:3"] },
-  n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera",
+  n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera", ac:["#C6D94F","#6C7629","#1F220C"],
     hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
     e:L(`P.A...
          .LC.D.
          ...L.A
          P..T.P`), w:["v:1:2","h:3:2","h:1:3","h:2:4","v:2:5","v:3:5","v:4:5","v:2:4","h:6:4"] },
-  n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera",
+  n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera", ac:["#E0B44C","#8A6B31","#241C0C"],
     hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
     e:L(`.A.A.P
          P.C...
@@ -833,7 +834,7 @@ function drinkMate(){
   if(!S||S.over||S.busy||!canDrinkHere()) return;
   S.drunk.add(key(S.player.x,S.player.y));
   S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
-  float(S.player.x,S.player.y,"+MATE","#D2A24C");
+  float(S.player.x,S.player.y,"+MATE",acentoSala());
   if(S.matesTurn>=TUNE.matesPerTurn){
     say("🧉 Tercer mate del turno… terminás en tu baño.","r");
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
@@ -939,7 +940,7 @@ function actionPhase(){
   const card=S.deck.pop();
   S.played.push(card);
   S.lastCard=card; S.phase="accion"; S.cardPending=true;
-  banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : "#D2A24C");
+  banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
   say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
   syncUI();
   setTimeout(()=>applyCard(card), TUNE.cardMs);
@@ -1133,6 +1134,12 @@ function isDark(hex){
   const n=parseInt(hex.slice(1),16);
   const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
   return (0.299*r + 0.587*g + 0.114*b) < 140;
+}
+/* el color de la sala, y una versión con opacidad para el lienzo */
+function acentoSala(){ return (S && S.sala && S.sala.ac && S.sala.ac[0]) || "#D2A24C"; }
+function hexA(hex,a){
+  const n=parseInt((hex||"#D2A24C").slice(1),16);
+  return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a.toFixed(2)+")";
 }
 const rnd=(x,y,n)=>{ const s=Math.sin(x*127.1+y*311.7+n*74.7)*43758.5453; return s-Math.floor(s); };
 function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g); g.restore(); }
@@ -1706,12 +1713,14 @@ function drawOverlays(now){
     const p=(Math.sin(now/420)+1)/2;
     reachableCells(S.mp).forEach((dist,kk)=>{
       const x=kk%W, y=(kk/W)|0;
-      ctx.fillStyle=`rgba(255,255,255,${.09+p*.06})`;
+      ctx.fillStyle = S.sala.piso==="gris"
+        ? `rgba(255,255,255,${.30+p*.14})`
+        : `rgba(255,255,255,${.09+p*.06})`;
       rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill();
-      ctx.strokeStyle=`rgba(210,162,76,${.40+p*.25})`; ctx.lineWidth=1.6;
+      ctx.strokeStyle=hexA(acentoSala(), .40+p*.25); ctx.lineWidth=1.6;
       rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.stroke();
       if(mouseCell&&mouseCell.x===x&&mouseCell.y===y){
-        ctx.fillStyle="#D2A24C44"; rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill(); }
+        ctx.fillStyle=hexA(acentoSala(),.32); rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill(); }
     });
   }
 }
@@ -1749,6 +1758,14 @@ function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
   document.body.classList.toggle("claro", S.sala.piso==="gris");
+  // y cada sala pinta su propio acento, según su temática
+  const ac = S.sala.ac || ["#D2A24C","#8A6B31","#241C0C"];
+  const raiz = document.documentElement;
+  if(raiz && raiz.style && raiz.style.setProperty){
+    raiz.style.setProperty("--brass", ac[0]);
+    raiz.style.setProperty("--brass-dim", ac[1]);
+    raiz.style.setProperty("--brass-soft", ac[2]);
+  }
 
   $("numnivel").textContent = S.sala.num===0 ? "0" : String(S.sala.num);
   $("kicker").textContent = (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing;
