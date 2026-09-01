@@ -1581,8 +1581,9 @@ function drawBanner(dt){
   ctx.globalAlpha=Math.max(0,Math.min(1,a));
   ctx.font='600 15px "Archivo",system-ui,sans-serif';
   ctx.textAlign="center"; ctx.textBaseline="middle";
+  // abajo, sobre el muro inferior: arriba tapaba la puerta de salida
   const w=Math.min(cv.width-24, ctx.measureText(b.txt).width+40);
-  const x=cv.width/2, y=26;
+  const x=cv.width/2, y=cv.height-27;
   ctx.fillStyle="#0B0D12E8"; rr(ctx,x-w/2,y-15,w,30,2); ctx.fill();
   ctx.strokeStyle=b.color; ctx.lineWidth=1.5; rr(ctx,x-w/2,y-15,w,30,2); ctx.stroke();
   ctx.fillStyle=b.color; ctx.fillText(b.txt,x,y+1);
