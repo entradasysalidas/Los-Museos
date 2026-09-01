@@ -282,12 +282,15 @@ const CREW = {
   kzk   :{n:"Kzk",       hair:"#A9793F", style:"corto",  beard:true,  tall:1.00, shirt:"#8A6BC4"},
   matxi :{n:"Matxi",     hair:"#6B4526", style:"corto",  beard:false, tall:1.00, shirt:"#D8A33C"},
   chuna :{n:"Chuna",     hair:"#3A2416", style:"largorulos", beard:false, tall:1.00, shirt:"#3FA6A0"},
-  hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",  beard:false, tall:1.18, shirt:"#C25B93"},
+  hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",  beard:false, tall:1.18, shirt:"#22242A"},
   marian:{n:"Marian",    hair:"#7A5230", style:"largo",  beard:false, tall:1.10, shirt:"#5B7FD4"},
   damian:{n:"Damián",    hair:"#1E1A18", style:"medio",  beard:false, tall:1.00, shirt:"#7FA23E"},
 };
 
 /* habilidad propia de cada uno, solo cuando protagoniza su sala */
+/* nombre corto que va estampado en la remera */
+Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); });
+
 const POWERS = {
   hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una estatua."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
@@ -330,18 +333,55 @@ const DECK = [
   {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush", ic:"⚡"},
 ];
 
+/* ---------- estéticas ----------
+   Cada sala tiene su piso, sus muebles, su color de pared y su cantidad de luz.
+   Los depósitos y sótanos son oscuros y de hormigón; las salas de museo entran
+   en luz, con parquet o mármol claro y cuadros en las paredes. */
+const THEMES = {
+  deposito:{ piso:["#7E7160","#766A59"], patron:"hormigon", junta:"#00000020",
+             luz:"#FFE7BE", luzA:.10, luzR:2.0, pared:"#3E3A34", paredTop:"#4A463F",
+             muebles:["cajones","estanteria","cajones"], vineta:.46, fondo:"#25231F" },
+  oficina :{ piso:["#8E8C84","#86847C"], patron:"alfombra", junta:"#00000016",
+             luz:"#EAF2FF", luzA:.14, luzR:2.2, pared:"#414652", paredTop:"#4C525F",
+             muebles:["escritorio","estanteria","planta"], vineta:.40, fondo:"#2A2D34" },
+  museo   :{ piso:["#B79A72","#AF9269"], patron:"parquet", junta:"#00000014",
+             luz:"#FFF6E2", luzA:.30, luzR:2.8, pared:"#6E6A62", paredTop:"#7C7870",
+             muebles:["cuadro","vitrinaAlta","cuadro"], vineta:.26, fondo:"#3A362F" },
+  sotano  :{ piso:["#5E5A54","#57534E"], patron:"hormigon", junta:"#00000028",
+             luz:"#CFE0FF", luzA:.07, luzR:1.7, pared:"#31302C", paredTop:"#3B3A35",
+             muebles:["estanteria","estanteria","cajones"], vineta:.58, fondo:"#1C1B19" },
+  taller  :{ piso:["#A9A091","#A19889"], patron:"baldosa", junta:"#00000022",
+             luz:"#FFF3D0", luzA:.22, luzR:2.1, pared:"#5A564E", paredTop:"#666259",
+             muebles:["mesa","estanteria","mesa"], vineta:.34, fondo:"#33302B" },
+  patio   :{ piso:["#C6BCA6","#BEB49E"], patron:"piedra", junta:"#00000018",
+             luz:"#FFFBEC", luzA:.38, luzR:3.2, pared:"#8A8474", paredTop:"#979181",
+             muebles:["seto","pedestal","seto"], vineta:.18, fondo:"#4A4638" },
+  galeria :{ piso:["#CBC4B6","#C3BCAE"], patron:"marmol", junta:"#00000012",
+             luz:"#FFF4D8", luzA:.34, luzR:3.0, pared:"#7A7365", paredTop:"#8A8375",
+             muebles:["cuadro","pedestal","cuadro"], vineta:.20, fondo:"#433E33" },
+};
+
 /* ---------- antagonistas ---------- */
 const FOES = {
-  encargado:{n:"El Encargado",   look:"overol",  d:"Camina y nada más. Es la sala escuela."},
-  curador  :{n:"El Curador",     look:"saco",    d:"Sus acciones lo llevan a las vitrinas, no a los puestos."},
-  director :{n:"El Director",    look:"traje",   d:"El perseguidor clásico. Sin trucos, sin descanso."},
+  encargado:{n:"El Encargado",   look:"overol", d:"Camina y nada más. Es la sala escuela."},
+  curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas, no a los puestos.", twist:"vitrinas"},
+  director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos, sin descanso."},
+  seguridad:{n:"La Seguridad",   look:"guardia",d:"Si terminás en su misma fila o columna sin pared de por medio, avanza un casillero extra.", twist:"linterna"},
+  procurad :{n:"Los Procuradores", look:"procurador", count:2,
+             d:"Son dos y cada uno avanza un casillero. Te cierran el paso entre los dos."},
+  perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las estatuas: esconderse no sirve.", twist:"olfato"},
+  restaura :{n:"El Restaurador", look:"guardapolvo",
+             d:"Cuando te saca una pieza la devuelve a la vitrina más cercana a él, no a la más lejana tuya.", twist:"reponeCerca"},
+  inspector:{n:"El Inspector",   look:"gabardina", d:"Cada objeto que usás le sube un nivel de alerta.", twist:"anota"},
+  general  :{n:"El Director General", look:"gala", alert:2,
+             d:"Arranca con alerta 2 y hace las dos cosas: persigue y se teletransporta a las vitrinas.", twist:"vitrinas"},
 };
 
 /* ---------- las salas ----------
    #pared  .piso  E salida  @tu puesto  b tu baño  J antagonista  x su baño
    V vitrina  1 2 3 cómplices (rombo/triángulo/círculo)  M mate  T estatua  L piso mojado */
 const SALAS = {
-  s1:{ num:1, name:"Depósito de embalaje", wing:"Museo de Pueblo",
+  s1:{ num:1, name:"Depósito de embalaje", wing:"Museo de Pueblo", theme:"deposito",
        place:"Cajones, papel de burbuja y una sola puerta",
        hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
        map:[ "####E######",
@@ -352,7 +392,7 @@ const SALAS = {
              "#..M...M..#",
              "#V..LJx.V3#",
              "###########" ]},
-  s2:{ num:2, name:"Sala de Arqueología", wing:"Museo Municipal",
+  s2:{ num:2, name:"Sala de Arqueología", wing:"Museo Municipal", theme:"museo",
        place:"Vitrinas largas y pasillos angostos",
        hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
        map:[ "###E#######",
@@ -363,7 +403,7 @@ const SALAS = {
              "#2.M...M.3#",
              "#..#Jx#..V#",
              "###########" ]},
-  s3:{ num:3, name:"Oficinas administrativas", wing:"Museo Municipal",
+  s3:{ num:3, name:"Oficinas administrativas", wing:"Museo Municipal", theme:"oficina",
        place:"La parte aburrida del museo",
        hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
        map:[ "####E######",
@@ -373,6 +413,72 @@ const SALAS = {
              "#..#...#..#",
              "#2.M.#.M.3#",
              "#..L.Jx..V#",
+             "###########" ]},
+  s4:{ num:4, name:"Arte Moderno", wing:"Museo Provincial", theme:"museo",
+       place:"Salones abiertos, casi nada donde taparse",
+       hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
+       map:[ "####E######",
+             "#@b.....V.#",
+             "#..T...T..#",
+             "#1..V....2#",
+             "#..#...#..#",
+             "#M.....L.M#",
+             "#V...Jx..3#",
+             "###########" ]},
+  s5:{ num:5, name:"Archivo y sótano", wing:"Museo Provincial", theme:"sotano",
+       place:"Estanterías, humedad y pasillos largos",
+       hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
+       map:[ "#########E#",
+             "#@b......V#",
+             "#.#T#.#.#.#",
+             "#1...V...2#",
+             "#.#.#T#.#.#",
+             "#M...L...M#",
+             "#V..Jx...3#",
+             "###########" ]},
+  s6:{ num:6, name:"Ciencias Naturales", wing:"Museo Nacional", theme:"museo",
+       place:"Dinosaurios, vitrinas altas y un olor raro",
+       hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
+       map:[ "####E######",
+             "#@b..#..V.#",
+             "#...T#T...#",
+             "#V.......V#",
+             "#.#..#..#.#",
+             "#1.M.#.M.2#",
+             "#..L.Jx..3#",
+             "###########" ]},
+  s7:{ num:7, name:"Taller de Restauración", wing:"Museo Nacional", theme:"taller",
+       place:"Mesas, solventes y piezas a medio arreglar",
+       hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
+       map:[ "####E######",
+             "#@b#....V.#",
+             "#..#.##...#",
+             "#1.....#.2#",
+             "#.##.#.#..#",
+             "#M..T#T..M#",
+             "#V.L.Jx.V3#",
+             "###########" ]},
+  s8:{ num:8, name:"Patio de Esculturas", wing:"El Gran Museo", theme:"patio",
+       place:"Al aire libre, entre setos y estatuas",
+       hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
+       map:[ "#####E#####",
+             "#@b..T...V#",
+             "#.T.....T.#",
+             "#1...V...2#",
+             "#..T...T..#",
+             "#M.......M#",
+             "#V.L.Jx..3#",
+             "###########" ]},
+  s9:{ num:9, name:"Gran Galería", wing:"El Gran Museo", theme:"galeria",
+       place:"La sala del cuadro que todos vienen a ver",
+       hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
+       map:[ "#####E#####",
+             "#@b.#.#..V#",
+             "#...#.#...#",
+             "#1..V....2#",
+             "#.#.###.#.#",
+             "#M.T.L.T.M#",
+             "#V...Jx..3#",
              "###########" ]},
 };
 
@@ -422,13 +528,18 @@ function newGame(salaKey){
 
   S = {
     salaKey, sala, hero, heroKey:sala.hero, power, foe:FOES[sala.foe], foeKey:sala.foe,
+    th: THEMES[sala.theme] || THEMES.museo,
     grid:p.grid, marks:p.marks,
     exit:p.exit, home:p.home, bath:p.bath, foeHome:p.foeHome, foeBath:p.foeBath,
     player:{x:p.home.x, y:p.home.y, px:p.home.x, py:p.home.y, bob:0},
-    foes:[{x:p.foeHome.x, y:p.foeHome.y, px:p.foeHome.x, py:p.foeHome.y, bob:0}],
+    foes: Array.from({length: FOES[sala.foe].count || 1}, (_,i)=>{
+      const o = i===0 ? p.foeHome : p.foeBath;      // el segundo arranca en el baño contiguo
+      return {x:o.x, y:o.y, px:o.x, py:o.y, bob:0};
+    }),
     pile, under, hand:[], delivered:[], taken:0, lost:[],
     objects:[], objUsed:[],
-    alert:1, deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
+    alert: FOES[sala.foe].alert || 1,
+    deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
     over:null, busy:false, log:[], phase:"vos", cardPending:false,
@@ -442,6 +553,7 @@ function newGame(salaKey){
   fx.floats.length=0; fx.shake=0;
   buildFloorLayer();
   buildLegend();
+  const cvEl=document.getElementById("c"); if(cvEl) cvEl.style.background=S.th.fondo;
   say(`<b>Sala ${sala.num} · ${sala.name}</b>`,"y");
   say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
   say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
@@ -610,10 +722,12 @@ function drinkMate(){
 function endMovement(){
   if(S.over) return;
   const c=S.grid[S.player.y][S.player.x];
-  const hidden = c.type==="estatua" ||
+  const hidden = S.foe.twist!=="olfato" && (c.type==="estatua" ||
     (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
-      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="estatua"; }));
+      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="estatua"; })));
   if(hidden) say("🗿 Terminaste el turno escondido: no te persigue.","g");
+  else if(S.foe.twist==="olfato" && S.grid[S.player.y][S.player.x].type==="estatua")
+    say("🐕 El Perro te huele igual: la estatua no te tapa.","r");
   setTimeout(()=>chasePhase(hidden), 220);
 }
 
@@ -637,6 +751,20 @@ function chaseStep(f){
 
 function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
 
+/* ¿el jugador quedó en la misma fila o columna que el antagonista, sin paredes? */
+function enLineaRecta(){
+  const f=S.foes[0], p=S.player;
+  if(f.x!==p.x && f.y!==p.y) return false;
+  if(f.x===p.x){
+    const a=Math.min(f.y,p.y), b=Math.max(f.y,p.y);
+    for(let y=a+1;y<b;y++) if(isWall(f.x,y)) return false;
+  }else{
+    const a=Math.min(f.x,p.x), b=Math.max(f.x,p.x);
+    for(let x=a+1;x<b;x++) if(isWall(x,f.y)) return false;
+  }
+  return true;
+}
+
 function chasePhase(hidden){
   if(S.over) return;
   S.phase = "persecucion";
@@ -651,7 +779,16 @@ function chasePhase(hidden){
   syncUI();
   (function paso(){                                 // un casillero por vez, para poder seguirlo
     if(S.over) return;
-    if(i++ >= n) return setTimeout(actionPhase, 620);
+    if(i++ >= n) return setTimeout(()=>{
+      if(S.foe.twist==="linterna" && enLineaRecta()){
+        banner("Te alumbró con la linterna: un casillero más","#E0685D");
+        say("🔦 Quedaste en su línea recta: avanza un casillero extra.","r");
+        for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+        syncUI();
+        return setTimeout(actionPhase, 700);
+      }
+      actionPhase();
+    }, 620);
     for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
     syncUI();
     setTimeout(paso, TUNE.foeStepMs);
@@ -696,7 +833,7 @@ function applyCard(card){
   switch(card.k){
     case "desk": {
       // el Curador va a las vitrinas en vez de a los puestos
-      if(S.foeKey==="curador"){
+      if(S.foe.twist==="vitrinas"){
         const live = S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
         put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
       }else{
@@ -706,7 +843,7 @@ function applyCard(card){
     case "bath": put(S.foeBath); break;
     case "exit": put(S.exit);    break;
     case "home": put(S.foeHome); break;
-    case "rush": return rushSteps(foeSpeed());
+    case "rush": return rushSteps(S.foes.length>1 ? 1 : foeSpeed());  // dos fichas ya son suficiente castigo
   }
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
   if(card.k!=="refill") float(f.x,f.y,"↯","#D2A24C");   // se ve dónde reapareció
@@ -756,14 +893,17 @@ function losePiece(id){
   S.taken++;
   S.lost.push(id);
   float(S.player.x,S.player.y,"−"+PIE[id].sym,"#E0685D");
-  // se reactiva la vitrina más lejana a tu puesto
-  const d = bfsFrom(S.home);
-  let far=null, fd=-1;
+  // se reactiva la vitrina más lejana a tu puesto; el Restaurador, en cambio,
+  // la repone en la que tiene más a mano
+  const cerca = S.foe.twist==="reponeCerca";
+  const d = bfsFrom(cerca ? {x:S.foes[0].x,y:S.foes[0].y} : S.home);
+  let pick=null, best=cerca ? 1e9 : -1;
   for(const v of S.marks.vitrinas){
     const dd=d[key(v.x,v.y)];
-    if(S.grid[v.y][v.x].alarm && dd>fd){ fd=dd; far=v; }
+    if(!S.grid[v.y][v.x].alarm || dd<0) continue;
+    if(cerca ? dd<best : dd>best){ best=dd; pick=v; }
   }
-  if(far) S.grid[far.y][far.x].alarm = 0;
+  if(pick) S.grid[pick.y][pick.x].alarm = 0;
   say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a la vitrina más lejana y los dos vuelven a sus puestos.`,"r");
   if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas. Se terminó.`);
   resetPositions();
@@ -789,6 +929,11 @@ function useObject(i){
   if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
                       say("📢 Llamado falso por altavoz: volvió a su oficina.","g"); }
   float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
+  if(S.foe.twist==="anota" && S.alert<TUNE.alertMax){
+    S.alert++;
+    say(`📋 El Inspector te vio usarlo y lo anotó: <b>alerta ${S.alert}</b>.`,"r");
+    fx.shake = TUNE.shakeMs;
+  }
   syncUI();
 }
 
@@ -842,6 +987,12 @@ let floorLayer=null, mouseCell=null;
 
 const rr=(g,x,y,w,h,r)=>{ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r);
   g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); };
+/* ¿la remera es oscura? decide si el nombre va en claro o en oscuro */
+function isDark(hex){
+  const n=parseInt(hex.slice(1),16);
+  const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return (0.299*r + 0.587*g + 0.114*b) < 140;
+}
 const rnd=(x,y,n)=>{ const s=Math.sin(x*127.1+y*311.7+n*74.7)*43758.5453; return s-Math.floor(s); };
 function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g); g.restore(); }
 function atPos(g,fx_,fy_,fn){ g.save(); g.translate(fx_*CS+CS/2, fy_*CS+CS/2+7*U); g.scale(U,U); fn(g); g.restore(); }
@@ -852,58 +1003,154 @@ function buildFloorLayer(){
   floorLayer.width=W*CS; floorLayer.height=H*CS;
   const g=floorLayer.getContext("2d");
 
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const px=x*CS, py=y*CS;
-    // parquet de museo: listones alternados
-    g.fillStyle=(x+y)%2 ? "#8C7355" : "#846B4E";
-    g.fillRect(px,py,CS,CS);
-    for(let i=0;i<4;i++){
-      g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0c";
-      g.fillRect(px, py+i*(CS/4)+rnd(x,y,i+9)*3, CS, 1.5);
-    }
-    g.strokeStyle="#00000018"; g.lineWidth=1; g.strokeRect(px+.5,py+.5,CS,CS);
-  }
-  // cenitales de la galería
+  const th=S.th;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) drawPiso(g,x,y,th);
+  // la luz que entra: cuanto más "sala de museo", más cenitales y más fuertes
   for(let y=1;y<H;y+=3) for(let x=1;x<W;x+=4){
-    const cx=x*CS+CS, cy=y*CS+CS;
-    const gr=g.createRadialGradient(cx,cy,4,cx,cy,CS*2.3);
-    gr.addColorStop(0,"#fff3d822"); gr.addColorStop(1,"#fff3d800");
-    g.fillStyle=gr; g.fillRect(cx-CS*2.3,cy-CS*2.3,CS*4.6,CS*4.6);
+    const cx=x*CS+CS, cy=y*CS+CS, R=CS*th.luzR;
+    const gr=g.createRadialGradient(cx,cy,4,cx,cy,R);
+    gr.addColorStop(0, th.luz + Math.round(th.luzA*255).toString(16).padStart(2,"0"));
+    gr.addColorStop(1, th.luz + "00");
+    g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
   for(let y=0;y<H;y++) for(let x=0;x<W;x++)
     if(S.grid[y][x].wall) inCell(g,x,y,gg=>drawWall(gg,x,y));
 }
 
-function drawWall(g,x,y){
-  const border = x===0||y===0||x===W-1||y===H-1;
-  if(border){                                   // muro de sala, con zócalo
-    g.fillStyle="#3A3F4A"; g.fillRect(0,0,48,48);
-    g.fillStyle="#454B58"; g.fillRect(0,0,48,6);
-    g.fillStyle="#2C313C"; g.fillRect(0,42,48,6);
-    return;
+/* ---------- pisos ---------- */
+function drawPiso(g,x,y,th){
+  const px=x*CS, py=y*CS;
+  g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
+  g.fillRect(px,py,CS,CS);
+  if(th.patron==="parquet"){
+    for(let i=0;i<4;i++){
+      g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0e";
+      g.fillRect(px, py+i*(CS/4)+rnd(x,y,i+9)*3, CS, 1.5);
+    }
+  }else if(th.patron==="hormigon"){
+    for(let i=0;i<14;i++){
+      g.fillStyle = rnd(x,y,i)>.5 ? "#00000012" : "#ffffff0a";
+      g.fillRect(px+rnd(x,y,i)*CS, py+rnd(x,y,i+31)*CS, 2.5, 2.5);
+    }
+    if(rnd(x,y,7)>.72){
+      g.strokeStyle="#00000022"; g.lineWidth=1; g.beginPath();
+      g.moveTo(px+rnd(x,y,3)*CS, py); g.lineTo(px+rnd(x,y,4)*CS, py+CS); g.stroke();
+    }
+  }else if(th.patron==="alfombra"){
+    for(let i=0;i<10;i++){
+      g.fillStyle = rnd(x,y,i)>.5 ? "#00000010" : "#ffffff10";
+      g.fillRect(px+rnd(x,y,i)*CS, py+rnd(x,y,i+40)*CS, 2, 2);
+    }
+  }else if(th.patron==="baldosa"){
+    g.strokeStyle="#00000018"; g.lineWidth=1;
+    g.strokeRect(px+CS/2+.5, py+.5, CS/2, CS/2);
+    g.strokeRect(px+.5, py+CS/2+.5, CS/2, CS/2);
+  }else if(th.patron==="piedra"){
+    g.strokeStyle="#00000014"; g.lineWidth=1.4;
+    g.strokeRect(px+2.5, py+2.5, CS-5, CS-5);
+  }else if(th.patron==="marmol"){
+    g.strokeStyle="#ffffff18"; g.lineWidth=1.2;
+    for(let i=0;i<3;i++){
+      g.beginPath();
+      g.moveTo(px+rnd(x,y,i)*CS, py);
+      g.quadraticCurveTo(px+rnd(x,y,i+5)*CS, py+CS/2, px+rnd(x,y,i+11)*CS, py+CS);
+      g.stroke();
+    }
   }
-  const kind=S.grid[y][x].deco;
-  g.fillStyle="#00000038"; rr(g,5,7,40,40,3); g.fill();
-  if(kind===0){                                  // panel expositor con cuadro
-    g.fillStyle="#4E5460"; rr(g,3,3,42,42,2); g.fill();
-    g.fillStyle="#3C424D"; g.fillRect(3,3,42,6);
-    g.fillStyle="#C0A063"; g.fillRect(10,12,28,24);          // marco dorado
-    g.fillStyle=["#7B4A3A","#3B5A76","#5A6B44"][(x+y)%3];    // lienzo
-    g.fillRect(13,15,22,18);
-    g.fillStyle="#ffffff18"; g.fillRect(13,15,22,6);
-  }else if(kind===1){                            // cajones de embalaje
+  g.strokeStyle=th.junta; g.lineWidth=1; g.strokeRect(px+.5,py+.5,CS,CS);
+}
+
+/* ---------- muebles: cada estética usa los suyos ---------- */
+const MUEBLE = {
+  cuadro(g,x,y){
+    g.fillStyle="#6A6459"; rr(g,3,3,42,42,2); g.fill();
+    g.fillStyle="#79736A"; g.fillRect(3,3,42,6);
+    g.fillStyle="#C0A063"; g.fillRect(9,11,30,26);
+    g.fillStyle=["#7B4A3A","#3B5A76","#5A6B44","#6E4A6B"][(x+y)%4];
+    g.fillRect(12,14,24,20);
+    g.fillStyle="#ffffff20"; g.fillRect(12,14,24,7);
+    g.fillStyle="#00000030"; g.fillRect(12,30,24,4);
+  },
+  cajones(g){
     g.fillStyle="#9A7647"; rr(g,4,5,40,38,2); g.fill();
     g.fillStyle="#8A6739"; g.fillRect(4,5,40,7);
     g.strokeStyle="#6E5129"; g.lineWidth=2;
     g.beginPath(); g.moveTo(4,24); g.lineTo(44,24);
     g.moveTo(6,7); g.lineTo(42,41); g.moveTo(42,7); g.lineTo(6,41); g.stroke();
-  }else{                                         // vitrina alta cerrada
-    g.fillStyle="#3F4653"; rr(g,6,4,36,40,2); g.fill();
-    g.fillStyle="#6E8598"; g.fillRect(9,8,30,30);
-    g.fillStyle="#ffffff22";
+  },
+  vitrinaAlta(g){
+    g.fillStyle="#4A5260"; rr(g,6,4,36,40,2); g.fill();
+    g.fillStyle="#7E93A4"; g.fillRect(9,8,30,30);
+    g.fillStyle="#ffffff26";
     g.beginPath(); g.moveTo(11,38); g.lineTo(27,8); g.lineTo(33,8); g.lineTo(17,38); g.fill();
-    g.fillStyle="#2C313C"; g.fillRect(6,40,36,4);
+    g.fillStyle="#333A45"; g.fillRect(6,40,36,4);
+  },
+  estanteria(g){
+    g.fillStyle="#6B655B"; rr(g,4,4,40,40,1); g.fill();
+    for(let i=0;i<3;i++){
+      const yy=8+i*12;
+      g.fillStyle="#4E4941"; g.fillRect(6,yy+8,36,3);
+      for(let k=0;k<5;k++){
+        g.fillStyle=["#8A6A4A","#6E7A8A","#7A5A5A","#6A7A5A"][(k+i)%4];
+        g.fillRect(7+k*7, yy, 5.5, 8);
+      }
+    }
+  },
+  escritorio(g){
+    g.fillStyle="#7A6B58"; rr(g,3,10,42,30,2); g.fill();
+    g.fillStyle="#8A7A66"; g.fillRect(3,10,42,5);
+    g.fillStyle="#2A2E38"; rr(g,15,13,18,12,1); g.fill();
+    g.fillStyle="#46505C"; g.fillRect(17,15,14,8);
+    g.fillStyle="#C9C4B9"; rr(g,15,28,18,4,1); g.fill();
+    g.fillStyle="#5A5248"; g.fillRect(5,32,10,8);
+  },
+  mesa(g){
+    g.fillStyle="#B9B2A2"; rr(g,3,12,42,26,1); g.fill();
+    g.fillStyle="#C6BFAF"; g.fillRect(3,12,42,4);
+    g.fillStyle="#7A7266"; g.fillRect(6,38,5,6); g.fillRect(37,38,5,6);
+    g.fillStyle="#8FA88F"; g.beginPath(); g.arc(14,24,4,0,7); g.fill();
+    g.fillStyle="#C4A46A"; g.beginPath(); g.arc(23,22,3.4,0,7); g.fill();
+    g.fillStyle="#9A9AB4"; g.fillRect(30,19,8,10);
+  },
+  planta(g){
+    g.fillStyle="#8F8578"; rr(g,8,6,32,34,4); g.fill();
+    g.fillStyle="#B9704A"; rr(g,14,26,20,14,3); g.fill();
+    g.fillStyle="#A25F3C"; g.fillRect(14,26,20,4);
+    g.fillStyle="#2F7D4F";
+    [[24,16,11],[16,20,8],[32,20,8],[20,10,7],[29,11,7]].forEach(([cx,cy,r])=>{
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
+  },
+  seto(g,x,y){
+    g.fillStyle="#3E6B44"; rr(g,3,6,42,36,6); g.fill();
+    g.fillStyle="#4C7F52";
+    for(let i=0;i<9;i++){
+      const a=rnd(x,y,i), b=rnd(x,y,i+20);
+      g.beginPath(); g.arc(7+a*34, 10+b*28, 5.5, 0, 7); g.fill();
+    }
+    g.fillStyle="#5B4632"; g.fillRect(4,40,40,4);
+  },
+  pedestal(g){
+    g.fillStyle="#B3ABA0"; rr(g,13,18,22,24,1); g.fill();
+    g.fillStyle="#C2BAAF"; g.fillRect(11,16,26,4);
+    g.fillStyle="#C8C1B6"; g.fillRect(13,40,22,4);
+    g.fillStyle="#D6D0C6";
+    g.beginPath(); g.moveTo(18,18); g.lineTo(20,8); g.lineTo(28,8); g.lineTo(30,18); g.fill();
+    g.beginPath(); g.arc(24,6,5.5,0,7); g.fill();
+    g.fillStyle="#B0A99E"; g.beginPath(); g.arc(21,6,2,0,7); g.fill();
+  },
+};
+
+function drawWall(g,x,y){
+  const th=S.th;
+  const border = x===0||y===0||x===W-1||y===H-1;
+  if(border){                                   // muro perimetral de la sala
+    g.fillStyle=th.pared; g.fillRect(0,0,48,48);
+    g.fillStyle=th.paredTop; g.fillRect(0,0,48,6);
+    g.fillStyle="#00000033"; g.fillRect(0,42,48,6);
+    return;
   }
+  g.fillStyle="#00000038"; rr(g,5,7,40,40,3); g.fill();
+  (MUEBLE[th.muebles[S.grid[y][x].deco]] || MUEBLE.cajones)(g,x,y);
 }
 
 /* ---------- elementos ---------- */
@@ -1044,6 +1291,14 @@ function drawPerson(g, look, bob, alpha){
   g.fillStyle="#2B3140"; g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);      // piernas
   g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();                 // remera
   g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+  if(look.tag){                                                                // nombre estampado
+    g.save();
+    g.font='700 5.2px "Archivo",system-ui,sans-serif';
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillStyle = isDark(look.shirt) ? "#EFEDE7" : "#1B1D22";
+    g.fillText(look.tag, 0, -0.5+bob);
+    g.restore();
+  }
   g.fillStyle="#EFC08C"; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
   g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
   drawHair(g, look, bob);
@@ -1083,55 +1338,152 @@ function drawHair(g, look, bob){
   }
 }
 
-/* antagonistas */
+/* ---------- antagonistas ----------
+   Cuerpo y cabeza según el puesto: overol, saco, traje, uniforme, guardapolvo,
+   gabardina o traje de gala. El Perro guardián tiene silueta propia. */
+const FOE_BODY = {
+  overol:"#4E6B84", saco:"#8A7B5E", traje:"#262B38", guardia:"#2E4A6E",
+  procurador:"#1E1E24", guardapolvo:"#D8D5CC", gabardina:"#7A6A4E", gala:"#2A2038",
+};
+
 function drawFoe(g,bob,look){
+  if(look==="perro") return drawPerro(g,bob);
+  const body = FOE_BODY[look] || "#262B38";
+  const oscuro = look!=="guardapolvo";
+
   g.fillStyle="#00000042"; g.beginPath(); g.ellipse(0,16,13,5.5,0,0,7); g.fill();
-  g.fillStyle="#1A1D24"; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
-  const body = look==="overol" ? "#4E6B84" : look==="saco" ? "#8A7B5E" : "#262B38";
+  g.fillStyle=oscuro?"#1A1D24":"#B9B6AE"; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
   g.fillStyle=body; rr(g,-11.5,-9+bob,23,17,5); g.fill();
-  if(look==="traje"){
+
+  if(look==="traje" || look==="gala" || look==="procurador"){
     g.fillStyle="#F5F5F7";
-    g.beginPath(); g.moveTo(-4,-9+bob); g.lineTo(4,-9+bob); g.lineTo(2,2+bob); g.lineTo(-2,2+bob); g.fill();
-    g.fillStyle="#D4534A";
-    g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(3,-4+bob); g.lineTo(0,4+bob); g.lineTo(-3,-4+bob); g.fill();
+    g.beginPath(); g.moveTo(-4,-9+bob); g.lineTo(4,-9+bob);
+    g.lineTo(2,2+bob); g.lineTo(-2,2+bob); g.fill();
+    g.fillStyle = look==="gala" ? "#C0A063" : look==="procurador" ? "#2E2E38" : "#D4534A";
+    g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(3,-4+bob);
+    g.lineTo(0,4+bob); g.lineTo(-3,-4+bob); g.fill();
   }
-  if(look==="overol"){
-    g.fillStyle="#3C556B"; g.fillRect(-11.5,-3+bob,23,3);
+  if(look==="overol" || look==="guardia"){
+    g.fillStyle="#00000033"; g.fillRect(-11.5,-3+bob,23,3);
     g.fillStyle="#C9CDD4"; g.fillRect(-7,-9+bob,2.5,8); g.fillRect(4.5,-9+bob,2.5,8);
   }
-  if(look==="saco"){
-    g.fillStyle="#6E6146"; g.fillRect(-2,-9+bob,4,14);
+  if(look==="guardia"){
+    g.fillStyle="#D2A24C"; g.fillRect(-11.5,-1+bob,23,2);           // cinturón
+    g.fillStyle="#E8E4DA"; g.fillRect(-9,-7+bob,4,3);               // placa
+  }
+  if(look==="saco" || look==="gabardina"){
+    g.fillStyle= look==="saco" ? "#6E6146" : "#5F5340";
+    g.fillRect(-2,-9+bob,4,14);
     g.fillStyle="#EFE8D8"; g.fillRect(-1.2,-9+bob,2.4,9);
   }
+  if(look==="guardapolvo"){
+    g.strokeStyle="#A9A69E"; g.lineWidth=1; g.beginPath();
+    g.moveTo(0,-9+bob); g.lineTo(0,7+bob); g.stroke();
+    g.fillStyle="#8FA88F"; g.fillRect(4,-5+bob,4,5);                // frasco en el bolsillo
+  }
   g.fillStyle=body; g.fillRect(-14.5,-6+bob,4,11); g.fillRect(10.5,-6+bob,4,11);
+
+  if(look==="guardia"){                                             // linterna encendida
+    g.fillStyle="#3A3F4A"; g.fillRect(13,-2+bob,7,3.5);
+    g.fillStyle="#FFE9A8"; g.beginPath();
+    g.moveTo(20,-2+bob); g.lineTo(30,-6+bob); g.lineTo(30,4+bob); g.lineTo(20,1.5+bob); g.fill();
+  }
+  if(look==="gabardina"){                                           // planilla
+    g.fillStyle="#E6E2D6"; g.fillRect(11,-4+bob,8,10);
+    g.fillStyle="#8A8578"; for(let i=0;i<3;i++) g.fillRect(12.5,-2+bob+i*3,5,1);
+  }
+  if(look==="gala"){                                                // bastón
+    g.strokeStyle="#3A2E1C"; g.lineWidth=1.6; g.lineCap="round";
+    g.beginPath(); g.moveTo(14,-4+bob); g.lineTo(16,12); g.stroke();
+    g.fillStyle="#C0A063"; g.beginPath(); g.arc(14,-5+bob,2,0,7); g.fill();
+  }
+
   g.fillStyle="#E8B98A"; g.beginPath(); g.arc(0,-16+bob,8.6,0,7); g.fill();
-  if(look==="traje"){                                        // calvo con canas al costado
+
+  if(look==="traje"){                                               // calvo con canas
     g.fillStyle="#8D939E";
     g.beginPath(); g.arc(-6.8,-16+bob,3.2,0,7); g.fill();
     g.beginPath(); g.arc(6.8,-16+bob,3.2,0,7); g.fill();
-  }else if(look==="overol"){                                 // gorra
+  }else if(look==="overol"){                                        // gorra de trabajo
     g.fillStyle="#3C556B";
     g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
     g.fillRect(-8.4,-18+bob,17,2.5); g.fillRect(-12,-18.5+bob,10,2.5);
-  }else{                                                     // curador: pelo gris y anteojos
+  }else if(look==="guardia"){                                       // gorra de uniforme
+    g.fillStyle="#22375A";
+    g.beginPath(); g.arc(0,-18+bob,8.6,Math.PI,0); g.fill();
+    g.fillRect(-8.6,-18.5+bob,17.2,3); g.fillRect(-12.5,-19+bob,11,2.6);
+    g.fillStyle="#D2A24C"; g.fillRect(-2,-22+bob,4,3);
+  }else if(look==="procurador"){                                    // pelo corto y anteojos negros
+    g.fillStyle="#1B1B20";
+    g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
+    g.fillRect(-8.4,-18+bob,16.8,3);
+    g.fillStyle="#15151A"; g.fillRect(-7,-16.5+bob,14,4);
+    return capReturn(g,bob,true);
+  }else if(look==="guardapolvo"){                                   // pelo gris y barbijo
+    g.fillStyle="#A8A49C";
+    g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
+    g.fillStyle="#DCE6E4"; rr(g,-6,-15+bob,12,7,2); g.fill();
+    return capReturn(g,bob,false,-19.5);
+  }else if(look==="gabardina"){                                     // sombrero
+    g.fillStyle="#4E4536";
+    g.fillRect(-11,-19+bob,22,2.6);
+    g.beginPath(); g.arc(0,-19.5+bob,6.6,Math.PI,0); g.fill();
+    g.fillRect(-6.6,-20+bob,13.2,2);
+  }else if(look==="gala"){                                          // canas peinadas
+    g.fillStyle="#C9CDD4";
+    g.beginPath(); g.arc(0,-17.8+bob,8.6,Math.PI,0); g.fill();
+    g.fillRect(-8.6,-18.4+bob,17.2,3.4);
+  }else{                                                            // curador: pelo gris y anteojos
     g.fillStyle="#9AA0A9";
     g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
     g.strokeStyle="#2C313C"; g.lineWidth=1.2;
     g.beginPath(); g.arc(-3,-15.5+bob,2.6,0,7); g.arc(3,-15.5+bob,2.6,0,7); g.stroke();
   }
-  g.strokeStyle="#4A4038"; g.lineWidth=2.1; g.lineCap="round";   // cejas de enojo
-  g.beginPath(); g.moveTo(-6,-19.5+bob); g.lineTo(-2,-17.5+bob);
-  g.moveTo(6,-19.5+bob); g.lineTo(2,-17.5+bob); g.stroke();
-  g.fillStyle="#1C1F26";
-  g.beginPath(); g.arc(-3,-15.2+bob,1.25,0,7); g.fill();
-  g.beginPath(); g.arc(3,-15.2+bob,1.25,0,7); g.fill();
-  const dist = Math.abs(S.foes[0].x-S.player.x)+Math.abs(S.foes[0].y-S.player.y);
-  if(dist<=2 && !S.over){
-    const b=Math.sin(performance.now()/150)*2;
-    g.fillStyle="#E0685D"; g.beginPath(); g.arc(15,-27+b,8.5,0,7); g.fill();
-    g.fillStyle="#fff"; g.font="bold 13px system-ui";
-    g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",15,-27+b);
+  capReturn(g,bob,false);
+}
+
+/* cejas, ojos y el globo de alerta: común a todos los que tienen cara */
+function capReturn(g,bob,sinOjos,cejaY){
+  const cy = cejaY!==undefined ? cejaY : -19.5;
+  g.strokeStyle="#4A4038"; g.lineWidth=2.1; g.lineCap="round";
+  g.beginPath(); g.moveTo(-6,cy+bob); g.lineTo(-2,cy+2+bob);
+  g.moveTo(6,cy+bob); g.lineTo(2,cy+2+bob); g.stroke();
+  if(!sinOjos){
+    g.fillStyle="#1C1F26";
+    g.beginPath(); g.arc(-3,-15.2+bob,1.25,0,7); g.fill();
+    g.beginPath(); g.arc(3,-15.2+bob,1.25,0,7); g.fill();
   }
+  alerta(g,bob);
+}
+
+function alerta(g,bob){
+  const d = Math.min(...S.foes.map(f=>Math.abs(f.x-S.player.x)+Math.abs(f.y-S.player.y)));
+  if(d>2 || S.over) return;
+  const b=Math.sin(performance.now()/150)*2;
+  g.fillStyle="#E0685D"; g.beginPath(); g.arc(15,-27+b,8.5,0,7); g.fill();
+  g.fillStyle="#fff"; g.font="bold 13px system-ui";
+  g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",15,-27+b);
+}
+
+function drawPerro(g,bob){
+  g.fillStyle="#00000042"; g.beginPath(); g.ellipse(0,14,15,5,0,0,7); g.fill();
+  g.fillStyle="#5A4632"; g.fillRect(-10,4,4,10); g.fillRect(-4,4,4,10);
+  g.fillStyle="#5A4632"; g.fillRect(4,4,4,10); g.fillRect(9,4,4,10);
+  g.fillStyle="#6B5540"; rr(g,-12,-6+bob,24,12,5); g.fill();          // lomo
+  g.fillStyle="#7C6349"; rr(g,-12,-6+bob,24,4,4); g.fill();
+  g.strokeStyle="#5A4632"; g.lineWidth=2.6; g.lineCap="round";        // cola
+  g.beginPath(); g.moveTo(-12,-4+bob); g.quadraticCurveTo(-19,-10+bob,-16,-14+bob); g.stroke();
+  g.fillStyle="#6B5540"; g.beginPath(); g.arc(12,-10+bob,7.4,0,7); g.fill();   // cabeza
+  g.fillStyle="#5A4632";                                              // orejas
+  g.beginPath(); g.moveTo(7,-16+bob); g.lineTo(9,-8+bob); g.lineTo(13,-15+bob); g.fill();
+  g.beginPath(); g.moveTo(17,-16+bob); g.lineTo(15,-8+bob); g.lineTo(11,-15+bob); g.fill();
+  g.fillStyle="#4A3828"; rr(g,16,-9+bob,7,5,2); g.fill();             // hocico
+  g.fillStyle="#1C1F26"; g.beginPath(); g.arc(22.5,-7.5+bob,1.6,0,7); g.fill();
+  g.fillStyle="#E8E4DA";                                              // colmillos
+  g.beginPath(); g.moveTo(18,-5+bob); g.lineTo(19.5,-2+bob); g.lineTo(21,-5+bob); g.fill();
+  g.fillStyle="#F0C04A"; g.beginPath(); g.arc(11,-11.5+bob,1.5,0,7); g.fill();
+  g.fillStyle="#D2A24C"; g.fillRect(4,-4+bob,3,10);                   // collar
+  alerta(g,bob);
 }
 
 /* ---------- bucle ---------- */
@@ -1241,9 +1593,10 @@ function drawFloats(dt){
 }
 
 function drawVignette(){
+  const a = Math.round((S.th.vineta||.4)*255).toString(16).padStart(2,"0");
   const g=ctx.createRadialGradient(cv.width/2,cv.height/2,cv.height*.40,
                                    cv.width/2,cv.height/2,cv.height*.95);
-  g.addColorStop(0,"#00000000"); g.addColorStop(1,"#00000066");
+  g.addColorStop(0,"#00000000"); g.addColorStop(1,"#000000"+a);
   ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
 }
 
@@ -1364,7 +1717,7 @@ function buildLegend(){
       <div><b>${it[0]}</b><small>${it[1]}</small></div></div>`).join("");
   box.querySelectorAll("canvas").forEach(c=>{
     const g=c.getContext("2d");
-    g.fillStyle="#8C7355"; g.fillRect(0,0,48,48);
+    g.fillStyle=S.th.piso[0]; g.fillRect(0,0,48,48);
     items[+c.dataset.i][2](g);
   });
 }
@@ -1504,7 +1857,7 @@ function menu(){
       alcanza con pasarles por encima.<br>
       <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.
       Las piezas en la mano son tu escudo.<br>
-      <span style="color:var(--brass)">Las salas 4 a 9 llegan en la próxima tanda.</span>
+      <span style="color:var(--brass)">Cada sala tiene su protagonista, su antagonista y su propia estética.</span>
     </div>`);
 }
 
