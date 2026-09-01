@@ -945,14 +945,36 @@ function drawSalida(g,open){
     g.fillStyle=`rgba(121,174,158,${.10+p*.20})`; g.fillRect(0,0,48,48); }
 }
 
+/* Escritorio. Sin luces de estado: las lucecitas son solo de la vitrina, que
+   sí tiene estado (activa / con alarma). Acá lo que identifica es el cartelito. */
 function drawPuesto(g,mine){
-  g.fillStyle="#00000030"; rr(g,5,8,38,36,3); g.fill();
-  g.fillStyle=mine?"#4A5262":"#5A4A52"; rr(g,4,6,40,34,2); g.fill();
-  g.fillStyle=mine?"#586275":"#6B5760"; g.fillRect(4,6,40,8);
-  g.fillStyle="#2A2E38"; rr(g,14,14,20,13,1); g.fill();                 // monitor
-  g.fillStyle=mine?"#5A8FB8":"#B06A6A"; g.fillRect(16,16,16,9);
-  g.fillStyle="#D8D2C6"; rr(g,15,31,18,5,1); g.fill();
-  g.fillStyle=mine?"#79AE9E":"#E0685D"; g.beginPath(); g.arc(40,42,3,0,7); g.fill();
+  g.fillStyle="#00000030"; rr(g,4,12,40,30,3); g.fill();
+  // silla, asomando por detrás
+  g.fillStyle="#39404D"; rr(g,17,2,14,13,4); g.fill();
+  g.fillStyle="#2E353F"; rr(g,19,4,10,9,3); g.fill();
+  // tapa del escritorio, con veta
+  g.fillStyle=mine?"#7C6749":"#4A4048"; rr(g,3,13,42,27,2); g.fill();
+  g.fillStyle=mine?"#8D7757":"#574B54"; g.fillRect(3,13,42,5);
+  g.strokeStyle="#00000018"; g.lineWidth=1;
+  for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(3,18+i*5.5); g.lineTo(45,18+i*5.5); g.stroke(); }
+  // monitor apagado y teclado
+  g.fillStyle="#22262E"; rr(g,15,15,18,12,1); g.fill();
+  g.fillStyle=mine?"#3D4A57":"#4A3A3E"; g.fillRect(17,17,14,8);
+  g.fillStyle="#ffffff10"; g.fillRect(17,17,14,3);
+  g.fillStyle="#22262E"; g.fillRect(22,27,4,2);
+  g.fillStyle="#C9C4B9"; rr(g,15,30,18,4,1); g.fill();
+  // cartel de identificación: el tuyo con tu inicial, el suyo en rojo
+  if(mine){
+    g.fillStyle="#D9D4C7"; rr(g,4,34,13,7,1); g.fill();
+    g.fillStyle="#3A3F4A"; g.font="bold 6px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText((S.hero.n.replace("El ","")[0]||"").toUpperCase(), 10.5, 38);
+  }else{
+    g.fillStyle="#8A3A34"; rr(g,4,34,20,7,1); g.fill();
+    g.fillStyle="#F2E6E4"; g.font="bold 5px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText("DIRECCIÓN", 14, 38);
+  }
 }
 
 function drawBanio(g){
@@ -1282,14 +1304,14 @@ function buildLegend(){
     if(S.grid[y][x].wall){ wallXY={x,y}; break; }
 
   const items=[
-    ["Vitrina",  "Pasá por encima y sacás una <b>pieza</b>",           g=>drawVitrina(g,{alarm:0})],
-    ["Con alarma","Ya la usaste: no sirve más",                        g=>drawVitrina(g,{alarm:1})],
+    ["Vitrina",  "Luz <b>verde</b>: pasá por encima y sacás una <b>pieza</b>", g=>drawVitrina(g,{alarm:0})],
+    ["Con alarma","Luz <b>roja</b>: ya la usaste, no sirve más",        g=>drawVitrina(g,{alarm:1})],
     ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",   g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
     ["Mate",     "Te devuelve los pasos del turno",                    g=>drawMate(g)],
     ["Estatua",  "Terminá el turno acá y no te persigue",              g=>drawEstatua(g)],
     ["Piso mojado","Te come un movimiento",                            g=>drawMojado(g)],
-    ["Tu puesto","Donde empezás y adonde volvés si te agarra",         g=>drawPuesto(g,true)],
-    ["Su oficina","Donde empieza y vuelve el antagonista",             g=>drawPuesto(g,false)],
+    ["Tu puesto","Tu casilla de inicio. <b>No se toca nada acá</b>",   g=>drawPuesto(g,true)],
+    ["Su oficina","Donde empieza y vuelve él. Tampoco hace nada",      g=>drawPuesto(g,false)],
     ["Baño",     "El tuyo y el suyo, uno al lado de cada puesto",      g=>drawBanio(g)],
     ["Salida",   "Se abre con las 3 piezas entregadas",                g=>drawSalida(g,false)],
     ["Mueble",   "Escenografía: no se cruza y no hace nada",           g=>wallXY&&drawWall(g,wallXY.x,wallXY.y)],
