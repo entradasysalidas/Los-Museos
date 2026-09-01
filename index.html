@@ -352,10 +352,18 @@ const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1
    Arriba van la oficina del jefe, la salida y su baño, más casillas vacías.
    Abajo, tu puesto y tu baño. El editor permite reacomodarlos.            */
 const FRAME_DEF = {
-  "2,0":"salida",  "3,0":"baniojefe","4,0":"oficina","5,0":"oficina",
-  "2,1":"vacio",   "3,1":"vacio",   "4,1":"vacio",  "5,1":"vacio",
-  "3,6":"puesto",  "4,6":"puesto",
-  "3,7":"banio",   "4,7":"vacio",
+  "2,0":"salida",
+  "3,0":"baniojefe",
+  "4,0":"vacio",
+  "5,0":"oficina",
+  "2,1":"vacio",
+  "3,1":"vacio",
+  "4,1":"vacio",
+  "5,1":"vacio",
+  "3,6":"vacio",
+  "4,6":"vacio",
+  "3,7":"banio",
+  "4,7":"puesto",
 };
 const ROLES = ["vacio","oficina","baniojefe","salida","puesto","banio"];
 function frameStoreKey(){ return "museos.frame"; }
@@ -470,7 +478,7 @@ const SALAS = {
     e:L(`A....A
          .C.D.P
          .M.M..
-         T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:6:3","v:5:5"] },
+         T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:6:3","v:5:5","v:2:0","v:3:0","h:5:1","h:4:1"] },
   n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris",
     hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`D.P.P.
