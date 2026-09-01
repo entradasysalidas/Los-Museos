@@ -31,7 +31,7 @@
 
   #stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
   /* 660 del lienzo + 2×10 de padding: fijo, para que el panel lateral no se caiga abajo */
-  #leftcol{flex:0 1 auto;width:662px;max-width:100%;min-width:0}
+  #leftcol{flex:0 1 auto;width:566px;max-width:100%;min-width:0}
   #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
     box-shadow:0 18px 44px #0009}
   canvas{display:block;max-width:100%;height:auto;background:#20242C;cursor:pointer}
@@ -126,6 +126,8 @@
   .editbar .ehelp{font-size:11.5px;color:var(--body);flex:1;min-width:200px}
   .editbar .ecount{font:600 11.5px/1 "IBM Plex Mono",monospace;color:var(--brass)}
   .editbar .emsg{font-size:11.5px;color:var(--patina)}
+  .editbar .ewarn{display:none;font-size:11.5px;color:var(--alarm);flex-basis:100%}
+  .editbar.on .ewarn{display:block}
   .editbar #editcode{width:100%;height:52px;background:var(--sunk);color:var(--dim);
     border:1px solid var(--line);font:11px/1.4 "IBM Plex Mono",monospace;padding:6px;resize:vertical}
   body.editing canvas{cursor:crosshair}
@@ -209,7 +211,7 @@
   <div id="stage">
     <div id="leftcol">
       <div id="boardwrap">
-        <canvas id="c" width="640" height="480"></canvas>
+        <canvas id="c" width="544" height="544"></canvas>
         <div id="tray">
           <div class="traybox">
             <h4><span>Piezas · salen de las vitrinas</span><span id="piecen"></span></h4>
@@ -224,13 +226,17 @@
       <div class="hintbar" id="hint"></div>
       <div class="editbar" id="editbar">
         <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor de paredes</button>
-        <span class="ehelp">Hacé clic en el <b>borde entre dos casillas</b> para poner o sacar una pared.
-          Se guarda solo en esta compu.</span>
+        <span class="ehelp">Clic en el <b>borde</b> entre dos casillas: pone o saca una <b>pared</b>.
+          Clic en el <b>centro</b> de una casilla: cambia el <b>objeto</b> (vitrina, mate, planta,
+          banana, cómplice). En el marco de arriba y abajo cambia el <b>rol</b> (oficina, salida,
+          baño, puesto). Se guarda solo en esta compu.</span>
         <span class="ecount" id="editcount"></span>
-        <button class="ebtn" onclick="clearWalls()">Limpiar</button>
+        <button class="ebtn" onclick="clearWalls()">Limpiar paredes</button>
+        <button class="ebtn" onclick="resetNivel()">Restaurar nivel</button>
         <button class="ebtn" onclick="copyWalls()">Copiar código</button>
         <textarea id="editcode" readonly></textarea>
         <span class="emsg" id="editmsg"></span>
+        <span class="ewarn" id="editwarn"></span>
       </div>
       <details id="legendbox" open>
         <summary>Qué es cada cosa en el tablero</summary>
@@ -304,22 +310,47 @@ const TUNE = {
 };
 
 /* rejilla completa: 8x6. El centro jugable es x 1..6, y 1..4 */
-const W = 8, H = 6, CS = 80;
-const CX0 = 1, CY0 = 1, CW = 6, CH = 4;
+const W = 8, H = 8, CS = 68;
+const CX0 = 1, CY0 = 2, CW = 6, CH = 4;
+/* el marco: un área de 4x2 arriba y una de 2x2 abajo, pegadas al medio */
+const TOP = {x0:2, y0:0, w:4, h:2};
+const BOT = {x0:3, y0:6, w:2, h:2};
 const DIRS  = [[1,0],[-1,0],[0,-1],[0,1]];      // prioridad del manual: → ← ↑ ↓
 const DIAGS = [[1,-1],[1,1],[-1,1],[-1,-1]];
 const key = (x,y) => y*W + x;
 const inside = (x,y) => x>=0 && y>=0 && x<W && y<H;
 const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
 
-/* --- el marco, igual en todos los niveles --- */
-const FRAME = {
-  salida  : {x:1, y:0},          // al norte, como pide el manual
-  puesto  : {x:0, y:1},
-  banio   : {x:0, y:2},
-  oficina : {x:7, y:1},
-  banioJefe:{x:7, y:2},
+/* --- el marco: roles por casilla, editables ---
+   Arriba van la oficina del jefe, la salida y su baño, más casillas vacías.
+   Abajo, tu puesto y tu baño. El editor permite reacomodarlos.            */
+const FRAME_DEF = {
+  "2,0":"vacio",   "3,0":"oficina", "4,0":"oficina", "5,0":"vacio",
+  "2,1":"salida",  "3,1":"baniojefe","4,1":"vacio",  "5,1":"vacio",
+  "3,6":"puesto",  "4,6":"puesto",
+  "3,7":"banio",   "4,7":"banio",
 };
+const ROLES = ["vacio","oficina","baniojefe","salida","puesto","banio"];
+function frameStoreKey(){ return "museos.frame"; }
+function loadFrame(){
+  try{ const r=localStorage.getItem(frameStoreKey()); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function saveFrame(o){ try{ localStorage.setItem(frameStoreKey(), JSON.stringify(o)); }catch(e){} }
+let FRAME_MAP = null;                       // se resuelve en cada partida
+function firstOf(role){
+  for(const k in FRAME_MAP) if(FRAME_MAP[k]===role){
+    const [x,y]=k.split(",").map(Number); return {x,y};
+  }
+  return {x:CX0, y:CY0};                    // fallback: no dejar el juego sin referencia
+}
+function allOf(role){
+  const out=[];
+  for(const k in FRAME_MAP) if(FRAME_MAP[k]===role){
+    const [x,y]=k.split(",").map(Number); out.push({x,y});
+  }
+  return out.length ? out : [firstOf(role)];
+}
 
 /* --- aristas: "v" corta entre (x,y) y (x+1,y); "h" entre (x,y) y (x,y+1) --- */
 const edgeKey = (a,b) => (a.x===b.x)
@@ -337,6 +368,7 @@ const CREW = {
   hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",      beard:false, tall:1.18, shirt:"#22242A"},
   marian:{n:"Marian",    hair:"#7A5230", style:"largo",      beard:false, tall:1.10, shirt:"#5B7FD4"},
   damian:{n:"Damián",    hair:"#1E1A18", style:"medio",      beard:false, tall:1.00, shirt:"#7FA23E"},
+  negro :{n:"El Negro",  hair:"#4A3524", style:"corto",      beard:true,  tall:1.00, shirt:"#9A6BD4"},
 };
 Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); });
 
@@ -350,6 +382,7 @@ const POWERS = {
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
   chupa :{n:"Bolsillos grandes",d:"Empezás con un objeto extra."},
   marian:{n:"Ojo de halcón",    d:"Ves la próxima acción del antagonista antes de moverte."},
+  negro :{n:"Oficio",           d:"Ya conoce el edificio: ves el alcance del antagonista antes de moverte."},
 };
 
 const PIECES = [
@@ -406,65 +439,65 @@ const THEMES = {
 const L = (s)=>s.trim().split("\n").map(r=>r.trim());
 const SALAS = {
   tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris",
-    hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
+    hero:"negro", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`A....A
          .C.D.P
          .M.M..
-         T..PP.`), w:[] },
+         T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:6:3","v:5:5"] },
   n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris",
     hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`D.P.P.
          ..A.M.
          .A..P.
-         C.TM..`), w:[] },
+         C.TM..`), w:["v:1:2","h:1:4","v:2:2","h:3:2","h:5:2","h:5:4","h:4:4","v:3:5"] },
   n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris",
     hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
     e:L(`MPP..P
          ..A...
          T.A...
-         M..C.D`), w:[] },
+         M..C.D`), w:["v:1:2","v:2:2","h:3:2","h:1:4","v:1:5","v:3:5","v:5:5","v:5:2"] },
   n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris",
     hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
     e:L(`.AD.MP
          .C....
          ......
-         P.TMPA`), w:[] },
+         P.TMPA`), w:["h:1:2","v:3:2","v:5:2","v:5:5","v:4:5","h:4:4","v:3:5","v:1:5"] },
   n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris",
     hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
     e:L(`...DP.
          P...M.
          .M..A.
-         .TPA.C`), w:[] },
+         .TPA.C`), w:["v:1:3","v:1:4","h:2:4","v:2:5","v:3:5","v:5:5","h:4:2","h:5:2"] },
   n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera",
     hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
     e:L(`LTP.AC
          ...PAP
          ..L...
-         D.....`), w:[] },
+         D.....`), w:["h:2:2","h:3:2","v:2:2","h:4:3","v:4:4","h:4:4","v:5:3","v:5:4"] },
   n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera",
     hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
     e:L(`P.P.LT
          A.....
          .DL...
-         ...PAC`), w:[] },
+         ...PAC`), w:["h:1:2","v:2:2","h:3:2","h:6:2","v:3:5","v:5:5","h:4:3","h:5:3"] },
   n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera",
     hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
     e:L(`.....A
          T.L.PC
          ..L...
-         P.A.PD`), w:[] },
+         P.A.PD`), w:["h:1:2","h:1:3","h:5:2","v:5:3","h:5:3","h:6:2","v:4:5","v:1:5"] },
   n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera",
     hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
     e:L(`P.A...
          .LC.D.
          ...L.A
-         P..T.P`), w:[] },
+         P..T.P`), w:["v:1:2","h:3:2","h:1:3","h:2:4","v:2:5","v:3:5","v:4:5","v:2:4","h:6:4"] },
   n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera",
     hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
     e:L(`.A.A.P
          P.C...
          P.T...
-         .LL..D`), w:[] },
+         .LL..D`), w:["h:1:2","v:1:3","h:1:3","v:1:4","v:2:4","v:3:4","h:3:2","v:4:5","v:5:2"] },
 };
 
 /* ---------- estado ---------- */
@@ -476,8 +509,17 @@ const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana",
                  D:"complice", T:"complice", C:"complice"};
 const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 
-function buildBoard(sala){
+/* Los elementos editados pisan a los del manual, por nivel. */
+function elemsStoreKey(k){ return "museos.elems."+k; }
+function loadElems(k){
+  try{ const r=localStorage.getItem(elemsStoreKey(k)); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function saveElems(k,rows){ try{ localStorage.setItem(elemsStoreKey(k), JSON.stringify(rows)); }catch(e){} }
+
+function buildBoard(sala, salaKey){
   const grid=[], marks={vitrinas:[], comps:[], mates:[]};
+  const EL = loadElems(salaKey) || sala.e;
   for(let y=0;y<H;y++){
     grid.push([]);
     for(let x=0;x<W;x++) grid[y].push({play:false, type:null, alarm:0, want:null, piece:null});
@@ -486,7 +528,7 @@ function buildBoard(sala){
   for(let cy=0;cy<CH;cy++) for(let cx=0;cx<CW;cx++){
     const x=CX0+cx, y=CY0+cy, c=grid[y][x];
     c.play=true;
-    const ch=(sala.e[cy]||"")[cx] || ".";
+    const ch=(EL[cy]||"")[cx] || ".";
     if(CH2TYPE[ch]){
       c.type=CH2TYPE[ch];
       if(c.type==="vitrina")  marks.vitrinas.push({x,y});
@@ -494,16 +536,22 @@ function buildBoard(sala){
       if(c.type==="complice"){ c.want=CH2WANT[ch]; marks.comps.push({x,y,want:c.want}); }
     }
   }
-  // el marco
-  const put=(p,t)=>{ const c=grid[p.y][p.x]; c.play=true; c.type=t; };
-  put(FRAME.salida,"salida");   put(FRAME.puesto,"puesto"); put(FRAME.banio,"banio");
-  put(FRAME.oficina,"oficina"); put(FRAME.banioJefe,"baniojefe");
+  // el marco: cada casilla toma el rol que diga el mapa
+  for(const k in FRAME_MAP){
+    const [x,y]=k.split(",").map(Number);
+    if(!inside(x,y)) continue;
+    const c=grid[y][x];
+    c.play=true;
+    c.type = FRAME_MAP[k]==="vacio" ? null : FRAME_MAP[k];
+    c.frame = true;
+  }
   return {grid, marks};
 }
 
 function newGame(salaKey){
   const sala = SALAS[salaKey];
-  const b = buildBoard(sala);
+  FRAME_MAP = loadFrame() || {...FRAME_DEF};
+  const b = buildBoard(sala, salaKey);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
   const walls = new Set(loadWalls(salaKey) || sala.w);
 
@@ -516,13 +564,15 @@ function newGame(salaKey){
     salaKey, sala, hero, heroKey:sala.hero, power,
     foe:FOES[sala.foe], foeKey:sala.foe, th:THEMES[sala.piso],
     grid:b.grid, marks:b.marks, walls,
-    exit:FRAME.salida, home:FRAME.puesto, bath:FRAME.banio,
-    foeHome:FRAME.oficina, foeBath:FRAME.banioJefe,
-    player:{x:FRAME.puesto.x, y:FRAME.puesto.y, px:FRAME.puesto.x, py:FRAME.puesto.y, bob:0},
-    foes: Array.from({length: FOES[sala.foe].count || 1}, (_,i)=>{
-      const o = i===0 ? FRAME.oficina : FRAME.banioJefe;
-      return {x:o.x, y:o.y, px:o.x, py:o.y, bob:0};
-    }),
+    exit:firstOf("salida"), home:firstOf("puesto"), bath:firstOf("banio"),
+    foeHome:firstOf("oficina"), foeBath:firstOf("baniojefe"),
+    player:{x:firstOf("puesto").x, y:firstOf("puesto").y,
+            px:firstOf("puesto").x, py:firstOf("puesto").y, bob:0},
+    foes: (()=>{ const ofi=allOf("oficina");
+      return Array.from({length: FOES[sala.foe].count || 1}, (_,i)=>{
+        const o = ofi[Math.min(i, ofi.length-1)];
+        return {x:o.x, y:o.y, px:o.x, py:o.y, bob:0};
+      }); })(),
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
@@ -928,6 +978,26 @@ function fixVitrina(){
   syncUI();
 }
 
+/* Con paredes en aristas es fácil sellar una casilla sin querer. Esto lista
+   lo que quedó incomunicado, para verlo mientras se edita el nivel. */
+function aislados(){
+  if(!S) return [];
+  const d=bfsFrom(S.home);
+  const etiqueta={vitrina:"vitrina", mate:"mate", complice:"cómplice",
+                  planta:"planta", banana:"banana", salida:"salida",
+                  oficina:"oficina", baniojefe:"baño del jefe", banio:"tu baño"};
+  const out=[];
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const c=S.grid[y][x];
+    if(!c.play || !c.type) continue;
+    if(d[key(x,y)]>=0) continue;
+    out.push({x, y, q: etiqueta[c.type] || c.type,
+              cx:x-CX0, cy:y-CY0,
+              dentro:(x>=CX0 && x<CX0+CW && y>=CY0 && y<CY0+CH)});
+  }
+  return out;
+}
+
 /* ======================= fin ======================= */
 function salaLabel(s){ return s.num===0 ? "Tutorial" : "Nivel "+s.num; }
 
@@ -1220,6 +1290,8 @@ function drawPerson(g, look, bob, alpha){
     g.restore();
   }
   g.fillStyle="#EFC08C"; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
+  drawHairBack(g, look, bob);                                                  // melena, por detrás
+  g.fillStyle="#EFC08C";
   g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
   drawHair(g, look, bob);
   if(look.beard){                                                              // barba
@@ -1233,19 +1305,40 @@ function drawPerson(g, look, bob, alpha){
   g.restore();
 }
 
+/* La melena va DETRÁS de la cara. Si se dibuja encima, tapa los ojos y el
+   personaje termina pareciendo el Tío Cosa. */
+function drawHairBack(g, look, bob){
+  const y=-14.5+bob;
+  g.fillStyle=look.hair;
+  if(look.style==="largo"){
+    g.beginPath(); g.arc(0,y-1,9.6,0,7); g.fill();
+    g.fillRect(-9.6,y-1,19.2,16);
+    g.beginPath(); g.arc(0,y+15,9.6,0,Math.PI); g.fill();
+  }else if(look.style==="largorulos"){
+    for(const [cx,cy,r] of [[-8,y+2,5.4],[8,y+2,5.4],[-9,y+9,5],[9,y+9,5],[0,y+13,5.4]]){
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+    }
+  }else if(look.style==="medio"){
+    g.beginPath(); g.arc(0,y-1,9.2,0,7); g.fill();
+    g.fillRect(-9.2,y-1,18.4,9);
+  }
+}
+
 function drawHair(g, look, bob){
   const y=-14.5+bob;
   g.fillStyle=look.hair;
-  if(look.style==="corto"){
-    g.beginPath(); g.arc(0,y-1.5,8,Math.PI,0); g.fill();
-    g.fillRect(-8,y-2,16,2.5);
+  if(look.style==="corto"){                                        // gorro de pelo, bien visible
+    g.beginPath(); g.arc(0,y-1,8.9,Math.PI*1.02,Math.PI*1.98); g.fill();
+    g.fillRect(-8.9,y-3.5,17.8,4);
+    g.fillRect(-8.9,y-3,2.6,6);  g.fillRect(6.3,y-3,2.6,6);        // patillas
   }else if(look.style==="medio"){
-    g.beginPath(); g.arc(0,y-1.5,8.4,Math.PI,0); g.fill();
-    g.fillRect(-8.4,y-2,16.8,9);                                   // lacio hasta la mandíbula
-  }else if(look.style==="largo"){
     g.beginPath(); g.arc(0,y-1.5,8.6,Math.PI,0); g.fill();
-    g.fillRect(-8.6,y-2,17.2,15);
-    g.beginPath(); g.arc(0,y+13,8.6,0,Math.PI); g.fill();
+    g.fillRect(-8.6,y-2.5,17.2,4);
+    g.fillRect(-8.6,y-2,2.8,8);  g.fillRect(5.8,y-2,2.8,8);
+  }else if(look.style==="largo"){
+    g.beginPath(); g.arc(0,y-1.5,8.8,Math.PI,0); g.fill();
+    g.fillRect(-8.8,y-2.5,17.6,4);
+    g.fillRect(-8.8,y-2,2.9,13); g.fillRect(5.9,y-2,2.9,13);       // mechones a los costados
   }else if(look.style==="rulos"){
     for(const [cx,cy,r] of [[-6,y-4,4.2],[0,y-6.5,4.6],[6,y-4,4.2],[-8,y-.5,3.6],[8,y-.5,3.6]]){
       g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
@@ -1652,7 +1745,7 @@ function setGoal(id,done,val){
 const KEYS = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
               w:[0,-1],d:[1,0],s:[0,1],a:[-1,0]};
 let walking = false, picking = false;
-let editMode = false, hoverEdge = null;
+let editMode = false, hoverEdge = null, mouseCellEdit = null;
 
 addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
@@ -1698,18 +1791,56 @@ function edgeFromEvent(e){
 }
 
 cv.addEventListener("mousemove", e=>{
-  if(editMode){ hoverEdge = edgeFromEvent(e); mouseCell=null; }
+  if(editMode){ hoverEdge = edgeFromEvent(e); mouseCellEdit = hoverEdge ? null : cellFromEvent(e); mouseCell=null; }
   else { mouseCell = cellFromEvent(e); hoverEdge=null; }
 });
-cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; });
+cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; mouseCellEdit=null; });
+
+/* En el editor: cerca de un borde toca la pared, en el centro toca la casilla */
+const CYCLE = [".","P","M","A","L","D","T","C"];
+const CHNAME = {".":"vacía","P":"vitrina","M":"mate","A":"planta","L":"banana",
+                "D":"cómplice ◆","T":"cómplice ▲","C":"cómplice ●"};
+
+function cycleCore(x,y){
+  const cx=x-CX0, cy=y-CY0;
+  if(cx<0||cy<0||cx>=CW||cy>=CH) return false;
+  const sala=SALAS[S.salaKey];
+  const rows=(loadElems(S.salaKey) || sala.e).map(r=>r.split(""));
+  const cur=rows[cy][cx];
+  const nxt=CYCLE[(CYCLE.indexOf(cur)+1+CYCLE.length)%CYCLE.length];
+  rows[cy][cx]=nxt;
+  saveElems(S.salaKey, rows.map(r=>r.join("")));
+  const k=S.salaKey; newGame(k);
+  $("editmsg").textContent = "Casilla → " + CHNAME[nxt];
+  return true;
+}
+
+function cycleFrame(x,y){
+  const inTop = x>=TOP.x0 && x<TOP.x0+TOP.w && y>=TOP.y0 && y<TOP.y0+TOP.h;
+  const inBot = x>=BOT.x0 && x<BOT.x0+BOT.w && y>=BOT.y0 && y<BOT.y0+BOT.h;
+  if(!inTop && !inBot) return false;
+  const kk=x+","+y;
+  const cur=FRAME_MAP[kk] || "vacio";
+  const nxt=ROLES[(ROLES.indexOf(cur)+1+ROLES.length)%ROLES.length];
+  FRAME_MAP[kk]=nxt;
+  saveFrame(FRAME_MAP);
+  const k=S.salaKey; newGame(k);
+  $("editmsg").textContent = "Marco → " + nxt;
+  return true;
+}
 
 cv.addEventListener("click", e=>{
   if(!S) return;
   if(editMode){
     const ed=edgeFromEvent(e);
-    if(!ed) return;
-    if(S.walls.has(ed.k)) S.walls.delete(ed.k); else S.walls.add(ed.k);
-    saveWalls(S.salaKey, [...S.walls]);
+    if(ed){
+      if(S.walls.has(ed.k)) S.walls.delete(ed.k); else S.walls.add(ed.k);
+      saveWalls(S.salaKey, [...S.walls]);
+      syncEditor();
+      return;
+    }
+    const c=cellFromEvent(e);
+    if(c && !cycleCore(c.x,c.y)) cycleFrame(c.x,c.y);
     syncEditor();
     return;
   }
@@ -1771,13 +1902,34 @@ function syncEditor(){
   $("editbtn").textContent = editMode ? "Salir del editor" : "Editor de paredes";
   if(!editMode || !S) return;
   $("editcount").textContent = S.walls.size + (S.walls.size===1?" pared":" paredes");
-  $("editcode").value = JSON.stringify([...S.walls]);
+  const mal = aislados();
+  $("editwarn").innerHTML = mal.length
+    ? "\u26A0 Sin salida: " + mal.map(m=>m.q + (m.dentro ? " en ("+m.cx+","+m.cy+")" : "")).join(" \u00B7 ")
+    : "";
+  $("editcode").value =
+    "paredes: " + JSON.stringify([...S.walls]) + "\n" +
+    "objetos: " + JSON.stringify(S.sala.e) + "\n" +
+    "marco:   " + JSON.stringify(FRAME_MAP);
 }
 
 function clearWalls(){
   if(!S) return;
   S.walls.clear();
   saveWalls(S.salaKey, []);
+  syncEditor();
+}
+
+/* vuelve el nivel a como vino del manual: objetos, paredes y marco */
+function resetNivel(){
+  if(!S) return;
+  const k=S.salaKey;
+  try{
+    localStorage.removeItem(elemsStoreKey(k));
+    localStorage.removeItem(wallsStoreKey(k));
+    localStorage.removeItem(frameStoreKey());
+  }catch(e){}
+  newGame(k);
+  $("editmsg").textContent="Nivel restaurado.";
   syncEditor();
 }
 
@@ -1801,6 +1953,13 @@ function drawEditorOverlay(){
     if(playable(x,y+1)){ ctx.beginPath(); ctx.moveTo(x*CS+4,(y+1)*CS); ctx.lineTo((x+1)*CS-4,(y+1)*CS); ctx.stroke(); }
   }
   ctx.setLineDash([]);
+  if(!hoverEdge && mouseCellEdit){
+    const {x,y}=mouseCellEdit;
+    if(playable(x,y)){
+      ctx.strokeStyle="#D2A24CAA"; ctx.lineWidth=2;
+      ctx.strokeRect(x*CS+4,y*CS+4,CS-8,CS-8);
+    }
+  }
   if(hoverEdge){
     const [k,a,b]=hoverEdge.k.split(":"), x=+a, y=+b;
     const t=Math.max(6, CS*0.10);
