@@ -1408,6 +1408,7 @@ function drawPerson(g, look, bob, alpha){
   g.scale(1, t);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(0,15,11,4.5,0,0,7); g.fill();
   g.fillStyle="#2B3140"; g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);      // piernas
+  drawHairBack(g, look, bob);                                                  // melena, detrás de todo
   g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();                 // remera
   g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
   if(look.tag){                                                                // nombre estampado
@@ -1419,7 +1420,6 @@ function drawPerson(g, look, bob, alpha){
     g.restore();
   }
   g.fillStyle="#EFC08C"; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
-  drawHairBack(g, look, bob);                                                  // melena, por detrás
   g.fillStyle="#EFC08C";
   g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
   drawHair(g, look, bob);
@@ -1440,16 +1440,16 @@ function drawHairBack(g, look, bob){
   const y=-14.5+bob;
   g.fillStyle=look.hair;
   if(look.style==="largo"){
-    g.beginPath(); g.arc(0,y-1,9.6,0,7); g.fill();
-    g.fillRect(-9.6,y-1,19.2,16);
-    g.beginPath(); g.arc(0,y+15,9.6,0,Math.PI); g.fill();
+    g.beginPath(); g.arc(0,y-1,9.4,0,7); g.fill();
+    g.fillRect(-9.4,y-1,18.8,10);
+    g.beginPath(); g.arc(0,y+9,9.4,0,Math.PI); g.fill();
   }else if(look.style==="largorulos"){
-    for(const [cx,cy,r] of [[-8,y+2,5.4],[8,y+2,5.4],[-9,y+9,5],[9,y+9,5],[0,y+13,5.4]]){
+    for(const [cx,cy,r] of [[-8,y+1,5.2],[8,y+1,5.2],[-8.5,y+6,4.8],[8.5,y+6,4.8],[0,y+9,5.2]]){
       g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
     }
   }else if(look.style==="medio"){
-    g.beginPath(); g.arc(0,y-1,9.2,0,7); g.fill();
-    g.fillRect(-9.2,y-1,18.4,9);
+    g.beginPath(); g.arc(0,y-1,9.1,0,7); g.fill();
+    g.fillRect(-9.1,y-1,18.2,7);
   }
 }
 
