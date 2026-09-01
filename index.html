@@ -125,6 +125,14 @@
   .ebtn.primary{background:var(--brass);color:#171208;border-color:var(--brass)}
   .editbar .ehelp{font-size:11.5px;color:var(--body);flex:1;min-width:200px}
   .editbar .ecount{font:600 11.5px/1 "IBM Plex Mono",monospace;color:var(--brass)}
+  .palette{display:none;flex-basis:100%;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .editbar.on .palette{display:flex}
+  .tool{display:flex;align-items:center;gap:5px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--body);padding:6px 9px;cursor:pointer;
+    font:600 11.5px/1 "Archivo",sans-serif}
+  .tool:hover{border-color:var(--brass)}
+  .tool.on{background:var(--brass);color:#171208;border-color:var(--brass)}
+  .tool .ti{font-size:14px;line-height:1}
   .editbar .emsg{font-size:11.5px;color:var(--patina)}
   .editbar .ewarn{display:none;font-size:11.5px;color:var(--alarm);flex-basis:100%}
   .editbar.on .ewarn{display:block}
@@ -226,11 +234,11 @@
       <div class="hintbar" id="hint"></div>
       <div class="editbar" id="editbar">
         <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor de paredes</button>
-        <span class="ehelp">Clic en el <b>borde</b> entre dos casillas: pone o saca una <b>pared</b>.
-          Clic en el <b>centro</b> de una casilla: cambia el <b>objeto</b> (vitrina, mate, planta,
-          banana, cómplice). En el marco de arriba y abajo cambia el <b>rol</b> (oficina, salida,
-          baño, puesto). Se guarda solo en esta compu.</span>
+        <span class="ehelp">Elegí una <b>herramienta</b> y hacé clic en el tablero para ponerla.
+          Con <b>Pared</b>, el clic va justo en el borde entre dos casillas. Se guarda solo
+          en esta compu, nivel por nivel.</span>
         <span class="ecount" id="editcount"></span>
+        <div class="palette" id="palette"></div>
         <button class="ebtn" onclick="clearWalls()">Limpiar paredes</button>
         <button class="ebtn" onclick="resetNivel()">Restaurar nivel</button>
         <button class="ebtn" onclick="copyWalls()">Copiar código</button>
@@ -325,8 +333,8 @@ const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1
    Arriba van la oficina del jefe, la salida y su baño, más casillas vacías.
    Abajo, tu puesto y tu baño. El editor permite reacomodarlos.            */
 const FRAME_DEF = {
-  "2,0":"vacio",   "3,0":"oficina", "4,0":"oficina", "5,0":"vacio",
-  "2,1":"salida",  "3,1":"baniojefe","4,1":"vacio",  "5,1":"vacio",
+  "2,0":"salida",  "3,0":"baniojefe","4,0":"oficina","5,0":"oficina",
+  "2,1":"vacio",   "3,1":"vacio",   "4,1":"vacio",  "5,1":"vacio",
   "3,6":"puesto",  "4,6":"puesto",
   "3,7":"banio",   "4,7":"banio",
 };
@@ -1796,51 +1804,81 @@ cv.addEventListener("mousemove", e=>{
 });
 cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; mouseCellEdit=null; });
 
-/* En el editor: cerca de un borde toca la pared, en el centro toca la casilla */
-const CYCLE = [".","P","M","A","L","D","T","C"];
-const CHNAME = {".":"vacía","P":"vitrina","M":"mate","A":"planta","L":"banana",
-                "D":"cómplice ◆","T":"cómplice ▲","C":"cómplice ●"};
+/* ==========================================================================
+   EDITOR CON PALETA · elegís una herramienta y pintás. Mucho más claro que
+   ciclar el contenido de la casilla a cada clic.
+   ========================================================================== */
+const TOOLS = [
+  {id:"pared",     n:"Pared",      zona:"arista", ic:"▬"},
+  {id:"P",         n:"Vitrina",    zona:"centro", ic:"▣"},
+  {id:"M",         n:"Mate",       zona:"centro", ic:"🧉"},
+  {id:"A",         n:"Planta",     zona:"centro", ic:"🪴"},
+  {id:"L",         n:"Banana",     zona:"centro", ic:"🍌"},
+  {id:"D",         n:"Cómplice ◆", zona:"centro", ic:"◆"},
+  {id:"T",         n:"Cómplice ▲", zona:"centro", ic:"▲"},
+  {id:"C",         n:"Cómplice ●", zona:"centro", ic:"●"},
+  {id:".",         n:"Borrar",     zona:"centro", ic:"✕"},
+  {id:"salida",    n:"Salida",     zona:"marco",  ic:"🚪"},
+  {id:"oficina",   n:"Oficina",    zona:"marco",  ic:"🏢"},
+  {id:"baniojefe", n:"Baño jefe",  zona:"marco",  ic:"🚻"},
+  {id:"puesto",    n:"Tu puesto",  zona:"marco",  ic:"🪑"},
+  {id:"banio",     n:"Tu baño",    zona:"marco",  ic:"🚽"},
+  {id:"vacio",     n:"Marco vacío",zona:"marco",  ic:"·"},
+];
+let tool = "pared";
 
-function cycleCore(x,y){
-  const cx=x-CX0, cy=y-CY0;
-  if(cx<0||cy<0||cx>=CW||cy>=CH) return false;
+function pickTool(id){
+  tool = id;
+  syncEditor();
+}
+
+function enCentro(x,y){ return x>=CX0 && x<CX0+CW && y>=CY0 && y<CY0+CH; }
+function enMarco(x,y){
+  return (x>=TOP.x0 && x<TOP.x0+TOP.w && y>=TOP.y0 && y<TOP.y0+TOP.h) ||
+         (x>=BOT.x0 && x<BOT.x0+BOT.w && y>=BOT.y0 && y<BOT.y0+BOT.h);
+}
+
+/* pinta un objeto del tablero: escribe el carácter, guarda y reconstruye */
+function setCore(x,y,ch){
+  if(!enCentro(x,y)) return false;
   const sala=SALAS[S.salaKey];
   const rows=(loadElems(S.salaKey) || sala.e).map(r=>r.split(""));
-  const cur=rows[cy][cx];
-  const nxt=CYCLE[(CYCLE.indexOf(cur)+1+CYCLE.length)%CYCLE.length];
-  rows[cy][cx]=nxt;
+  rows[y-CY0][x-CX0]=ch;
   saveElems(S.salaKey, rows.map(r=>r.join("")));
   const k=S.salaKey; newGame(k);
-  $("editmsg").textContent = "Casilla → " + CHNAME[nxt];
   return true;
 }
 
-function cycleFrame(x,y){
-  const inTop = x>=TOP.x0 && x<TOP.x0+TOP.w && y>=TOP.y0 && y<TOP.y0+TOP.h;
-  const inBot = x>=BOT.x0 && x<BOT.x0+BOT.w && y>=BOT.y0 && y<BOT.y0+BOT.h;
-  if(!inTop && !inBot) return false;
-  const kk=x+","+y;
-  const cur=FRAME_MAP[kk] || "vacio";
-  const nxt=ROLES[(ROLES.indexOf(cur)+1+ROLES.length)%ROLES.length];
-  FRAME_MAP[kk]=nxt;
+/* pinta un rol del marco */
+function setFrame(x,y,role){
+  if(!enMarco(x,y)) return false;
+  FRAME_MAP[x+","+y]=role;
   saveFrame(FRAME_MAP);
   const k=S.salaKey; newGame(k);
-  $("editmsg").textContent = "Marco → " + nxt;
   return true;
 }
 
 cv.addEventListener("click", e=>{
   if(!S) return;
   if(editMode){
-    const ed=edgeFromEvent(e);
-    if(ed){
+    const t=TOOLS.find(o=>o.id===tool) || TOOLS[0];
+    if(t.zona==="arista"){
+      const ed=edgeFromEvent(e);
+      if(!ed){ $("editmsg").textContent="Con la Pared, hacé clic justo en el borde entre dos casillas."; return; }
       if(S.walls.has(ed.k)) S.walls.delete(ed.k); else S.walls.add(ed.k);
       saveWalls(S.salaKey, [...S.walls]);
       syncEditor();
       return;
     }
     const c=cellFromEvent(e);
-    if(c && !cycleCore(c.x,c.y)) cycleFrame(c.x,c.y);
+    if(!c) return;
+    let ok=false;
+    if(t.zona==="centro") ok=setCore(c.x,c.y,t.id);
+    if(t.zona==="marco")  ok=setFrame(c.x,c.y,t.id);
+    $("editmsg").textContent = ok
+      ? t.n + " puesto"
+      : (t.zona==="centro" ? "Eso solo va dentro del tablero de 6×4."
+                           : "Eso solo va en el marco de arriba o de abajo.");
     syncEditor();
     return;
   }
@@ -1899,8 +1937,11 @@ function toggleEditor(){
 function syncEditor(){
   const bar=$("editbar"); if(!bar) return;
   bar.className = editMode ? "editbar on" : "editbar";
-  $("editbtn").textContent = editMode ? "Salir del editor" : "Editor de paredes";
-  if(!editMode || !S) return;
+  $("editbtn").textContent = editMode ? "Salir del editor" : "Editor del nivel";
+  $("palette").innerHTML = TOOLS.map(t=>
+    '<button class="tool'+(t.id===tool?" on":"")+'" onclick="pickTool(\''+t.id+'\')">'+
+    '<span class="ti">'+t.ic+'</span>'+t.n+'</button>').join("");
+  if(!editMode || !S){ if($("palette")) $("palette").innerHTML=""; return; }
   $("editcount").textContent = S.walls.size + (S.walls.size===1?" pared":" paredes");
   const mal = aislados();
   $("editwarn").innerHTML = mal.length
