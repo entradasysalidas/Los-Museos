@@ -31,7 +31,7 @@
 
   #stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
   /* 660 del lienzo + 2×10 de padding: fijo, para que el panel lateral no se caiga abajo */
-  #leftcol{flex:0 1 auto;width:682px;max-width:100%;min-width:0}
+  #leftcol{flex:0 1 auto;width:662px;max-width:100%;min-width:0}
   #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
     box-shadow:0 18px 44px #0009}
   canvas{display:block;max-width:100%;height:auto;background:#20242C;cursor:pointer}
@@ -113,6 +113,23 @@
   .comp .st{font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim)}
   .comp.done{opacity:.45} .comp.done .st{color:var(--patina)}
 
+  .editbar{margin-top:10px;background:var(--panel);border:1px solid var(--line);
+    padding:9px 12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .editbar .ehelp,.editbar .ecount,.editbar #editcode,.editbar .emsg{display:none}
+  .editbar.on{border-color:var(--brass);background:#241C0C}
+  .editbar.on .ehelp,.editbar.on .ecount,.editbar.on .emsg{display:inline}
+  .editbar.on #editcode{display:block}
+  .ebtn{background:var(--panel2);border:1px solid var(--line);color:var(--body);
+    font:600 11.5px/1 "Archivo",sans-serif;padding:7px 11px;cursor:pointer}
+  .ebtn:hover{border-color:var(--brass);color:var(--brass)}
+  .ebtn.primary{background:var(--brass);color:#171208;border-color:var(--brass)}
+  .editbar .ehelp{font-size:11.5px;color:var(--body);flex:1;min-width:200px}
+  .editbar .ecount{font:600 11.5px/1 "IBM Plex Mono",monospace;color:var(--brass)}
+  .editbar .emsg{font-size:11.5px;color:var(--patina)}
+  .editbar #editcode{width:100%;height:52px;background:var(--sunk);color:var(--dim);
+    border:1px solid var(--line);font:11px/1.4 "IBM Plex Mono",monospace;padding:6px;resize:vertical}
+  body.editing canvas{cursor:crosshair}
+
   #legendbox{margin-top:10px;background:var(--panel);border:1px solid var(--line);padding:9px 13px}
   #legendbox summary{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
     text-transform:uppercase;color:var(--dim);cursor:pointer;padding:2px 0}
@@ -192,7 +209,7 @@
   <div id="stage">
     <div id="leftcol">
       <div id="boardwrap">
-        <canvas id="c" width="660" height="480"></canvas>
+        <canvas id="c" width="640" height="480"></canvas>
         <div id="tray">
           <div class="traybox">
             <h4><span>Piezas · salen de las vitrinas</span><span id="piecen"></span></h4>
@@ -205,6 +222,16 @@
         </div>
       </div>
       <div class="hintbar" id="hint"></div>
+      <div class="editbar" id="editbar">
+        <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor de paredes</button>
+        <span class="ehelp">Hacé clic en el <b>borde entre dos casillas</b> para poner o sacar una pared.
+          Se guarda solo en esta compu.</span>
+        <span class="ecount" id="editcount"></span>
+        <button class="ebtn" onclick="clearWalls()">Limpiar</button>
+        <button class="ebtn" onclick="copyWalls()">Copiar código</button>
+        <textarea id="editcode" readonly></textarea>
+        <span class="emsg" id="editmsg"></span>
+      </div>
       <details id="legendbox" open>
         <summary>Qué es cada cosa en el tablero</summary>
         <div id="legend"></div>
@@ -257,54 +284,67 @@
 <div id="overlay"><div class="modal" id="modal"></div></div>
 <script>
 /* ==========================================================================
-   LOS MUSEOS · motor
-   Reglas tomadas del reglamento de LUNES (Tunni / Nassif · Super Noob):
-   ronda de 3 fases, movimiento de 2 casilleros exactos, activación al pasar
-   por encima, persecución con orden de prioridad, mazo de 9 acciones que al
-   agotarse sube la alerta, y captura que te saca una pieza en vez de matarte.
-   Capas: DATOS -> ESTADO -> LÓGICA (acá) -> RENDER -> INPUT.
+   LOS MUSEOS · motor v2
+   Tablero fiel al de LUNES: un centro de 6x4 casillas formado por las 6
+   losetas de 2x2, rodeado de un marco fijo con la salida al norte, tu puesto
+   con su baño y la oficina del antagonista con el suyo.
+   Las paredes son SEGMENTOS EN LAS ARISTAS entre casillas: no ocupan casilla,
+   solo cortan el paso. Por eso el tablero real entra en 24 casillas.
    ========================================================================== */
 
 const TUNE = {
-  steps        : 2,    // casilleros por ronda (el reglamento dice "exactos")
+  steps        : 2,    // casilleros por ronda (el manual dice "exactos")
   alertMax     : 3,    // tope de casilleros que avanza el antagonista
-  matesPerTurn : 3,    // al tercer mate en una misma fase, terminás en el baño
-  bananaCost   : 1,    // movimiento que te come el piso mojado
-  moveMs       : 115,   // interpolación de un paso tuyo
-  foeStepMs    : 560,   // pausa entre casillero y casillero del antagonista
-  cardMs       : 2000,  // cuánto se lee la carta antes de que actúe
+  matesPerTurn : 3,    // al tercer mate del turno, terminás en el baño
+  bananaCost   : 1,    // movimiento que te come la banana
+  moveMs       : 115,
+  foeStepMs    : 560,
+  cardMs       : 2000,
   shakeMs      : 340,
 };
 
-const W = 11, H = 8, CS = 60;
-const DIRS  = [[1,0],[-1,0],[0,-1],[0,1]];   // prioridad del reglamento: → ← ↑ ↓
+/* rejilla completa: 8x6. El centro jugable es x 1..6, y 1..4 */
+const W = 8, H = 6, CS = 80;
+const CX0 = 1, CY0 = 1, CW = 6, CH = 4;
+const DIRS  = [[1,0],[-1,0],[0,-1],[0,1]];      // prioridad del manual: → ← ↑ ↓
 const DIAGS = [[1,-1],[1,1],[-1,1],[-1,-1]];
-const key = (x,y)=>y*W+x;
-const inside = (x,y)=>x>=0&&y>=0&&x<W&&y<H;
-const shuffle = a=>{ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+const key = (x,y) => y*W + x;
+const inside = (x,y) => x>=0 && y>=0 && x<W && y<H;
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
 
-/* ---------- el grupo ---------- */
-const CREW = {
-  tomy  :{n:"Tomy",      hair:"#C2571F", style:"rulos",  beard:false, tall:1.00, shirt:"#4E8FD0"},
-  lamber:{n:"Lamber",    hair:"#1E1A18", style:"corto",  beard:true,  tall:1.00, shirt:"#57A06B"},
-  chupa :{n:"Chupa",     hair:"#1E1A18", style:"corto",  beard:false, tall:1.00, shirt:"#C9603F"},
-  kzk   :{n:"Kzk",       hair:"#A9793F", style:"corto",  beard:true,  tall:1.00, shirt:"#8A6BC4"},
-  matxi :{n:"Matxi",     hair:"#6B4526", style:"corto",  beard:false, tall:1.00, shirt:"#D8A33C"},
-  chuna :{n:"Chuna",     hair:"#3A2416", style:"largorulos", beard:false, tall:1.00, shirt:"#3FA6A0"},
-  hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",  beard:false, tall:1.18, shirt:"#22242A"},
-  marian:{n:"Marian",    hair:"#7A5230", style:"largo",  beard:false, tall:1.10, shirt:"#5B7FD4"},
-  damian:{n:"Damián",    hair:"#1E1A18", style:"medio",  beard:false, tall:1.00, shirt:"#7FA23E"},
+/* --- el marco, igual en todos los niveles --- */
+const FRAME = {
+  salida  : {x:1, y:0},          // al norte, como pide el manual
+  puesto  : {x:0, y:1},
+  banio   : {x:0, y:2},
+  oficina : {x:7, y:1},
+  banioJefe:{x:7, y:2},
 };
 
-/* habilidad propia de cada uno, solo cuando protagoniza su sala */
-/* nombre corto que va estampado en la remera */
+/* --- aristas: "v" corta entre (x,y) y (x+1,y); "h" entre (x,y) y (x,y+1) --- */
+const edgeKey = (a,b) => (a.x===b.x)
+  ? "h:"+a.x+":"+Math.min(a.y,b.y)
+  : "v:"+Math.min(a.x,b.x)+":"+a.y;
+
+/* --- el grupo --- */
+const CREW = {
+  tomy  :{n:"Tomy",      hair:"#C2571F", style:"rulos",      beard:false, tall:1.00, shirt:"#4E8FD0"},
+  lamber:{n:"Lamber",    hair:"#1E1A18", style:"corto",      beard:true,  tall:1.00, shirt:"#57A06B"},
+  chupa :{n:"Chupa",     hair:"#1E1A18", style:"corto",      beard:false, tall:1.00, shirt:"#C9603F"},
+  kzk   :{n:"Kzk",       hair:"#A9793F", style:"corto",      beard:true,  tall:1.00, shirt:"#8A6BC4"},
+  matxi :{n:"Matxi",     hair:"#6B4526", style:"corto",      beard:false, tall:1.00, shirt:"#D8A33C"},
+  chuna :{n:"Chuna",     hair:"#3A2416", style:"largorulos", beard:false, tall:1.00, shirt:"#3FA6A0"},
+  hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",      beard:false, tall:1.18, shirt:"#22242A"},
+  marian:{n:"Marian",    hair:"#7A5230", style:"largo",      beard:false, tall:1.10, shirt:"#5B7FD4"},
+  damian:{n:"Damián",    hair:"#1E1A18", style:"medio",      beard:false, tall:1.00, shirt:"#7FA23E"},
+};
 Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); });
 
 const POWERS = {
-  hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una estatua."},
+  hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una planta."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
-  lamber:{n:"Agenda llena",     d:"Cualquier cómplice te acepta cualquier pieza."},
-  kzk   :{n:"Manos de técnico", d:"Una vez por partida reactivás una vitrina con alarma."},
+  lamber:{n:"Agenda llena",     d:"Con E convencés a cualquier cómplice de aceptar cualquier pieza."},
+  kzk   :{n:"Manos de técnico", d:"Con F reactivás una vitrina con alarma, una vez por partida."},
   chuna :{n:"Piernas",          d:"Una vez por partida movés 4 casilleros en lugar de 2."},
   tomy  :{n:"Mate infinito",    d:"Podés repetir el mismo mate dentro del mismo turno."},
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
@@ -312,183 +352,119 @@ const POWERS = {
   marian:{n:"Ojo de halcón",    d:"Ves la próxima acción del antagonista antes de moverte."},
 };
 
-/* ---------- las 3 piezas: color + símbolo, como los informes ---------- */
 const PIECES = [
-  {id:"rombo",     sym:"◆", name:"Rombo azul",       color:"#3F7FD6"},
-  {id:"triangulo", sym:"▲", name:"Triángulo rojo",   color:"#D4534A"},
-  {id:"circulo",   sym:"●", name:"Círculo naranja",  color:"#E09A3C"},
+  {id:"rombo",     sym:"◆", name:"Rombo azul",      color:"#3F7FD6"},
+  {id:"triangulo", sym:"▲", name:"Triángulo rojo",  color:"#D4534A"},
+  {id:"circulo",   sym:"●", name:"Círculo naranja", color:"#E09A3C"},
 ];
 const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
 
-/* ---------- objetos recompensa (se sortean 3 de 5) ---------- */
 const OBJECTS = {
   mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
   mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
   fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal."},
-  empa  :{ic:"🥟", n:"Empanada", d:"Te teletransporta a tu baño. Salva de un encierro."},
+  empa  :{ic:"🥟", n:"Empanada", d:"Te teletransporta a tu baño."},
   altavoz:{ic:"📢",n:"Altavoz",  d:"Llamado falso: el antagonista vuelve a su oficina."},
 };
 
-/* ---------- las 9 acciones del antagonista ---------- */
 const DECK = [
   {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo",     ic:"◆"},
   {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo", ic:"▲"},
   {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo",   ic:"●"},
   {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath", ic:"WC"},
-  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit", ic:"🚬"},
-  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit", ic:"🚬"},
-  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.", k:"home", ic:"🏢"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush", ic:"⚡"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush", ic:"⚡"},
+  {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
+  {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
+  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.",      k:"home", ic:"🏢"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"⚡"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"⚡"},
 ];
 
-/* ---------- estéticas ----------
-   Cada sala tiene su piso, sus muebles, su color de pared y su cantidad de luz.
-   Los depósitos y sótanos son oscuros y de hormigón; las salas de museo entran
-   en luz, con parquet o mármol claro y cuadros en las paredes. */
-const THEMES = {
-  deposito:{ piso:["#7E7160","#766A59"], patron:"hormigon", junta:"#00000020",
-             luz:"#FFE7BE", luzA:.10, luzR:2.0, pared:"#3E3A34", paredTop:"#4A463F",
-             muebles:["cajones","estanteria","cajones"], vineta:.46, fondo:"#25231F" },
-  oficina :{ piso:["#8E8C84","#86847C"], patron:"alfombra", junta:"#00000016",
-             luz:"#EAF2FF", luzA:.14, luzR:2.2, pared:"#414652", paredTop:"#4C525F",
-             muebles:["escritorio","estanteria","planta"], vineta:.40, fondo:"#2A2D34" },
-  museo   :{ piso:["#B79A72","#AF9269"], patron:"parquet", junta:"#00000014",
-             luz:"#FFF6E2", luzA:.30, luzR:2.8, pared:"#6E6A62", paredTop:"#7C7870",
-             muebles:["cuadro","vitrinaAlta","cuadro"], vineta:.26, fondo:"#3A362F" },
-  sotano  :{ piso:["#5E5A54","#57534E"], patron:"hormigon", junta:"#00000028",
-             luz:"#CFE0FF", luzA:.07, luzR:1.7, pared:"#31302C", paredTop:"#3B3A35",
-             muebles:["estanteria","estanteria","cajones"], vineta:.58, fondo:"#1C1B19" },
-  taller  :{ piso:["#A9A091","#A19889"], patron:"baldosa", junta:"#00000022",
-             luz:"#FFF3D0", luzA:.22, luzR:2.1, pared:"#5A564E", paredTop:"#666259",
-             muebles:["mesa","estanteria","mesa"], vineta:.34, fondo:"#33302B" },
-  patio   :{ piso:["#C6BCA6","#BEB49E"], patron:"piedra", junta:"#00000018",
-             luz:"#FFFBEC", luzA:.38, luzR:3.2, pared:"#8A8474", paredTop:"#979181",
-             muebles:["seto","pedestal","seto"], vineta:.18, fondo:"#4A4638" },
-  galeria :{ piso:["#CBC4B6","#C3BCAE"], patron:"marmol", junta:"#00000012",
-             luz:"#FFF4D8", luzA:.34, luzR:3.0, pared:"#7A7365", paredTop:"#8A8375",
-             muebles:["cuadro","pedestal","cuadro"], vineta:.20, fondo:"#433E33" },
-};
-
-/* ---------- antagonistas ---------- */
 const FOES = {
   encargado:{n:"El Encargado",   look:"overol", d:"Camina y nada más. Es la sala escuela."},
-  curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas, no a los puestos.", twist:"vitrinas"},
-  director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos, sin descanso."},
-  seguridad:{n:"La Seguridad",   look:"guardia",d:"Si terminás en su misma fila o columna sin pared de por medio, avanza un casillero extra.", twist:"linterna"},
-  procurad :{n:"Los Procuradores", look:"procurador", count:2,
-             d:"Son dos y cada uno avanza un casillero. Te cierran el paso entre los dos."},
-  perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las estatuas: esconderse no sirve.", twist:"olfato"},
-  restaura :{n:"El Restaurador", look:"guardapolvo",
-             d:"Cuando te saca una pieza la devuelve a la vitrina más cercana a él, no a la más lejana tuya.", twist:"reponeCerca"},
-  inspector:{n:"El Inspector",   look:"gabardina", d:"Cada objeto que usás le sube un nivel de alerta.", twist:"anota"},
+  curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas.", twist:"vitrinas"},
+  director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos."},
+  seguridad:{n:"La Seguridad",   look:"guardia",d:"Si quedás en su línea recta sin pared, avanza un casillero extra.", twist:"linterna"},
+  procurad :{n:"Los Procuradores", look:"procurador", count:2, d:"Son dos y cada uno avanza un casillero."},
+  perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las plantas: esconderse no sirve.", twist:"olfato"},
+  restaura :{n:"El Restaurador", look:"guardapolvo", d:"Devuelve la pieza a la vitrina más cercana a él.", twist:"reponeCerca"},
+  inspector:{n:"El Inspector",   look:"gabardina", d:"Cada objeto que usás le sube la alerta.", twist:"anota"},
   general  :{n:"El Director General", look:"gala", alert:2,
-             d:"Arranca con alerta 2 y hace las dos cosas: persigue y se teletransporta a las vitrinas.", twist:"vitrinas"},
+             d:"Arranca en alerta 2, persigue y se teletransporta a las vitrinas.", twist:"vitrinas"},
 };
 
-/* ---------- las salas ----------
-   #pared  .piso  E salida  @tu puesto  b tu baño  J antagonista  x su baño
-   V vitrina  1 2 3 cómplices (rombo/triángulo/círculo)  M mate  T estatua  L piso mojado */
+const THEMES = {
+  gris  :{ piso:["#9A968C","#928E84"], patron:"alfombra", junta:"#00000018",
+           luz:"#EAF2FF", luzA:.16, pared:"#E8E4DA", void:"#2A2D34", vineta:.34, fondo:"#2A2D34" },
+  madera:{ piso:["#B08A5C","#A78254"], patron:"parquet", junta:"#00000016",
+           luz:"#FFF3D8", luzA:.28, pared:"#F2ECDC", void:"#33302B", vineta:.24, fondo:"#33302B" },
+};
+
+/* --- los 10 niveles del manual ---
+   e: elementos del centro, con coordenadas del centro (0..5, 0..3)
+      P impresora · D rombo · T triángulo · C círculo · M mate · L banana · A planta
+   w: paredes, en aristas. Se dibujan con el editor y se guardan acá.        --- */
+const L = (s)=>s.trim().split("\n").map(r=>r.trim());
 const SALAS = {
-  s1:{ num:1, name:"Depósito de embalaje", wing:"Museo de Pueblo", theme:"deposito",
-       place:"Cajones, papel de burbuja y una sola puerta",
-       hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
-       map:[ "####E######",
-             "#@b......V#",
-             "#.........#",
-             "#..T#.#T..#",
-             "#1..#.#..2#",
-             "#..M...M..#",
-             "#V..LJx.V3#",
-             "###########" ]},
-  s2:{ num:2, name:"Sala de Arqueología", wing:"Museo Municipal", theme:"museo",
-       place:"Vitrinas largas y pasillos angostos",
-       hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
-       map:[ "###E#######",
-             "#@b..#...1#",
-             "#..#L#.#..#",
-             "#V.#...#.V#",
-             "#..#T#T#..#",
-             "#2.M...M.3#",
-             "#..#Jx#..V#",
-             "###########" ]},
-  s3:{ num:3, name:"Oficinas administrativas", wing:"Museo Municipal", theme:"oficina",
-       place:"La parte aburrida del museo",
-       hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
-       map:[ "####E######",
-             "#@b..#..1.#",
-             "#...T#T...#",
-             "#V.......V#",
-             "#..#...#..#",
-             "#2.M.#.M.3#",
-             "#..L.Jx..V#",
-             "###########" ]},
-  s4:{ num:4, name:"Arte Moderno", wing:"Museo Provincial", theme:"museo",
-       place:"Salones abiertos, casi nada donde taparse",
-       hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
-       map:[ "####E######",
-             "#@b.....V.#",
-             "#..T...T..#",
-             "#1..V....2#",
-             "#..#...#..#",
-             "#M.....L.M#",
-             "#V...Jx..3#",
-             "###########" ]},
-  s5:{ num:5, name:"Archivo y sótano", wing:"Museo Provincial", theme:"sotano",
-       place:"Estanterías, humedad y pasillos largos",
-       hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
-       map:[ "#########E#",
-             "#@b......V#",
-             "#.#T#.#.#.#",
-             "#1...V...2#",
-             "#.#.#T#.#.#",
-             "#M...L...M#",
-             "#V..Jx...3#",
-             "###########" ]},
-  s6:{ num:6, name:"Ciencias Naturales", wing:"Museo Nacional", theme:"museo",
-       place:"Dinosaurios, vitrinas altas y un olor raro",
-       hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
-       map:[ "####E######",
-             "#@b..#..V.#",
-             "#...T#T...#",
-             "#V.......V#",
-             "#.#..#..#.#",
-             "#1.M.#.M.2#",
-             "#..L.Jx..3#",
-             "###########" ]},
-  s7:{ num:7, name:"Taller de Restauración", wing:"Museo Nacional", theme:"taller",
-       place:"Mesas, solventes y piezas a medio arreglar",
-       hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
-       map:[ "####E######",
-             "#@b#....V.#",
-             "#..#.##...#",
-             "#1.....#.2#",
-             "#.##.#.#..#",
-             "#M..T#T..M#",
-             "#V.L.Jx.V3#",
-             "###########" ]},
-  s8:{ num:8, name:"Patio de Esculturas", wing:"El Gran Museo", theme:"patio",
-       place:"Al aire libre, entre setos y estatuas",
-       hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
-       map:[ "#####E#####",
-             "#@b..T...V#",
-             "#.T.....T.#",
-             "#1...V...2#",
-             "#..T...T..#",
-             "#M.......M#",
-             "#V.L.Jx..3#",
-             "###########" ]},
-  s9:{ num:9, name:"Gran Galería", wing:"El Gran Museo", theme:"galeria",
-       place:"La sala del cuadro que todos vienen a ver",
-       hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
-       map:[ "#####E#####",
-             "#@b.#.#..V#",
-             "#...#.#...#",
-             "#1..V....2#",
-             "#.#.###.#.#",
-             "#M.T.L.T.M#",
-             "#V...Jx..3#",
-             "###########" ]},
+  tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris",
+    hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
+    e:L(`A....A
+         .C.D.P
+         .M.M..
+         T..PP.`), w:[] },
+  n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris",
+    hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
+    e:L(`D.P.P.
+         ..A.M.
+         .A..P.
+         C.TM..`), w:[] },
+  n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris",
+    hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
+    e:L(`MPP..P
+         ..A...
+         T.A...
+         M..C.D`), w:[] },
+  n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris",
+    hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
+    e:L(`.AD.MP
+         .C....
+         ......
+         P.TMPA`), w:[] },
+  n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris",
+    hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
+    e:L(`...DP.
+         P...M.
+         .M..A.
+         .TPA.C`), w:[] },
+  n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera",
+    hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
+    e:L(`LTP.AC
+         ...PAP
+         ..L...
+         D.....`), w:[] },
+  n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera",
+    hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
+    e:L(`P.P.LT
+         A.....
+         .DL...
+         ...PAC`), w:[] },
+  n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera",
+    hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
+    e:L(`.....A
+         T.L.PC
+         ..L...
+         P.A.PD`), w:[] },
+  n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera",
+    hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
+    e:L(`P.A...
+         .LC.D.
+         ...L.A
+         P..T.P`), w:[] },
+  n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera",
+    hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
+    e:L(`.A.A.P
+         P.C...
+         P.T...
+         .LL..D`), w:[] },
 };
 
 /* ---------- estado ---------- */
@@ -496,82 +472,81 @@ let S = null;
 const fx = { floats:[], shake:0, banner:null };
 function banner(txt,color){ fx.banner={txt, color:color||"#EAE8E2", t:0}; }
 
-function parseMap(rows){
-  const grid=[], marks={vitrinas:[],comps:[],mates:[]};
-  let exit=null, home=null, bath=null, foeHome=null, foeBath=null;
-  const compOrder = ["rombo","triangulo","circulo"];
+const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana",
+                 D:"complice", T:"complice", C:"complice"};
+const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
+
+function buildBoard(sala){
+  const grid=[], marks={vitrinas:[], comps:[], mates:[]};
   for(let y=0;y<H;y++){
     grid.push([]);
-    for(let x=0;x<W;x++){
-      const ch=rows[y][x];
-      const c={wall:ch==="#", type:null, deco:(x*7+y*13)%3, alarm:0, want:null, piece:null};
-      if(ch==="V"){ c.type="vitrina"; marks.vitrinas.push({x,y}); }
-      if(ch==="M"){ c.type="mate";    marks.mates.push({x,y}); }
-      if(ch==="T"){ c.type="estatua"; }
-      if(ch==="L"){ c.type="mojado"; }
-      if(ch==="E"){ c.type="salida"; exit={x,y}; }
-      if(ch==="@"){ c.type="puesto";  home={x,y}; }
-      if(ch==="b"){ c.type="banio";   bath={x,y}; }
-      if(ch==="J"){ c.type="oficina"; foeHome={x,y}; }
-      if(ch==="x"){ c.type="baniojefe"; foeBath={x,y}; }
-      if("123".includes(ch)){
-        c.type="complice"; c.want=compOrder[+ch-1];
-        marks.comps.push({x,y,want:c.want});
-      }
-      grid[y].push(c);
+    for(let x=0;x<W;x++) grid[y].push({play:false, type:null, alarm:0, want:null, piece:null});
+  }
+  // el centro
+  for(let cy=0;cy<CH;cy++) for(let cx=0;cx<CW;cx++){
+    const x=CX0+cx, y=CY0+cy, c=grid[y][x];
+    c.play=true;
+    const ch=(sala.e[cy]||"")[cx] || ".";
+    if(CH2TYPE[ch]){
+      c.type=CH2TYPE[ch];
+      if(c.type==="vitrina")  marks.vitrinas.push({x,y});
+      if(c.type==="mate")     marks.mates.push({x,y});
+      if(c.type==="complice"){ c.want=CH2WANT[ch]; marks.comps.push({x,y,want:c.want}); }
     }
   }
-  return {grid,marks,exit,home,bath,foeHome,foeBath};
+  // el marco
+  const put=(p,t)=>{ const c=grid[p.y][p.x]; c.play=true; c.type=t; };
+  put(FRAME.salida,"salida");   put(FRAME.puesto,"puesto"); put(FRAME.banio,"banio");
+  put(FRAME.oficina,"oficina"); put(FRAME.banioJefe,"baniojefe");
+  return {grid, marks};
 }
 
 function newGame(salaKey){
   const sala = SALAS[salaKey];
-  const p = parseMap(sala.map);
+  const b = buildBoard(sala);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
+  const walls = new Set(loadWalls(salaKey) || sala.w);
 
-  // cada gema queda repartida en una vitrina, a la vista tras el cristal
   const pile = shuffle(PIECES.map(o=>o.id));
-  p.marks.vitrinas.forEach((v,i)=>{ p.grid[v.y][v.x].piece = pile[i]; });
-  // 3 objetos de los 5, uno debajo de cada pieza
+  b.marks.vitrinas.forEach((v,i)=>{ b.grid[v.y][v.x].piece = pile[i]; });
   const objs = shuffle(Object.keys(OBJECTS)).slice(0,3);
   const under = {}; pile.forEach((id,i)=>under[id]=objs[i]);
 
   S = {
-    salaKey, sala, hero, heroKey:sala.hero, power, foe:FOES[sala.foe], foeKey:sala.foe,
-    th: THEMES[sala.theme] || THEMES.museo,
-    grid:p.grid, marks:p.marks,
-    exit:p.exit, home:p.home, bath:p.bath, foeHome:p.foeHome, foeBath:p.foeBath,
-    player:{x:p.home.x, y:p.home.y, px:p.home.x, py:p.home.y, bob:0},
+    salaKey, sala, hero, heroKey:sala.hero, power,
+    foe:FOES[sala.foe], foeKey:sala.foe, th:THEMES[sala.piso],
+    grid:b.grid, marks:b.marks, walls,
+    exit:FRAME.salida, home:FRAME.puesto, bath:FRAME.banio,
+    foeHome:FRAME.oficina, foeBath:FRAME.banioJefe,
+    player:{x:FRAME.puesto.x, y:FRAME.puesto.y, px:FRAME.puesto.x, py:FRAME.puesto.y, bob:0},
     foes: Array.from({length: FOES[sala.foe].count || 1}, (_,i)=>{
-      const o = i===0 ? p.foeHome : p.foeBath;      // el segundo arranca en el baño contiguo
+      const o = i===0 ? FRAME.oficina : FRAME.banioJefe;
       return {x:o.x, y:o.y, px:o.x, py:o.y, bob:0};
     }),
-    pile, under, hand:[], delivered:[], taken:0, lost:[],
+    pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
     deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
-    over:null, busy:false, log:[], phase:"vos", cardPending:false,
+    over:null, busy:false, phase:"vos", cardPending:false, log:[],
   };
 
-  // habilidades que actúan en la preparación
   if(sala.hero==="damian"){
-    const d = bfsFrom(S.home);
-    const v = S.marks.vitrinas.slice().sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)])[0];
+    const d=bfsFrom(S.home);
+    const v=S.marks.vitrinas.slice().sort((a,b2)=>d[key(a.x,a.y)]-d[key(b2.x,b2.y)])[0];
     if(v) takePiece(S.grid[v.y][v.x], true);
   }
-  if(sala.hero==="chupa"){ const extra=shuffle(Object.keys(OBJECTS))[0]; S.objects.push(extra); }
+  if(sala.hero==="chupa") S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
   if(sala.hero==="matxi") S.freeCatch = true;
+  if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
 
-  fx.floats.length=0; fx.shake=0;
-  buildFloorLayer();
-  buildLegend();
+  fx.floats.length=0; fx.shake=0; fx.banner=null;
+  buildFloorLayer(); buildLegend();
   const cvEl=document.getElementById("c"); if(cvEl) cvEl.style.background=S.th.fondo;
-  say(`<b>Sala ${sala.num} · ${sala.name}</b>`,"y");
+  say(`<b>${sala.num===0?"Tutorial":"Nivel "+sala.num} · ${sala.name}</b>`,"y");
   say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
   say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
-  if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
   syncUI();
 }
 
@@ -583,9 +558,21 @@ function say(t,cls){
 }
 function float(x,y,txt,color){ fx.floats.push({x,y,txt,color:color||"#EAE8E2",t:0}); }
 
-const cellAt = (x,y)=> inside(x,y) ? S.grid[y][x] : null;
-const isWall = (x,y)=> !inside(x,y) || S.grid[y][x].wall;
-const foeOn = (x,y)=> S.foes.some(f=>f.x===x && f.y===y);
+/* ---------- tablero: casillas y aristas ---------- */
+const cellAt = (x,y) => inside(x,y) ? S.grid[y][x] : null;
+const playable = (x,y) => inside(x,y) && S.grid[y][x].play;
+const foeOn = (x,y) => S.foes.some(f=>f.x===x && f.y===y);
+
+/* ¿se puede ir de (x,y) al vecino (nx,ny)? Ortogonal, sin pared en la arista */
+function canStep(x,y,nx,ny){
+  if(!playable(nx,ny)) return false;
+  if(Math.abs(nx-x)+Math.abs(ny-y)!==1){          // diagonal (fernet): sin paredes en ninguno de los dos lados
+    if(!S.diagonal) return false;
+    return (canStep(x,y,nx,y) && canStep(nx,y,nx,ny)) ||
+           (canStep(x,y,x,ny) && canStep(x,ny,nx,ny));
+  }
+  return !S.walls.has(edgeKey({x,y},{x:nx,y:ny}));
+}
 
 function bfsFrom(from){
   const d=new Array(W*H).fill(-1); d[key(from.x,from.y)]=0;
@@ -594,7 +581,7 @@ function bfsFrom(from){
     const c=q.shift();
     for(const [dx,dy] of DIRS){
       const nx=c.x+dx, ny=c.y+dy;
-      if(isWall(nx,ny)||d[key(nx,ny)]!==-1) continue;
+      if(!canStep(c.x,c.y,nx,ny) || d[key(nx,ny)]!==-1) continue;
       d[key(nx,ny)]=d[key(c.x,c.y)]+1; q.push({x:nx,y:ny});
     }
   }
@@ -610,29 +597,93 @@ function reachableCells(steps){
     if(dist>=steps) continue;
     for(const [dx,dy] of dirs){
       const nx=c.x+dx, ny=c.y+dy;
-      if(isWall(nx,ny)||d[key(nx,ny)]!==-1) continue;
+      if(!canStep(c.x,c.y,nx,ny) || d[key(nx,ny)]!==-1) continue;
       d[key(nx,ny)]=dist+1; out.set(key(nx,ny),dist+1); q.push({x:nx,y:ny});
     }
   }
   return out;
 }
 
+/* ---------- paredes guardadas por el editor ---------- */
+function wallsStoreKey(k){ return "museos.walls."+k; }
+function loadWalls(k){
+  try{ const raw=localStorage.getItem(wallsStoreKey(k)); return raw ? JSON.parse(raw) : null; }
+  catch(e){ return null; }
+}
+function saveWalls(k, arr){
+  try{ localStorage.setItem(wallsStoreKey(k), JSON.stringify(arr)); return true; }
+  catch(e){ return false; }
+}
+
 /* ======================= FASE 1 · movimiento ======================= */
 function step(dx,dy){
   if(!S||S.over||S.busy||S.mp<=0) return;
-  if((dx&&dy) && !S.diagonal) return;                 // diagonal solo con fernet
+  if((dx&&dy) && !S.diagonal) return;
   const nx=S.player.x+dx, ny=S.player.y+dy;
-  if(isWall(nx,ny)) return;
+  if(!canStep(S.player.x,S.player.y,nx,ny)) return;
   S.player.x=nx; S.player.y=ny; S.mp--;
-  if(foeOn(nx,ny)){ resolveCatch(); return; }          // caíste encima: se resuelve
-  passThrough(nx,ny);                                  // todo se activa al pasar
+  if(foeOn(nx,ny)){ resolveCatch(); return; }
+  passThrough(nx,ny);
   if(S.over) return;
   if(S.mp<=0){
-    // si te quedaste justo sobre un mate, la ronda espera: tomarlo te devuelve
-    // los pasos y podés seguir. Enter cierra la ronda.
     if(canDrinkHere()){ S.awaitMate=true; syncUI(); return; }
     S.busy=true; setTimeout(endMovement, TUNE.moveMs+110);
   }
+  syncUI();
+}
+
+/* todo se activa al pasar por encima */
+function passThrough(x,y){
+  const c=S.grid[y][x];
+  if(c.type==="vitrina" && !c.alarm && c.piece){ takePiece(c); return; }
+  if(c.type==="complice"){
+    const wanted = S.hand.includes(c.want) ? c.want : null;
+    if(wanted && !S.delivered.includes(c.want)) deliver(c, wanted);
+    return;
+  }
+  if(c.type==="banana"){
+    if(S.mp>0){ S.mp-=TUNE.bananaCost; float(x,y,"¡RESBALÓN!","#E0685D");
+                say("🍌 Pisaste una cáscara: perdés un movimiento."); }
+    return;
+  }
+  if(c.type==="salida" && S.delivered.length>=3) return gameWin();
+}
+
+function deliver(c, id){
+  S.hand.splice(S.hand.indexOf(id),1);
+  S.delivered.push(c.want);
+  const obj=S.under[id];
+  if(obj) S.objects.push(obj);
+  float(c.x!==undefined?c.x:S.player.x, S.player.y, "✓ "+CREW[compOf(c.want)].n, "#79AE9E");
+  say(`🤝 Le pasaste ${PIE[id].sym} <b>${PIE[id].name}</b> a ${CREW[compOf(c.want)].n}. Te dio: <b>${OBJECTS[obj].n}</b>.`,"g");
+  if(S.delivered.length===3) say("Las tres piezas están afuera. <b>Corré a la salida.</b>","g");
+}
+
+function takePiece(cell, silent){
+  const id=cell.piece;
+  if(!id) return null;
+  cell.piece=null; cell.alarm=1;
+  const i=S.pile.indexOf(id); if(i>=0) S.pile.splice(i,1);
+  S.hand.push(id);
+  if(!silent){
+    float(S.player.x,S.player.y,"PIEZA "+PIE[id].sym,PIE[id].color);
+    banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
+    say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b>: <b>ahí</b> te dan el objeto.`,"y");
+  }
+  return id;
+}
+const compOf = want => (S.sala.comps[["rombo","triangulo","circulo"].indexOf(want)]);
+
+/* Agenda llena (Lamber): entrega flexible, pero la decide él */
+function canOfferHere(){
+  if(S.heroKey!=="lamber" || !S.hand.length) return false;
+  const c=S.grid[S.player.y][S.player.x];
+  return c.type==="complice" && !S.delivered.includes(c.want);
+}
+function offerDelivery(){
+  if(!S||S.over||S.busy||!canOfferHere()) return;
+  const c=S.grid[S.player.y][S.player.x];
+  deliver(c, S.hand[0]);
   syncUI();
 }
 
@@ -642,122 +693,46 @@ function canDrinkHere(){
   if(S.matesTurn>=TUNE.matesPerTurn) return false;
   return !S.drunk.has(key(S.player.x,S.player.y)) || S.heroKey==="tomy";
 }
-
-function finishRound(){                                 // Enter: cerrar la ronda a mano
-  if(!S||S.over||S.busy||!S.awaitMate) return;
-  S.awaitMate=false; S.busy=true;
-  setTimeout(endMovement, 60);
-}
-
-/* activación al pasar por encima */
-function passThrough(x,y){
-  const c=S.grid[y][x];
-  if(c.type==="vitrina" && !c.alarm && c.piece){
-    takePiece(c);
-    return;
-  }
-  if(c.type==="complice"){
-    // la entrega de la pieza correcta es automática al pasar, como en el reglamento.
-    // La entrega flexible de Lamber la decide él con E, para no quedarse sin escudo.
-    const wanted = S.hand.includes(c.want) ? c.want : null;
-    if(wanted && !S.delivered.includes(c.want)){
-      S.hand.splice(S.hand.indexOf(wanted),1);
-      S.delivered.push(c.want);
-      const obj = S.under[wanted];
-      if(obj){ S.objects.push(obj); }
-      float(x,y,"✓ "+CREW[compOf(c.want)].n, "#79AE9E");
-      say(`🤝 Le pasaste ${PIE[wanted].sym} <b>${PIE[wanted].name}</b> a ${CREW[compOf(c.want)].n}. Te dio: <b>${OBJECTS[obj].n}</b>.`,"g");
-      if(S.delivered.length===3) say(`Las tres piezas están afuera. <b>Corré a la salida.</b>`,"g");
-    }
-    return;
-  }
-  if(c.type==="mojado"){
-    if(S.mp>0){ S.mp-=TUNE.bananaCost; float(x,y,"¡PISO MOJADO!","#E0685D");
-                say("💧 Piso recién lavado: perdés un movimiento."); }
-    return;
-  }
-  if(c.type==="salida" && S.delivered.length>=3) return gameWin();
-}
-
-function takePiece(cell, silent){
-  const id = cell.piece;
-  if(!id) return null;
-  cell.piece = null;
-  cell.alarm = 1;
-  const i = S.pile.indexOf(id); if(i>=0) S.pile.splice(i,1);
-  S.hand.push(id);
-  if(!silent){
-    float(S.player.x,S.player.y, "PIEZA "+PIE[id].sym, PIE[id].color);
-    banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
-    say(`🖼️ Abriste la vitrina y sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b> para entregársela: <b>ahí</b> te dan el objeto. Esa vitrina quedó con alarma.`,"y");
-  }
-  return id;
-}
-const compOf = want => (S.sala.comps[["rombo","triangulo","circulo"].indexOf(want)]);
-
-/* Agenda llena: Lamber puede convencer a cualquier cómplice de aceptar cualquier
-   pieza, pero lo decide él — si fuera automático se quedaría sin escudo sin querer. */
-function canOfferHere(){
-  if(S.heroKey!=="lamber" || !S.hand.length) return false;
-  const c = S.grid[S.player.y][S.player.x];
-  return c.type==="complice" && !c.done && !S.delivered.includes(c.want);
-}
-function offerDelivery(){
-  if(!S||S.over||S.busy||!canOfferHere()) return;
-  const c = S.grid[S.player.y][S.player.x];
-  const id = S.hand.shift();
-  S.delivered.push(c.want); c.done=true;
-  const obj = S.under[id];
-  if(obj) S.objects.push(obj);
-  float(S.player.x,S.player.y,"✓ "+CREW[compOf(c.want)].n,"#79AE9E");
-  say(`🤝 Agenda llena: convenciste a ${CREW[compOf(c.want)].n} de aceptar ${PIE[id].sym} <b>${PIE[id].name}</b>. Te dio: <b>${OBJECTS[obj].n}</b>.`,"g");
-  if(S.delivered.length===3) say("Las tres piezas están afuera. <b>Corré a la salida.</b>","g");
-  syncUI();
-}
-
-/* mate: recupera los pasos ya dados en esta fase */
 function drinkMate(){
-  if(!S||S.over||S.busy) return;
-  const c=S.grid[S.player.y][S.player.x];
-  if(c.type!=="mate") return;
-  const k=key(S.player.x,S.player.y);
-  if(S.drunk.has(k) && S.heroKey!=="tomy"){ say("Ese mate ya lo tomaste este turno."); return; }
-  S.drunk.add(k);
-  S.matesTurn++;
-  S.mp = TUNE.steps;
-  S.awaitMate = false;
+  if(!S||S.over||S.busy||!canDrinkHere()) return;
+  S.drunk.add(key(S.player.x,S.player.y));
+  S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
   float(S.player.x,S.player.y,"+MATE","#D2A24C");
   if(S.matesTurn>=TUNE.matesPerTurn){
-    say("🧉 Tercer mate del turno… terminás el turno en tu baño.","r");
+    say("🧉 Tercer mate del turno… terminás en tu baño.","r");
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
     S.busy=true; return setTimeout(endMovement, TUNE.moveMs+110);
   }
   say("🧉 Mate: recuperaste los pasos de este turno.","g");
   syncUI();
 }
+function finishRound(){
+  if(!S||S.over||S.busy||!S.awaitMate) return;
+  S.awaitMate=false; S.busy=true;
+  setTimeout(endMovement, 60);
+}
 
 function endMovement(){
   if(S.over) return;
   const c=S.grid[S.player.y][S.player.x];
-  const hidden = S.foe.twist!=="olfato" && (c.type==="estatua" ||
+  const hidden = S.foe.twist!=="olfato" && (c.type==="planta" ||
     (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
-      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="estatua"; })));
-  if(hidden) say("🗿 Terminaste el turno escondido: no te persigue.","g");
-  else if(S.foe.twist==="olfato" && S.grid[S.player.y][S.player.x].type==="estatua")
-    say("🐕 El Perro te huele igual: la estatua no te tapa.","r");
+      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="planta"; })));
+  if(hidden) say("🪴 Terminaste el turno escondido: no te persigue.","g");
+  else if(S.foe.twist==="olfato" && c.type==="planta")
+    say("🐕 El Perro te huele igual: la planta no te tapa.","r");
   setTimeout(()=>chasePhase(hidden), 220);
 }
 
 /* ======================= FASE 2 · persecución ======================= */
-/* Un paso hacia el jugador. DIRS está en el orden de prioridad del reglamento
-   (→ ← ↑ ↓) y solo aceptamos una casilla que acorte de verdad la distancia, así
-   que ante un empate gana la primera dirección de la lista, como en el manual. */
+function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
+
 function chaseStep(f){
-  const d = bfsFrom({x:S.player.x, y:S.player.y});
+  const d=bfsFrom({x:S.player.x,y:S.player.y});
   let best=null, bd=d[key(f.x,f.y)];
-  for(const [dx,dy] of DIRS){
+  for(const [dx,dy] of DIRS){                    // DIRS está en el orden de prioridad del manual
     const nx=f.x+dx, ny=f.y+dy;
-    if(isWall(nx,ny)) continue;
+    if(!canStep(f.x,f.y,nx,ny)) continue;
     const v=d[key(nx,ny)];
     if(v>=0 && (bd<0 || v<bd)){ bd=v; best={x:nx,y:ny}; }
   }
@@ -766,35 +741,33 @@ function chaseStep(f){
   return f.x===S.player.x && f.y===S.player.y;
 }
 
-function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
-
-/* ¿el jugador quedó en la misma fila o columna que el antagonista, sin paredes? */
+/* ¿el jugador quedó en la línea recta del antagonista, sin paredes en medio? */
 function enLineaRecta(){
   const f=S.foes[0], p=S.player;
   if(f.x!==p.x && f.y!==p.y) return false;
-  if(f.x===p.x){
-    const a=Math.min(f.y,p.y), b=Math.max(f.y,p.y);
-    for(let y=a+1;y<b;y++) if(isWall(f.x,y)) return false;
-  }else{
-    const a=Math.min(f.x,p.x), b=Math.max(f.x,p.x);
-    for(let x=a+1;x<b;x++) if(isWall(x,f.y)) return false;
+  const step1 = f.x===p.x ? [0, Math.sign(p.y-f.y)] : [Math.sign(p.x-f.x), 0];
+  let x=f.x, y=f.y;
+  while(x!==p.x || y!==p.y){
+    const nx=x+step1[0], ny=y+step1[1];
+    if(!canStep(x,y,nx,ny)) return false;
+    x=nx; y=ny;
   }
   return true;
 }
 
 function chasePhase(hidden){
   if(S.over) return;
-  S.phase = "persecucion";
+  S.phase="persecucion";
   if(hidden){
-    banner("Escondido detrás de la estatua: no te persigue","#79AE9E");
+    banner("Escondido detrás de la planta: no te persigue","#79AE9E");
     syncUI();
     return setTimeout(actionPhase, 1200);
   }
   banner(`${S.foe.n} te persigue · ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
-  const n = S.foes.length>1 ? 1 : foeSpeed();       // Los Procuradores avanzan 1 cada uno
+  const n = S.foes.length>1 ? 1 : foeSpeed();
   let i=0;
   syncUI();
-  (function paso(){                                 // un casillero por vez, para poder seguirlo
+  (function paso(){
     if(S.over) return;
     if(i++ >= n) return setTimeout(()=>{
       if(S.foe.twist==="linterna" && enLineaRecta()){
@@ -813,16 +786,13 @@ function chasePhase(hidden){
 }
 
 /* ======================= FASE 3 · acción ======================= */
-/* El reglamento: cuando se acaba la pila se mezcla, y a partir de la ronda
-   siguiente sube la alerta. Reponer al principio de la fase da justo eso, y
-   además no se saltea si la ronda anterior terminó en captura. */
 function refillDeck(){
   S.deck = shuffle(DECK.slice());
-  S.played = [];                                    // arranca un ciclo nuevo
+  S.played = [];
   if(S.alert < TUNE.alertMax){
     S.alert++;
-    fx.shake = TUNE.shakeMs;
-    float(S.foes[0].x, S.foes[0].y, "ALERTA "+S.alert, "#E0685D");
+    fx.shake=TUNE.shakeMs;
+    float(S.foes[0].x,S.foes[0].y,"ALERTA "+S.alert,"#E0685D");
     say(`🚨 <b>Alerta ${S.alert}.</b> Se le acabó el mazo: ahora avanza ${foeSpeed()} casilleros.`,"r");
   }
 }
@@ -830,11 +800,9 @@ function refillDeck(){
 function actionPhase(){
   if(S.over) return;
   if(!S.deck.length) refillDeck();
-  const card = S.deck.pop();
+  const card=S.deck.pop();
   S.played.push(card);
-  S.lastCard = card;
-  S.phase = "accion";
-  S.cardPending = true;                             // se muestra antes de ejecutarse
+  S.lastCard=card; S.phase="accion"; S.cardPending=true;
   banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : "#D2A24C");
   say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
   syncUI();
@@ -843,32 +811,28 @@ function actionPhase(){
 
 function applyCard(card){
   if(S.over) return;
-  S.cardPending = false;
-  const f = S.foes[0];
-  const put = (p)=>{ if(p){ f.x=p.x; f.y=p.y; } };
-
+  S.cardPending=false;
+  const f=S.foes[0];
+  const put=p=>{ if(p){ f.x=p.x; f.y=p.y; } };
   switch(card.k){
-    case "desk": {
-      // el Curador va a las vitrinas en vez de a los puestos
+    case "desk":
       if(S.foe.twist==="vitrinas"){
-        const live = S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
+        const live=S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
         put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
-      }else{
-        put(S.marks.comps.find(c=>c.want===card.t));
-      }
-      break; }
+      }else put(S.marks.comps.find(c=>c.want===card.t));
+      break;
     case "bath": put(S.foeBath); break;
     case "exit": put(S.exit);    break;
     case "home": put(S.foeHome); break;
-    case "rush": return rushSteps(S.foes.length>1 ? 1 : foeSpeed());  // dos fichas ya son suficiente castigo
+    case "rush": return rushSteps(S.foes.length>1 ? 1 : foeSpeed());
   }
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
-  if(card.k!=="refill") float(f.x,f.y,"↯","#D2A24C");   // se ve dónde reapareció
+  float(f.x,f.y,"↯","#D2A24C");
   syncUI();
   setTimeout(nextRound, 620);
 }
 
-function rushSteps(n){                              // la carga también, de a un casillero
+function rushSteps(n){
   let i=0;
   (function paso(){
     if(S.over) return;
@@ -882,36 +846,31 @@ function rushSteps(n){                              // la carga también, de a u
 function nextRound(){
   if(S.over) return;
   S.round++;
-  S.mp = TUNE.steps;
-  S.matesTurn = 0; S.drunk.clear();
-  S.diagonal = false; S.busy = false; S.awaitMate = false; S.phase = "vos";
-  if(S.heroKey==="marian") S.peek = S.deck[S.deck.length-1];
+  S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear();
+  S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
+  if(S.heroKey==="marian") S.peek=S.deck[S.deck.length-1];
   syncUI();
 }
 
 /* ======================= captura ======================= */
 function resolveCatch(){
-  fx.shake = TUNE.shakeMs;
-  if(S.hand.length===0){
-    return gameLose(`${S.foe.n} te encontró sin ninguna pieza en la mano. A tu escritorio.`);
-  }
-  if(S.freeCatch){                                   // Cara de piedra (Matxi)
-    S.freeCatch = false;
+  fx.shake=TUNE.shakeMs;
+  if(S.hand.length===0)
+    return gameLose(`${S.foe.n} te encontró sin ninguna pieza en la mano.`);
+  if(S.freeCatch){
+    S.freeCatch=false;
     say("😐 Cara de piedra: zafaste sin entregar nada.","g");
     return resetPositions();
   }
   if(S.hand.length===1) return losePiece(S.hand[0]);
-  askWhichPiece();                                   // el reglamento te deja elegir
+  askWhichPiece();
 }
 
 function losePiece(id){
   S.hand.splice(S.hand.indexOf(id),1);
   S.pile.push(id);
   S.taken++;
-  S.lost.push(id);
   float(S.player.x,S.player.y,"−"+PIE[id].sym,"#E0685D");
-  // se reactiva la vitrina más lejana a tu puesto; el Restaurador, en cambio,
-  // la repone en la que tiene más a mano
   const cerca = S.foe.twist==="reponeCerca";
   const d = bfsFrom(cerca ? {x:S.foes[0].x,y:S.foes[0].y} : S.home);
   let pick=null, best=cerca ? 1e9 : -1;
@@ -920,16 +879,17 @@ function losePiece(id){
     if(!S.grid[v.y][v.x].alarm || dd<0) continue;
     if(cerca ? dd<best : dd>best){ best=dd; pick=v; }
   }
-  if(pick){ S.grid[pick.y][pick.x].alarm = 0; S.grid[pick.y][pick.x].piece = id; }
-  say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a la vitrina más lejana y los dos vuelven a sus puestos.`,"r");
-  if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas. Se terminó.`);
+  if(pick){ S.grid[pick.y][pick.x].alarm=0; S.grid[pick.y][pick.x].piece=id; }
+  say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a su vitrina y los dos vuelven a sus puestos.`,"r");
+  if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas.`);
   resetPositions();
 }
 
 function resetPositions(){
   S.player.x=S.home.x; S.player.y=S.home.y;
-  S.foes.forEach((f,i)=>{ f.x=S.foeHome.x; f.y=S.foeHome.y; });
-  S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear(); S.diagonal=false; S.busy=false; S.awaitMate=false;
+  S.foes.forEach((f,i)=>{ const o=i===0?S.foeHome:S.foeBath; f.x=o.x; f.y=o.y; });
+  S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear();
+  S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
   S.round++;
   syncUI();
 }
@@ -940,54 +900,58 @@ function useObject(i){
   if(i>=S.objects.length || S.objUsed.includes(i)) return;
   const id=S.objects[i];
   S.objUsed.push(i);
-  if(id==="mate1"||id==="mate2"){ S.matesTurn++; S.mp=TUNE.steps; say("🧉 Mate de la mochila: pasos recuperados.","g"); }
+  if(id==="mate1"||id==="mate2"){ S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false; say("🧉 Mate de la mochila: pasos recuperados.","g"); }
   if(id==="fernet"){ S.diagonal=true; say("🥃 Fernet: este turno te movés en diagonal.","y"); }
   if(id==="empa"){ S.player.x=S.bath.x; S.player.y=S.bath.y; say("🥟 Esa empanada estaba dudosa. Al baño.","y"); }
   if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
-                      say("📢 Llamado falso por altavoz: volvió a su oficina.","g"); }
+                      say("📢 Llamado falso: volvió a su oficina.","g"); }
   float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
   if(S.foe.twist==="anota" && S.alert<TUNE.alertMax){
     S.alert++;
-    say(`📋 El Inspector te vio usarlo y lo anotó: <b>alerta ${S.alert}</b>.`,"r");
-    fx.shake = TUNE.shakeMs;
+    say(`📋 El Inspector te vio usarlo: <b>alerta ${S.alert}</b>.`,"r");
+    fx.shake=TUNE.shakeMs;
   }
   syncUI();
 }
 
-/* habilidad de Kzk */
 function fixVitrina(){
-  if(S.heroKey!=="kzk" || S.powerUsed) return;
-  const broken = S.marks.vitrinas.filter(v=>S.grid[v.y][v.x].alarm);
-  if(!broken.length) return;
+  if(!S || S.heroKey!=="kzk" || S.powerUsed) return;
+  const rotas=S.marks.vitrinas.filter(v=>S.grid[v.y][v.x].alarm);
+  if(!rotas.length) return;
   const d=bfsFrom({x:S.player.x,y:S.player.y});
-  broken.sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)]);
-  S.grid[broken[0].y][broken[0].x].alarm=0;
+  rotas.sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)]);
+  const v=rotas[0];
+  S.grid[v.y][v.x].alarm=0;
+  if(S.pile.length) S.grid[v.y][v.x].piece = S.pile[S.pile.length-1];
   S.powerUsed=true;
   say("🔧 Manos de técnico: desactivaste una alarma.","g");
   syncUI();
 }
 
 /* ======================= fin ======================= */
+function salaLabel(s){ return s.num===0 ? "Tutorial" : "Nivel "+s.num; }
+
 function gameWin(){
   S.over="win";
   float(S.exit.x,S.exit.y,"¡AFUERA!","#79AE9E");
-  const next = Object.keys(SALAS)[Object.keys(SALAS).indexOf(S.salaKey)+1];
+  const keys=Object.keys(SALAS), next=keys[keys.indexOf(S.salaKey)+1];
   showModal(`<h2>Se escapó ${S.hero.n}</h2>
     <p class="lead">Tres piezas entregadas y la puerta de emergencia atrás.
-    <b>${S.foe.n}</b> se quedó con la alerta en ${S.alert} y una sala vacía.</p>
-    <div class="rules"><b>Ronda final:</b> ${S.round} · <b>Piezas recuperadas por él:</b> ${S.taken}/3
-    · <b>Sala:</b> ${S.sala.name}</div>
-    ${next?`<button class="btn" onclick="startSala('${next}')">Sala ${SALAS[next].num} · ${SALAS[next].name}</button>`:""}
+    <b>${S.foe.n}</b> se quedó con la alerta en ${S.alert}.</p>
+    <div class="rules"><b>Ronda final:</b> ${S.round} · <b>Piezas que te recuperó:</b> ${S.taken}/3
+    · <b>Sala:</b> ${salaLabel(S.sala)} ${S.sala.name}</div>
+    ${next?`<button class="btn" onclick="startSala('${next}')">${salaLabel(SALAS[next])} · ${SALAS[next].name}</button>`:""}
     <button class="btn alt" onclick="newGame('${S.salaKey}');closeModal()">Repetir</button>
     <button class="btn alt" onclick="menu()">Todas las salas</button>`);
 }
+
 function gameLose(reason){
   S.over="lose"; fx.shake=TUNE.shakeMs*1.7;
   say(`💼 <b>${reason}</b>`,"r");
   showModal(`<h2>Te agarraron</h2>
     <p class="lead">${reason}</p>
-    <div class="rules"><b>Rondas:</b> ${S.round} · <b>Piezas entregadas:</b> ${S.delivered.length}/3
-    · <b>Piezas que te sacó:</b> ${S.taken}/3</div>
+    <div class="rules"><b>Rondas:</b> ${S.round} · <b>Entregadas:</b> ${S.delivered.length}/3
+    · <b>Recuperadas por él:</b> ${S.taken}/3</div>
     <button class="btn" onclick="newGame('${S.salaKey}');closeModal()">Otra vez</button>
     <button class="btn alt" onclick="menu()">Todas las salas</button>`);
 }
@@ -1014,160 +978,74 @@ const rnd=(x,y,n)=>{ const s=Math.sin(x*127.1+y*311.7+n*74.7)*43758.5453; return
 function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g); g.restore(); }
 function atPos(g,fx_,fy_,fn){ g.save(); g.translate(fx_*CS+CS/2, fy_*CS+CS/2+7*U); g.scale(U,U); fn(g); g.restore(); }
 
-/* ---------- piso y paredes ---------- */
+/* ---------- piso, vacío exterior y paredes ---------- */
 function buildFloorLayer(){
   floorLayer=document.createElement("canvas");
   floorLayer.width=W*CS; floorLayer.height=H*CS;
   const g=floorLayer.getContext("2d");
-
   const th=S.th;
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++) drawPiso(g,x,y,th);
-  // la luz que entra: cuanto más "sala de museo", más cenitales y más fuertes
-  for(let y=1;y<H;y+=3) for(let x=1;x<W;x+=4){
-    const cx=x*CS+CS, cy=y*CS+CS, R=CS*th.luzR;
+
+  g.fillStyle=th.void; g.fillRect(0,0,W*CS,H*CS);       // lo que está fuera del tablero
+
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(!S.grid[y][x].play) continue;
+    drawPiso(g,x,y,th);
+  }
+  // luz cenital sobre el centro
+  for(let y=CY0;y<CY0+CH;y+=2) for(let x=CX0;x<CX0+CW;x+=3){
+    const cx=x*CS+CS, cy=y*CS+CS, R=CS*2.1;
     const gr=g.createRadialGradient(cx,cy,4,cx,cy,R);
     gr.addColorStop(0, th.luz + Math.round(th.luzA*255).toString(16).padStart(2,"0"));
     gr.addColorStop(1, th.luz + "00");
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++)
-    if(S.grid[y][x].wall) inCell(g,x,y,gg=>drawWall(gg,x,y));
+  // borde del tablero: sombra hacia afuera
+  g.strokeStyle="#00000055"; g.lineWidth=3;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(!S.grid[y][x].play) continue;
+    for(const [dx,dy] of DIRS){
+      if(playable(x+dx,y+dy)) continue;
+      g.beginPath();
+      if(dx===1){ g.moveTo((x+1)*CS,y*CS); g.lineTo((x+1)*CS,(y+1)*CS); }
+      if(dx===-1){ g.moveTo(x*CS,y*CS); g.lineTo(x*CS,(y+1)*CS); }
+      if(dy===1){ g.moveTo(x*CS,(y+1)*CS); g.lineTo((x+1)*CS,(y+1)*CS); }
+      if(dy===-1){ g.moveTo(x*CS,y*CS); g.lineTo((x+1)*CS,y*CS); }
+      g.stroke();
+    }
+  }
 }
 
-/* ---------- pisos ---------- */
 function drawPiso(g,x,y,th){
   const px=x*CS, py=y*CS;
   g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
   g.fillRect(px,py,CS,CS);
   if(th.patron==="parquet"){
-    for(let i=0;i<4;i++){
+    for(let i=0;i<5;i++){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0e";
-      g.fillRect(px, py+i*(CS/4)+rnd(x,y,i+9)*3, CS, 1.5);
+      g.fillRect(px, py+i*(CS/5)+rnd(x,y,i+9)*3, CS, 1.6);
     }
-  }else if(th.patron==="hormigon"){
-    for(let i=0;i<14;i++){
-      g.fillStyle = rnd(x,y,i)>.5 ? "#00000012" : "#ffffff0a";
-      g.fillRect(px+rnd(x,y,i)*CS, py+rnd(x,y,i+31)*CS, 2.5, 2.5);
-    }
-    if(rnd(x,y,7)>.72){
-      g.strokeStyle="#00000022"; g.lineWidth=1; g.beginPath();
-      g.moveTo(px+rnd(x,y,3)*CS, py); g.lineTo(px+rnd(x,y,4)*CS, py+CS); g.stroke();
-    }
-  }else if(th.patron==="alfombra"){
-    for(let i=0;i<10;i++){
+  }else{
+    for(let i=0;i<12;i++){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000010" : "#ffffff10";
-      g.fillRect(px+rnd(x,y,i)*CS, py+rnd(x,y,i+40)*CS, 2, 2);
-    }
-  }else if(th.patron==="baldosa"){
-    g.strokeStyle="#00000018"; g.lineWidth=1;
-    g.strokeRect(px+CS/2+.5, py+.5, CS/2, CS/2);
-    g.strokeRect(px+.5, py+CS/2+.5, CS/2, CS/2);
-  }else if(th.patron==="piedra"){
-    g.strokeStyle="#00000014"; g.lineWidth=1.4;
-    g.strokeRect(px+2.5, py+2.5, CS-5, CS-5);
-  }else if(th.patron==="marmol"){
-    g.strokeStyle="#ffffff18"; g.lineWidth=1.2;
-    for(let i=0;i<3;i++){
-      g.beginPath();
-      g.moveTo(px+rnd(x,y,i)*CS, py);
-      g.quadraticCurveTo(px+rnd(x,y,i+5)*CS, py+CS/2, px+rnd(x,y,i+11)*CS, py+CS);
-      g.stroke();
+      g.fillRect(px+rnd(x,y,i)*CS, py+rnd(x,y,i+40)*CS, 2.2, 2.2);
     }
   }
   g.strokeStyle=th.junta; g.lineWidth=1; g.strokeRect(px+.5,py+.5,CS,CS);
 }
 
-/* ---------- muebles: cada estética usa los suyos ---------- */
-const MUEBLE = {
-  cuadro(g,x,y){
-    g.fillStyle="#6A6459"; rr(g,3,3,42,42,2); g.fill();
-    g.fillStyle="#79736A"; g.fillRect(3,3,42,6);
-    g.fillStyle="#C0A063"; g.fillRect(9,11,30,26);
-    g.fillStyle=["#7B4A3A","#3B5A76","#5A6B44","#6E4A6B"][(x+y)%4];
-    g.fillRect(12,14,24,20);
-    g.fillStyle="#ffffff20"; g.fillRect(12,14,24,7);
-    g.fillStyle="#00000030"; g.fillRect(12,30,24,4);
-  },
-  cajones(g){
-    g.fillStyle="#9A7647"; rr(g,4,5,40,38,2); g.fill();
-    g.fillStyle="#8A6739"; g.fillRect(4,5,40,7);
-    g.strokeStyle="#6E5129"; g.lineWidth=2;
-    g.beginPath(); g.moveTo(4,24); g.lineTo(44,24);
-    g.moveTo(6,7); g.lineTo(42,41); g.moveTo(42,7); g.lineTo(6,41); g.stroke();
-  },
-  vitrinaAlta(g){
-    g.fillStyle="#4A5260"; rr(g,6,4,36,40,2); g.fill();
-    g.fillStyle="#7E93A4"; g.fillRect(9,8,30,30);
-    g.fillStyle="#ffffff26";
-    g.beginPath(); g.moveTo(11,38); g.lineTo(27,8); g.lineTo(33,8); g.lineTo(17,38); g.fill();
-    g.fillStyle="#333A45"; g.fillRect(6,40,36,4);
-  },
-  estanteria(g){
-    g.fillStyle="#6B655B"; rr(g,4,4,40,40,1); g.fill();
-    for(let i=0;i<3;i++){
-      const yy=8+i*12;
-      g.fillStyle="#4E4941"; g.fillRect(6,yy+8,36,3);
-      for(let k=0;k<5;k++){
-        g.fillStyle=["#8A6A4A","#6E7A8A","#7A5A5A","#6A7A5A"][(k+i)%4];
-        g.fillRect(7+k*7, yy, 5.5, 8);
-      }
-    }
-  },
-  escritorio(g){
-    g.fillStyle="#7A6B58"; rr(g,3,10,42,30,2); g.fill();
-    g.fillStyle="#8A7A66"; g.fillRect(3,10,42,5);
-    g.fillStyle="#2A2E38"; rr(g,15,13,18,12,1); g.fill();
-    g.fillStyle="#46505C"; g.fillRect(17,15,14,8);
-    g.fillStyle="#C9C4B9"; rr(g,15,28,18,4,1); g.fill();
-    g.fillStyle="#5A5248"; g.fillRect(5,32,10,8);
-  },
-  mesa(g){
-    g.fillStyle="#B9B2A2"; rr(g,3,12,42,26,1); g.fill();
-    g.fillStyle="#C6BFAF"; g.fillRect(3,12,42,4);
-    g.fillStyle="#7A7266"; g.fillRect(6,38,5,6); g.fillRect(37,38,5,6);
-    g.fillStyle="#8FA88F"; g.beginPath(); g.arc(14,24,4,0,7); g.fill();
-    g.fillStyle="#C4A46A"; g.beginPath(); g.arc(23,22,3.4,0,7); g.fill();
-    g.fillStyle="#9A9AB4"; g.fillRect(30,19,8,10);
-  },
-  planta(g){
-    g.fillStyle="#8F8578"; rr(g,8,6,32,34,4); g.fill();
-    g.fillStyle="#B9704A"; rr(g,14,26,20,14,3); g.fill();
-    g.fillStyle="#A25F3C"; g.fillRect(14,26,20,4);
-    g.fillStyle="#2F7D4F";
-    [[24,16,11],[16,20,8],[32,20,8],[20,10,7],[29,11,7]].forEach(([cx,cy,r])=>{
-      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
-  },
-  seto(g,x,y){
-    g.fillStyle="#3E6B44"; rr(g,3,6,42,36,6); g.fill();
-    g.fillStyle="#4C7F52";
-    for(let i=0;i<9;i++){
-      const a=rnd(x,y,i), b=rnd(x,y,i+20);
-      g.beginPath(); g.arc(7+a*34, 10+b*28, 5.5, 0, 7); g.fill();
-    }
-    g.fillStyle="#5B4632"; g.fillRect(4,40,40,4);
-  },
-  pedestal(g){
-    g.fillStyle="#B3ABA0"; rr(g,13,18,22,24,1); g.fill();
-    g.fillStyle="#C2BAAF"; g.fillRect(11,16,26,4);
-    g.fillStyle="#C8C1B6"; g.fillRect(13,40,22,4);
-    g.fillStyle="#D6D0C6";
-    g.beginPath(); g.moveTo(18,18); g.lineTo(20,8); g.lineTo(28,8); g.lineTo(30,18); g.fill();
-    g.beginPath(); g.arc(24,6,5.5,0,7); g.fill();
-    g.fillStyle="#B0A99E"; g.beginPath(); g.arc(21,6,2,0,7); g.fill();
-  },
-};
-
-function drawWall(g,x,y){
-  const th=S.th;
-  const border = x===0||y===0||x===W-1||y===H-1;
-  if(border){                                   // muro perimetral de la sala
-    g.fillStyle=th.pared; g.fillRect(0,0,48,48);
-    g.fillStyle=th.paredTop; g.fillRect(0,0,48,6);
-    g.fillStyle="#00000033"; g.fillRect(0,42,48,6);
-    return;
-  }
-  g.fillStyle="#00000038"; rr(g,5,7,40,40,3); g.fill();
-  (MUEBLE[th.muebles[S.grid[y][x].deco]] || MUEBLE.cajones)(g,x,y);
+/* Las paredes van en las aristas. Se dibujan encima de todo lo demás. */
+function drawParedes(){
+  const th=S.th, t=Math.max(5, CS*0.09);
+  ctx.save();
+  ctx.lineCap="round";
+  S.walls.forEach(w=>{
+    const [k,a,b]=w.split(":"), x=+a, y=+b;
+    ctx.fillStyle="#00000040";
+    ctx.fillStyle=th.pared;
+    if(k==="v") ctx.fillRect((x+1)*CS - t/2, y*CS + 2, t, CS - 4);
+    else        ctx.fillRect(x*CS + 2, (y+1)*CS - t/2, CS - 4, t);
+  });
+  ctx.restore();
 }
 
 /* ---------- elementos ---------- */
@@ -1557,8 +1435,8 @@ function frame(now){
     switch(c.type){
       case "vitrina":  inCell(ctx,x,y,g=>drawVitrina(g,c)); break;
       case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
-      case "estatua":  inCell(ctx,x,y,g=>drawEstatua(g)); break;
-      case "mojado":   inCell(ctx,x,y,g=>drawMojado(g)); break;
+      case "planta":   inCell(ctx,x,y,g=>drawEstatua(g)); break;
+      case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
       case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
       case "puesto":   inCell(ctx,x,y,g=>drawPuesto(g,true)); break;
       case "oficina":  inCell(ctx,x,y,g=>drawPuesto(g,false)); break;
@@ -1568,12 +1446,15 @@ function frame(now){
     }
   }
 
+  drawParedes();
+
   const actors = [
     {py:S.player.py, f:()=>atPos(ctx,S.player.px,S.player.py,g=>drawPerson(g,S.hero,S.player.bob))},
     ...S.foes.map(f=>({py:f.py, f:()=>atPos(ctx,f.px,f.py,g=>drawFoe(g,f.bob,S.foe.look))})),
   ].sort((a,b)=>a.py-b.py);
   actors.forEach(a=>a.f());
 
+  if(typeof drawEditorOverlay==="function") drawEditorOverlay();
   drawFloats(dt);
   drawBanner(dt);
   drawVignette();
@@ -1738,22 +1619,17 @@ function syncUI(){
    así nunca puede quedar desincronizada con lo que ves jugando. */
 function buildLegend(){
   const box=$("legend"); if(!box) return;
-  let wallXY=null;
-  for(let y=1;y<H-1&&!wallXY;y++) for(let x=1;x<W-1;x++)
-    if(S.grid[y][x].wall){ wallXY={x,y}; break; }
-
   const items=[
     ["Vitrina",  "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
-    ["Con alarma","Vacía: ya te llevaste la gema",                     g=>drawVitrina(g,{alarm:1,piece:null})],
-    ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",   g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
-    ["Mate",     "Te devuelve los pasos del turno",                    g=>drawMate(g)],
-    ["Estatua",  "Terminá el turno acá y no te persigue",              g=>drawEstatua(g)],
-    ["Piso mojado","Te come un movimiento",                            g=>drawMojado(g)],
-    ["Tu puesto","Tu casilla de inicio. <b>No se toca nada acá</b>",   g=>drawPuesto(g,true)],
-    ["Su oficina","Donde empieza y vuelve él. Tampoco hace nada",      g=>drawPuesto(g,false)],
-    ["Baño",     "El tuyo y el suyo, uno al lado de cada puesto",      g=>drawBanio(g)],
-    ["Salida",   "Se abre con las 3 piezas entregadas",                g=>drawSalida(g,false)],
-    ["Mueble",   "Escenografía: no se cruza y no hace nada",           g=>wallXY&&drawWall(g,wallXY.x,wallXY.y)],
+    ["Con alarma","Vacía: ya te llevaste la gema",                        g=>drawVitrina(g,{alarm:1,piece:null})],
+    ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
+    ["Mate",     "Te devuelve los pasos del turno",                       g=>drawMate(g)],
+    ["Planta",   "Terminá el turno acá y no te persigue",                 g=>drawEstatua(g)],
+    ["Banana",   "Te come un movimiento",                                 g=>drawMojado(g)],
+    ["Tu puesto","Tu casilla de inicio. <b>No se toca nada acá</b>",      g=>drawPuesto(g,true)],
+    ["Su oficina","Donde empieza y vuelve él",                            g=>drawPuesto(g,false)],
+    ["Baño",     "El tuyo y el suyo, al lado de cada puesto",             g=>drawBanio(g)],
+    ["Salida",   "Al norte. Se abre con las 3 piezas entregadas",         g=>drawSalida(g,false)],
   ];
 
   box.innerHTML = items.map((it,i)=>
@@ -1771,17 +1647,19 @@ function setGoal(id,done,val){
 }
 
 /* ==========================================================================
-   INPUT y PANTALLAS
+   INPUT, EDITOR DE PAREDES Y PANTALLAS
    ========================================================================== */
 const KEYS = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
               w:[0,-1],d:[1,0],s:[0,1],a:[-1,0]};
-let walking = false;
+let walking = false, picking = false;
+let editMode = false, hoverEdge = null;
 
 addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
   if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(); } return; }
-  if(k==="Escape"){ menu(); return; }
+  if(k==="Escape"){ if(editMode) return toggleEditor(); menu(); return; }
   if(!S || S.over || S.busy || walking || picking) return;
+  if(editMode) return;
   if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
   if(k===" "){ e.preventDefault(); drinkMate(); return; }
   if(k==="Enter"){ e.preventDefault(); finishRound(); return; }
@@ -1790,26 +1668,62 @@ addEventListener("keydown", e=>{
   if(/^[123]$/.test(k)) useObject(+k-1);
 });
 
-function cellFromEvent(e){
+function canvasPos(e){
   const r=cv.getBoundingClientRect();
-  const x=Math.floor((e.clientX-r.left)/(r.width /W));
-  const y=Math.floor((e.clientY-r.top )/(r.height/H));
+  return { px:(e.clientX-r.left)*(cv.width/r.width),
+           py:(e.clientY-r.top )*(cv.height/r.height) };
+}
+function cellFromEvent(e){
+  const {px,py}=canvasPos(e);
+  const x=Math.floor(px/CS), y=Math.floor(py/CS);
   return inside(x,y) ? {x,y} : null;
 }
-cv.addEventListener("mousemove", e=>{ mouseCell=cellFromEvent(e); });
-cv.addEventListener("mouseleave", ()=>{ mouseCell=null; });
+
+/* ---------- qué arista tocaste ---------- */
+function edgeFromEvent(e){
+  const {px,py}=canvasPos(e);
+  const x=Math.floor(px/CS), y=Math.floor(py/CS);
+  if(!inside(x,y)) return null;
+  const lx=px-x*CS, ly=py-y*CS;
+  const cands=[
+    {d:lx,      n:{x:x-1,y}},
+    {d:CS-lx,   n:{x:x+1,y}},
+    {d:ly,      n:{x,y:y-1}},
+    {d:CS-ly,   n:{x,y:y+1}},
+  ].sort((a,b)=>a.d-b.d);
+  const best=cands[0];
+  if(best.d > CS*0.30) return null;
+  if(!playable(x,y) || !playable(best.n.x,best.n.y)) return null;
+  return { a:{x,y}, b:best.n, k:edgeKey({x,y}, best.n) };
+}
+
+cv.addEventListener("mousemove", e=>{
+  if(editMode){ hoverEdge = edgeFromEvent(e); mouseCell=null; }
+  else { mouseCell = cellFromEvent(e); hoverEdge=null; }
+});
+cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; });
 
 cv.addEventListener("click", e=>{
-  if(!S||S.over||S.busy||walking||picking) return;
+  if(!S) return;
+  if(editMode){
+    const ed=edgeFromEvent(e);
+    if(!ed) return;
+    if(S.walls.has(ed.k)) S.walls.delete(ed.k); else S.walls.add(ed.k);
+    saveWalls(S.salaKey, [...S.walls]);
+    syncEditor();
+    return;
+  }
+  if(S.over||S.busy||walking||picking) return;
   if(S.mp<=0 && !S.awaitMate) return;
   const t=cellFromEvent(e); if(!t) return;
-  if(t.x===S.player.x && t.y===S.player.y){ return canDrinkHere() ? drinkMate() : finishRound(); }
+  if(t.x===S.player.x && t.y===S.player.y)
+    return canDrinkHere() ? drinkMate() : finishRound();
   const path=pathTo(t,S.mp); if(!path) return;
   walkPath(path);
 });
 
 function pathTo(target,maxSteps){
-  if(isWall(target.x,target.y)) return null;
+  if(!playable(target.x,target.y)) return null;
   const dirs = S.diagonal ? DIRS.concat(DIAGS) : DIRS;
   const prev=new Map(), seen=new Set([key(S.player.x,S.player.y)]);
   let frontier=[{x:S.player.x,y:S.player.y}];
@@ -1817,7 +1731,7 @@ function pathTo(target,maxSteps){
     const next=[];
     for(const c of frontier) for(const [dx,dy] of dirs){
       const nx=c.x+dx, ny=c.y+dy, kk=key(nx,ny);
-      if(isWall(nx,ny)||seen.has(kk)) continue;
+      if(!canStep(c.x,c.y,nx,ny) || seen.has(kk)) continue;
       seen.add(kk); prev.set(kk,{from:c,d:[dx,dy]}); next.push({x:nx,y:ny});
     }
     frontier=next;
@@ -1841,8 +1755,63 @@ function walkPath(path){
   })();
 }
 
+/* ==========================================================================
+   EDITOR · dibujá las paredes exactas del manual haciendo clic en los bordes
+   ========================================================================== */
+function toggleEditor(){
+  editMode=!editMode;
+  hoverEdge=null;
+  document.body.classList.toggle("editing", editMode);
+  syncEditor();
+}
+
+function syncEditor(){
+  const bar=$("editbar"); if(!bar) return;
+  bar.className = editMode ? "editbar on" : "editbar";
+  $("editbtn").textContent = editMode ? "Salir del editor" : "Editor de paredes";
+  if(!editMode || !S) return;
+  $("editcount").textContent = S.walls.size + (S.walls.size===1?" pared":" paredes");
+  $("editcode").value = JSON.stringify([...S.walls]);
+}
+
+function clearWalls(){
+  if(!S) return;
+  S.walls.clear();
+  saveWalls(S.salaKey, []);
+  syncEditor();
+}
+
+function copyWalls(){
+  const t=$("editcode");
+  t.select(); t.setSelectionRange(0, 99999);
+  try{ document.execCommand("copy"); $("editmsg").textContent="Copiado. Pasámelo y lo dejo fijo en el juego."; }
+  catch(e){ $("editmsg").textContent="Copialo a mano del cuadro de texto."; }
+  setTimeout(()=>{ $("editmsg").textContent=""; }, 4000);
+}
+
+/* dibujo del editor, llamado desde el bucle de render */
+function drawEditorOverlay(){
+  if(!editMode) return;
+  // resaltar todas las aristas donde se puede poner pared
+  ctx.save();
+  ctx.strokeStyle="#D2A24C33"; ctx.lineWidth=1.5; ctx.setLineDash([3,4]);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(!playable(x,y)) continue;
+    if(playable(x+1,y)){ ctx.beginPath(); ctx.moveTo((x+1)*CS,y*CS+4); ctx.lineTo((x+1)*CS,(y+1)*CS-4); ctx.stroke(); }
+    if(playable(x,y+1)){ ctx.beginPath(); ctx.moveTo(x*CS+4,(y+1)*CS); ctx.lineTo((x+1)*CS-4,(y+1)*CS); ctx.stroke(); }
+  }
+  ctx.setLineDash([]);
+  if(hoverEdge){
+    const [k,a,b]=hoverEdge.k.split(":"), x=+a, y=+b;
+    const t=Math.max(6, CS*0.10);
+    ctx.fillStyle = S.walls.has(hoverEdge.k) ? "#E0685DCC" : "#D2A24CCC";
+    if(k==="v") ctx.fillRect((x+1)*CS-t/2, y*CS+2, t, CS-4);
+    else        ctx.fillRect(x*CS+2, (y+1)*CS-t/2, CS-4, t);
+  }
+  ctx.restore();
+}
+
 /* ---------- elegir qué pieza te saca ---------- */
-let picking = false;
 function askWhichPiece(){
   picking = true;
   const opts = S.hand.map(id=>{
@@ -1852,25 +1821,17 @@ function askWhichPiece(){
   }).join("");
   showModal(`<h2>Te agarró con las manos llenas</h2>
     <p class="lead"><b>${S.foe.n}</b> te revisa la mochila y se lleva <b>una</b> pieza.
-    Elegí cuál devolvés: vuelve boca abajo y se reactiva la vitrina más lejana a tu puesto.</p>
-    ${opts}
-    <div class="rules">Llevás <b>${S.taken}/3</b> piezas recuperadas por él. A la tercera, se termina.</div>`);
+    Elegí cuál devolvés.</p>${opts}
+    <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`);
 }
 function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
 
-/* Modo memoria: el reglamento pide no mirar la pila de descarte y acordarse
-   de qué salió. Se puede jugar así tapando las acciones ya usadas. */
-function toggleMemoria(){
-  const on = document.body.classList.toggle("memoria");
-  document.getElementById("memtoggle").textContent = on ? "Ver la pila" : "Modo memoria";
-}
-
-/* ---------- menú ---------- */
+/* ---------- pantallas ---------- */
 function showModal(html){
   $("modal").innerHTML=html;
   $("overlay").classList.remove("off");
-  $("modal").scrollTop = 0;
-  document.body.classList.add("locked");     // que no scrollee la página de atrás
+  $("modal").scrollTop=0;
+  document.body.classList.add("locked");
 }
 function closeModal(){
   $("overlay").classList.add("off");
@@ -1884,8 +1845,8 @@ function menu(){
   const body = Object.entries(wings).map(([wing,list])=>`
     <div class="wing">${wing}</div>
     <div class="lvls">${list.map(([k,v])=>`
-      <button class="lv" onclick="startSala('${k}')" title="${v.place}">
-        <span class="num">${v.num}</span>
+      <button class="lv" onclick="startSala('${k}')" title="${v.name}">
+        <span class="num">${v.num===0?"·":v.num}</span>
         <span><b>${v.name}</b>
           <small><b style="color:var(--body)">${CREW[v.hero].n}</b>
             <span class="foe">vs ${FOES[v.foe].n}</span></small></span>
@@ -1899,15 +1860,14 @@ function menu(){
       <b>Cada ronda son tres fases:</b> movés <b>dos casilleros exactos</b> (podés volver
       sobre tus pasos), después te persigue, y después se da vuelta una de sus nueve acciones.<br>
       <b>Todo se activa al pasar por encima</b> — vitrinas, cómplices y mates. La única que
-      exige terminar el turno ahí es la <b>estatua</b>, que te esconde de la persecución.<br>
-      <b>El mate</b> te devuelve los pasos que ya diste en el turno. Tres en el mismo turno y
-      terminás en el baño.<br>
-      <b>Ojo con el circuito:</b> la <b>vitrina</b> te da una <b>pieza</b>; el <b>objeto</b> te lo
-      da el <b>cómplice</b> cuando le llevás la pieza de su color. No hay que apretar nada:
-      alcanza con pasarles por encima.<br>
-      <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.
-      Las piezas en la mano son tu escudo.<br>
-      <span style="color:var(--brass)">Cada sala tiene su protagonista, su antagonista y su propia estética.</span>
+      exige terminar el turno ahí es la <b>planta</b>, que te esconde de la persecución.<br>
+      <b>El mate</b> te devuelve los pasos que ya diste en el turno.<br>
+      <b>El circuito:</b> la <b>vitrina</b> te da una <b>pieza</b>; el <b>objeto</b> te lo da el
+      <b>cómplice</b> cuando le llevás la pieza de su color.<br>
+      <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.<br>
+      <span style="color:var(--brass)">El tablero es el del manual: centro de 6×4 con las 6
+      losetas, y el marco fijo con las dos oficinas, sus baños y la salida al norte. Las paredes
+      las podés corregir vos con el <b>editor</b>.</span>
     </details>`);
 }
 
