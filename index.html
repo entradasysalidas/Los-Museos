@@ -1133,19 +1133,6 @@ function buildFloorLayer(){
     gr.addColorStop(1, th.luz + "00");
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
-  // macetas decorativas en el vacío de alrededor: dan verde sin confundirse
-  // con las plantas del tablero, que sí son escondite
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    if(S.grid[y][x].play) continue;
-    const pegado = DIRS.some(([dx,dy])=>playable(x+dx,y+dy));
-    if(rnd(x,y,(S.sala.num||0)+3) < (pegado ? .45 : .82)) continue;
-    g.save(); g.translate(x*CS, y*CS); g.scale(CS/48, CS/48);
-    g.globalAlpha = pegado ? .9 : .55;
-    MACETA(g, x, y);
-    g.globalAlpha = 1;
-    g.restore();
-  }
-
   // borde del tablero: sombra hacia afuera
   g.strokeStyle="#00000055"; g.lineWidth=3;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
@@ -1160,21 +1147,6 @@ function buildFloorLayer(){
       g.stroke();
     }
   }
-}
-
-/* Maceta decorativa: no se pisa, no esconde, solo da verde alrededor. */
-function MACETA(g,x,y){
-  const s = .55 + rnd(x,y,4)*.35;
-  g.translate(24,30); g.scale(s,s); g.translate(-24,-30);
-  g.fillStyle="#00000035"; g.beginPath(); g.ellipse(24,42,13,4,0,0,7); g.fill();
-  g.fillStyle="#8A5A3C"; rr(g,15,28,18,14,2); g.fill();
-  g.fillStyle="#9B6845"; g.fillRect(14,26,20,4);
-  const verde=["#2F7D4F","#3B8F5C","#276943"][(x+y)%3];
-  g.fillStyle=verde;
-  [[24,16,10],[16,21,7],[32,21,7],[20,10,6],[29,11,6]].forEach(([cx,cy,r])=>{
-    g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
-  g.fillStyle="#ffffff18";
-  g.beginPath(); g.arc(20,13,4,0,7); g.fill();
 }
 
 function drawPiso(g,x,y,th){
