@@ -495,7 +495,7 @@ function parseMap(rows){
     grid.push([]);
     for(let x=0;x<W;x++){
       const ch=rows[y][x];
-      const c={wall:ch==="#", type:null, deco:(x*7+y*13)%3, alarm:0, want:null};
+      const c={wall:ch==="#", type:null, deco:(x*7+y*13)%3, alarm:0, want:null, piece:null};
       if(ch==="V"){ c.type="vitrina"; marks.vitrinas.push({x,y}); }
       if(ch==="M"){ c.type="mate";    marks.mates.push({x,y}); }
       if(ch==="T"){ c.type="estatua"; }
@@ -520,8 +520,9 @@ function newGame(salaKey){
   const p = parseMap(sala.map);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
 
-  // las 3 piezas van boca abajo; cada vitrina revela la siguiente
+  // cada gema queda repartida en una vitrina, a la vista tras el cristal
   const pile = shuffle(PIECES.map(o=>o.id));
+  p.marks.vitrinas.forEach((v,i)=>{ p.grid[v.y][v.x].piece = pile[i]; });
   // 3 objetos de los 5, uno debajo de cada pieza
   const objs = shuffle(Object.keys(OBJECTS)).slice(0,3);
   const under = {}; pile.forEach((id,i)=>under[id]=objs[i]);
@@ -546,7 +547,11 @@ function newGame(salaKey){
   };
 
   // habilidades que actúan en la preparación
-  if(sala.hero==="damian" && S.pile.length){ takePiece(true); }
+  if(sala.hero==="damian"){
+    const d = bfsFrom(S.home);
+    const v = S.marks.vitrinas.slice().sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)])[0];
+    if(v) takePiece(S.grid[v.y][v.x], true);
+  }
   if(sala.hero==="chupa"){ const extra=shuffle(Object.keys(OBJECTS))[0]; S.objects.push(extra); }
   if(sala.hero==="matxi") S.freeCatch = true;
 
@@ -638,9 +643,8 @@ function finishRound(){                                 // Enter: cerrar la rond
 /* activación al pasar por encima */
 function passThrough(x,y){
   const c=S.grid[y][x];
-  if(c.type==="vitrina" && !c.alarm && S.pile.length){
-    takePiece();
-    c.alarm = 1;
+  if(c.type==="vitrina" && !c.alarm && c.piece){
+    takePiece(c);
     return;
   }
   if(c.type==="complice"){
@@ -666,8 +670,12 @@ function passThrough(x,y){
   if(c.type==="salida" && S.delivered.length>=3) return gameWin();
 }
 
-function takePiece(silent){
-  const id = S.pile.pop();
+function takePiece(cell, silent){
+  const id = cell.piece;
+  if(!id) return null;
+  cell.piece = null;
+  cell.alarm = 1;
+  const i = S.pile.indexOf(id); if(i>=0) S.pile.splice(i,1);
   S.hand.push(id);
   if(!silent){
     float(S.player.x,S.player.y, "PIEZA "+PIE[id].sym, PIE[id].color);
@@ -903,7 +911,7 @@ function losePiece(id){
     if(!S.grid[v.y][v.x].alarm || dd<0) continue;
     if(cerca ? dd<best : dd>best){ best=dd; pick=v; }
   }
-  if(pick) S.grid[pick.y][pick.x].alarm = 0;
+  if(pick){ S.grid[pick.y][pick.x].alarm = 0; S.grid[pick.y][pick.x].piece = id; }
   say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a la vitrina más lejana y los dos vuelven a sus puestos.`,"r");
   if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas. Se terminó.`);
   resetPositions();
@@ -1164,13 +1172,38 @@ function drawVitrina(g,c){
   g.strokeRect(11,8,26,23);
   g.fillStyle="#ffffff22";
   g.beginPath(); g.moveTo(13,31); g.lineTo(26,8); g.lineTo(31,8); g.lineTo(18,31); g.fill();
-  if(on){                                                    // la pieza adentro
-    g.fillStyle="#D2A24C"; g.beginPath(); g.arc(24,22,5,0,7); g.fill();
-    g.fillStyle="#EBC77E"; g.beginPath(); g.arc(22.5,20.5,2,0,7); g.fill();
-  }
+  if(on && c.piece) drawGema(g, c.piece, 24, 21, 1);          // la gema, a la vista
   g.fillStyle = on ? "#79AE9E" : "#E0685D";                   // luz de alarma
   g.beginPath(); g.arc(35,34,2.4,0,7); g.fill();
   if(!on){ g.fillStyle="#E0685D33"; g.beginPath(); g.arc(35,34,6,0,7); g.fill(); }
+}
+
+/* Gema tallada: cada pieza tiene su forma y su color, para reconocerla de lejos.
+   Se dibuja la cara principal, una faceta clara arriba y una oscura abajo. */
+function drawGema(g, id, cx, cy, s){
+  const p = PIE[id];
+  g.save(); g.translate(cx,cy); g.scale(s,s);
+  g.fillStyle="#00000033"; g.beginPath(); g.ellipse(0,8,7,2.6,0,0,7); g.fill();
+
+  const cara = (col)=>{ g.fillStyle=col; g.beginPath(); return g; };
+  if(id==="rombo"){
+    cara(p.color); g.moveTo(0,-8); g.lineTo(7,0); g.lineTo(0,8); g.lineTo(-7,0); g.closePath(); g.fill();
+    g.fillStyle="#FFFFFF66"; g.beginPath();
+    g.moveTo(0,-8); g.lineTo(7,0); g.lineTo(0,0); g.closePath(); g.fill();
+    g.fillStyle="#00000038"; g.beginPath();
+    g.moveTo(0,8); g.lineTo(-7,0); g.lineTo(0,0); g.closePath(); g.fill();
+  }else if(id==="triangulo"){
+    cara(p.color); g.moveTo(0,-8); g.lineTo(8,7); g.lineTo(-8,7); g.closePath(); g.fill();
+    g.fillStyle="#FFFFFF66"; g.beginPath();
+    g.moveTo(0,-8); g.lineTo(8,7); g.lineTo(0,7); g.closePath(); g.fill();
+    g.fillStyle="#00000030"; g.fillRect(-8,5,16,2);
+  }else{
+    cara(p.color); g.arc(0,0,7.5,0,7); g.fill();
+    g.fillStyle="#FFFFFF55"; g.beginPath(); g.arc(0,0,7.5,Math.PI,Math.PI*1.6); g.fill();
+    g.fillStyle="#00000030"; g.beginPath(); g.arc(0,0,7.5,0,Math.PI*.6); g.fill();
+  }
+  g.fillStyle="#FFFFFFAA"; g.beginPath(); g.arc(-2.4,-3,1.5,0,7); g.fill();  // brillo
+  g.restore();
 }
 
 function drawMate(g){
@@ -1653,8 +1686,9 @@ function syncUI(){
               <div class="ic" style="color:${p.color}">${p.sym}</div>
               <div class="nm" style="color:${p.color}">${p.name}</div>
               <div class="st">en mano</div></div>`;
-    return `<div class="slot hidden-piece"><div class="ic">▨</div><div class="nm">Sin abrir</div>
-            <div class="st">en vitrina</div></div>`;
+    return `<div class="slot hidden-piece">
+            <div class="ic" style="color:${p.color};opacity:.55">${p.sym}</div>
+            <div class="nm">${p.name}</div><div class="st">en vitrina</div></div>`;
   }).join("");
 
   $("objn").textContent = `${S.objects.length-S.objUsed.length} sin usar`;
@@ -1699,8 +1733,8 @@ function buildLegend(){
     if(S.grid[y][x].wall){ wallXY={x,y}; break; }
 
   const items=[
-    ["Vitrina",  "Luz <b>verde</b>: pasá por encima y sacás una <b>pieza</b>", g=>drawVitrina(g,{alarm:0})],
-    ["Con alarma","Luz <b>roja</b>: ya la usaste, no sirve más",        g=>drawVitrina(g,{alarm:1})],
+    ["Vitrina",  "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
+    ["Con alarma","Vacía: ya te llevaste la gema",                     g=>drawVitrina(g,{alarm:1,piece:null})],
     ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",   g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
     ["Mate",     "Te devuelve los pasos del turno",                    g=>drawMate(g)],
     ["Estatua",  "Terminá el turno acá y no te persigue",              g=>drawEstatua(g)],
