@@ -420,19 +420,22 @@ function allOf(role){
    Las del marco (las que tocan una casilla de afuera del 6x4) son fijas para
    todos los niveles, igual que los roles del marco. Las de adentro son de
    cada nivel.                                                              */
-const FRAME_WALLS = ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"];
+const FRAME_WALLS = {
+  gris  : ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
+  madera: ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
+};
 function esParedDeMarco(k){
   const [t,a,b]=k.split(":"); const x=+a, y=+b;
   const c1={x,y}, c2 = (t==="v") ? {x:x+1,y} : {x,y:y+1};
   const enCore = c => c.x>=CX0 && c.x<CX0+CW && c.y>=CY0 && c.y<CY0+CH;
   return !(enCore(c1) && enCore(c2));
 }
-function framWallsKey(){ return "museos.framewalls"; }
-function loadFrameWalls(){
-  try{ const r=localStorage.getItem(framWallsKey()); return r ? JSON.parse(r) : null; }
+function framWallsKey(piso){ return "museos.framewalls."+piso; }
+function loadFrameWalls(piso){
+  try{ const r=localStorage.getItem(framWallsKey(piso)); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
 }
-function saveFrameWalls(a){ try{ localStorage.setItem(framWallsKey(), JSON.stringify(a)); }catch(e){} }
+function saveFrameWalls(piso,a){ try{ localStorage.setItem(framWallsKey(piso), JSON.stringify(a)); }catch(e){} }
 const edgeKey = (a,b) => (a.x===b.x)
   ? "h:"+a.x+":"+Math.min(a.y,b.y)
   : "v:"+Math.min(a.x,b.x)+":"+a.y;
@@ -634,7 +637,7 @@ function newGame(salaKey){
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
-  const delMarco = loadFrameWalls() || FRAME_WALLS;
+  const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || [];
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
 
@@ -2015,10 +2018,11 @@ cv.addEventListener("click", e=>{
       const quitar = S.walls.has(ed.k);
       if(quitar) S.walls.delete(ed.k); else S.walls.add(ed.k);
       if(esParedDeMarco(ed.k)){
-        const base = new Set(loadFrameWalls() || FRAME_WALLS);
+        const piso = S.sala.piso;
+        const base = new Set(loadFrameWalls(piso) || FRAME_WALLS[piso] || []);
         if(quitar) base.delete(ed.k); else base.add(ed.k);
-        saveFrameWalls([...base]);
-        $("editmsg").textContent = "Pared del marco: vale para los diez niveles.";
+        saveFrameWalls(piso, [...base]);
+        $("editmsg").textContent = "Pared del marco: vale para todas las salas de piso " + piso + ".";
       }else{
         saveWalls(S.salaKey, [...S.walls].filter(w=>!esParedDeMarco(w)));
         $("editmsg").textContent = quitar ? "Pared sacada." : "Pared puesta.";
@@ -2118,7 +2122,7 @@ function syncEditor(){
     "paredes: " + JSON.stringify(wAll.filter(w=>!esParedDeMarco(w))) + "\n" +
     "objetos: " + JSON.stringify(S.sala.e) + "\n" +
     "marco:   " + JSON.stringify(FRAME_MAP) + "\n" +
-    "paredes del marco: " + JSON.stringify(wAll.filter(esParedDeMarco));
+    "paredes del marco (" + S.sala.piso + "): " + JSON.stringify(wAll.filter(esParedDeMarco));
 }
 
 function clearWalls(){
