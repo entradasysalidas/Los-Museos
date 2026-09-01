@@ -387,7 +387,23 @@ function allOf(role){
   return out.length ? out : [firstOf(role)];
 }
 
-/* --- aristas: "v" corta entre (x,y) y (x+1,y); "h" entre (x,y) y (x,y+1) --- */
+/* --- aristas: "v" corta entre (x,y) y (x+1,y); "h" entre (x,y) y (x,y+1) ---
+   Las del marco (las que tocan una casilla de afuera del 6x4) son fijas para
+   todos los niveles, igual que los roles del marco. Las de adentro son de
+   cada nivel.                                                              */
+const FRAME_WALLS = ["v:2:0","v:3:0","h:5:1","h:4:1","v:3:7"];
+function esParedDeMarco(k){
+  const [t,a,b]=k.split(":"); const x=+a, y=+b;
+  const c1={x,y}, c2 = (t==="v") ? {x:x+1,y} : {x,y:y+1};
+  const enCore = c => c.x>=CX0 && c.x<CX0+CW && c.y>=CY0 && c.y<CY0+CH;
+  return !(enCore(c1) && enCore(c2));
+}
+function framWallsKey(){ return "museos.framewalls"; }
+function loadFrameWalls(){
+  try{ const r=localStorage.getItem(framWallsKey()); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function saveFrameWalls(a){ try{ localStorage.setItem(framWallsKey(), JSON.stringify(a)); }catch(e){} }
 const edgeKey = (a,b) => (a.x===b.x)
   ? "h:"+a.x+":"+Math.min(a.y,b.y)
   : "v:"+Math.min(a.x,b.x)+":"+a.y;
@@ -588,7 +604,9 @@ function newGame(salaKey){
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
-  const walls = new Set(loadWalls(salaKey) || sala.w);
+  const delMarco = loadFrameWalls() || FRAME_WALLS;
+  const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
+  const walls = new Set([...delMarco, ...delNivel]);
 
   const pile = shuffle(PIECES.map(o=>o.id));
   b.marks.vitrinas.forEach((v,i)=>{ b.grid[v.y][v.x].piece = pile[i]; });
@@ -1901,8 +1919,17 @@ cv.addEventListener("click", e=>{
     if(t.zona==="arista"){
       const ed=edgeFromEvent(e);
       if(!ed){ $("editmsg").textContent="Con la Pared, hacé clic justo en el borde entre dos casillas."; return; }
-      if(S.walls.has(ed.k)) S.walls.delete(ed.k); else S.walls.add(ed.k);
-      saveWalls(S.salaKey, [...S.walls]);
+      const quitar = S.walls.has(ed.k);
+      if(quitar) S.walls.delete(ed.k); else S.walls.add(ed.k);
+      if(esParedDeMarco(ed.k)){
+        const base = new Set(loadFrameWalls() || FRAME_WALLS);
+        if(quitar) base.delete(ed.k); else base.add(ed.k);
+        saveFrameWalls([...base]);
+        $("editmsg").textContent = "Pared del marco: vale para los diez niveles.";
+      }else{
+        saveWalls(S.salaKey, [...S.walls].filter(w=>!esParedDeMarco(w)));
+        $("editmsg").textContent = quitar ? "Pared sacada." : "Pared puesta.";
+      }
       syncEditor();
       return;
     }
@@ -1989,10 +2016,12 @@ function syncEditor(){
   $("editwarn").innerHTML = mal.length
     ? "\u26A0 Sin salida: " + mal.map(m=>m.q + (m.dentro ? " en ("+m.cx+","+m.cy+")" : "")).join(" \u00B7 ")
     : "";
+  const wAll=[...S.walls];
   $("editcode").value =
-    "paredes: " + JSON.stringify([...S.walls]) + "\n" +
+    "paredes: " + JSON.stringify(wAll.filter(w=>!esParedDeMarco(w))) + "\n" +
     "objetos: " + JSON.stringify(S.sala.e) + "\n" +
-    "marco:   " + JSON.stringify(FRAME_MAP);
+    "marco:   " + JSON.stringify(FRAME_MAP) + "\n" +
+    "paredes del marco: " + JSON.stringify(wAll.filter(esParedDeMarco));
 }
 
 function clearWalls(){
@@ -2009,7 +2038,6 @@ function resetNivel(){
   try{
     localStorage.removeItem(elemsStoreKey(k));
     localStorage.removeItem(wallsStoreKey(k));
-    localStorage.removeItem(frameStoreKey());
   }catch(e){}
   newGame(k);
   $("editmsg").textContent="Nivel restaurado.";
