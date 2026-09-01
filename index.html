@@ -4,319 +4,326 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Los Museos</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+  /* ---------- paleta: oscura por defecto, clara en las salas de piso gris --- */
   :root{
-    --bg:#101216; --panel:#191C23; --panel2:#212530; --sunk:#0C0E12;
-    --line:#2C313C; --hair:#3A404E;
-    --ink:#EAE8E2; --body:#C3C6CE; --dim:#8A8F9C;
-    --brass:#D2A24C; --brass-dim:#8A6B31;
-    --alarm:#E0685D; --patina:#79AE9E;
-    --rombo:#3F7FD6; --triangulo:#D4534A; --circulo:#E09A3C;
+    --bg:#0E1014; --panel:#171A21; --panel2:#1F232C; --sunk:#0A0C10;
+    --line:#2A2F3A; --hair:#39404E;
+    --ink:#F2F1ED; --body:#C8CBD3; --dim:#8B909C;
+    --brass:#D9A94F; --brass-dim:#8A6B31; --brass-soft:#241C0C;
+    --alarm:#E86B5E; --patina:#7FB6A4;
+    --shadow:0 18px 44px #000a;
   }
+  body.claro{
+    --bg:#E9E8E3; --panel:#F7F6F3; --panel2:#EDEBE6; --sunk:#DFDDD6;
+    --line:#CFCCC4; --hair:#B8B4AA;
+    --ink:#191B20; --body:#3C4048; --dim:#6E727C;
+    --brass:#8A6420; --brass-dim:#B99552; --brass-soft:#F2EADA;
+    --alarm:#B03A2E; --patina:#3E7A66;
+    --shadow:0 16px 36px #0002;
+  }
+
   *{box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}          /* nada de scroll: todo entra */
   body{margin:0;background:var(--bg);color:var(--body);
-    font:15px/1.55 "Archivo","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  #app{max-width:1220px;margin:0 auto;padding:16px 18px 40px}
+    font:16px/1.5 "Archivo","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    transition:background .3s}
 
-  header{display:flex;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap}
-  .logo{font:400 34px/1 "Bodoni Moda",Didot,Georgia,serif;color:var(--ink);letter-spacing:-.01em}
+  #app{height:100%;max-width:1280px;margin:0 auto;padding:12px 16px 14px;
+    display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px}
+
+  /* ---------- cabecera ---------- */
+  header{display:flex;align-items:center;gap:16px;min-width:0}
+  .logo{font:400 26px/1 "Bodoni Moda",Didot,Georgia,serif;color:var(--ink);
+    letter-spacing:-.01em;white-space:nowrap}
   .logo b{color:var(--brass);font-weight:400}
-  .sub{font:500 10px/1.6 "IBM Plex Mono",monospace;letter-spacing:.2em;
-    text-transform:uppercase;color:var(--dim);padding-bottom:4px}
-  .hchips{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;padding-bottom:2px}
-  .chip{background:var(--panel2);border:1px solid var(--line);padding:5px 12px;
-    font:500 11px/1.4 "IBM Plex Mono",monospace;color:var(--dim);white-space:nowrap}
-  .chip b{color:var(--ink);font-weight:500}
+  .salaname{min-width:0;flex:1}
+  .salaname .kicker{font:500 10.5px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--brass)}
+  .salaname h1{margin:3px 0 0;font:400 27px/1.05 "Bodoni Moda",Georgia,serif;
+    color:var(--ink);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .hbtn{background:var(--panel2);border:1px solid var(--line);color:var(--body);
+    font:600 14px/1 "Archivo",sans-serif;padding:11px 16px;cursor:pointer;white-space:nowrap}
+  .hbtn:hover{border-color:var(--brass);color:var(--brass)}
+  .hbtn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
-  #stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
-  /* 660 del lienzo + 2×10 de padding: fijo, para que el panel lateral no se caiga abajo */
-  #leftcol{flex:0 1 auto;width:566px;max-width:100%;min-width:0}
+  /* ---------- escenario ---------- */
+  #stage{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px;min-height:0}
+  @media(max-width:1040px){ #stage{grid-template-columns:minmax(0,1fr) 300px} }
+
   #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
-    box-shadow:0 18px 44px #0009}
-  canvas{display:block;max-width:100%;height:auto;background:#20242C;cursor:pointer}
+    box-shadow:var(--shadow);display:grid;place-items:center;min-height:0;min-width:0}
+  canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+    background:#20242C;cursor:pointer}
 
-  /* ---- bandeja del jugador ---- */
-  #tray{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-  .traybox{flex:1;min-width:250px;background:var(--sunk);border:1px solid var(--line);padding:9px 11px}
-  .traybox h4{margin:0 0 8px;font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
-  .slots{display:flex;gap:7px}
-  .slot{flex:1;min-height:66px;padding:7px 5px;text-align:center;border:1px dashed var(--hair);
-    background:var(--panel);display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:3px;transition:.16s}
-  .slot .ic{font-size:19px;line-height:1}
-  .slot .nm{font:600 10.5px/1.25 "Archivo",sans-serif}
-  .slot .st{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
+  aside{display:flex;flex-direction:column;gap:10px;min-height:0}
+
+  .card{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
+  .card h3{margin:0 0 10px;font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
     text-transform:uppercase;color:var(--dim)}
-  .slot.hidden-piece .nm{color:var(--dim)}
-  .slot.hand{border:1px solid;animation:pop .3s ease-out}
-  .slot.done{border:1px solid var(--patina);background:#13251F}
+
+  /* ---------- quién sos ---------- */
+  .yo{display:flex;align-items:center;gap:11px}
+  .yo canvas{width:44px;height:44px;flex:none;background:transparent;border:0}
+  .yo .n{font:700 17px/1.1 "Archivo",sans-serif;color:var(--ink)}
+  .yo .p{font-size:12.5px;color:var(--dim);line-height:1.35;margin-top:2px}
+  .yo .p b{color:var(--brass);font-weight:600}
+
+  /* ---------- el antagonista ---------- */
+  #foecard{border-left:3px solid var(--alarm)}
+  .foename{font:700 19px/1.15 "Archivo",sans-serif;color:var(--ink)}
+  .foewhy{font-size:12.5px;color:var(--dim);line-height:1.4;margin-top:3px}
+  .foestats{display:flex;gap:10px;margin-top:12px;align-items:stretch}
+  .stat{flex:1;background:var(--panel2);border:1px solid var(--line);padding:9px 11px}
+  .stat .lbl{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .stat .val{font:700 22px/1.1 "Archivo",sans-serif;color:var(--ink);margin-top:5px;
+    font-variant-numeric:tabular-nums}
+  .stat .val small{font:500 12px/1 "Archivo",sans-serif;color:var(--dim)}
+  .alertpips{display:flex;gap:4px;margin-top:7px}
+  .apip{flex:1;height:7px;background:var(--panel);border:1px solid var(--line)}
+  .apip.on{background:var(--brass);border-color:var(--brass)}
+  .apip.on.max{background:var(--alarm);border-color:var(--alarm)}
+
+  /* ---------- el mazo: cartas apiladas, se ve la última ---------- */
+  .deckwrap{position:relative;margin-top:12px;min-height:104px}
+  .deckback{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--hair)}
+  .deckback:nth-child(1){transform:translate(6px,6px)}
+  .deckback:nth-child(2){transform:translate(3px,3px)}
+  .deckcard{position:relative;background:var(--sunk);border:1px solid var(--brass-dim);
+    padding:12px 14px;min-height:104px;display:flex;gap:12px;align-items:flex-start;
+    animation:flip .35s ease-out}
+  .deckcard.rush{border-color:var(--alarm)}
+  .deckcard .ic{font-size:26px;line-height:1;flex:none;width:34px;text-align:center;
+    color:var(--brass)}
+  .deckcard.rush .ic{color:var(--alarm)}
+  .deckcard .tt{font:700 15px/1.2 "Archivo",sans-serif;color:var(--ink)}
+  .deckcard .dd{font-size:12.5px;color:var(--dim);line-height:1.4;margin-top:4px}
+  .deckcard.vacia{border-style:dashed;border-color:var(--line);align-items:center}
+  .deckcard.vacia .tt{color:var(--dim);font-weight:500}
+  @keyframes flip{from{transform:translateY(-6px) scale(.97);opacity:0}}
+  .deckfoot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;
+    font:500 11.5px/1 "IBM Plex Mono",monospace;color:var(--dim)}
+  .deckfoot b{color:var(--brass)}
+
+  /* ---------- objetivo y bandeja ---------- */
+  .goals{display:flex;gap:8px}
+  .goal{flex:1;background:var(--panel2);border:1px solid var(--line);padding:9px 10px;
+    text-align:center}
+  .goal .lbl{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .goal .val{font:700 20px/1.1 "Archivo",sans-serif;color:var(--ink);margin-top:5px}
+  .goal.listo{border-color:var(--patina)} .goal.listo .val{color:var(--patina)}
+
+  .slots{display:flex;gap:7px;margin-top:9px}
+  .slot{flex:1;min-height:58px;padding:6px 4px;text-align:center;border:1px dashed var(--hair);
+    background:var(--panel2);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px}
+  .slot .ic{font-size:18px;line-height:1}
+  .slot .nm{font:700 10.5px/1.2 "Archivo",sans-serif}
+  .slot .st{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim)}
+  .slot.hand{border-style:solid;border-width:2px}
+  .slot.done{border:1px solid var(--patina);background:var(--panel)}
   .slot.done .nm{color:var(--patina)}
-  .slot.lost{border:1px solid var(--alarm);background:#2A1616}
-  .slot.lost .nm{color:var(--alarm)}
-  .slot.obj{border:1px solid var(--brass);background:#241C0C;cursor:pointer}
+  .slot.obj{border:1px solid var(--brass);background:var(--brass-soft);cursor:pointer}
   .slot.obj:hover{transform:translateY(-2px)}
   .slot.obj .nm{color:var(--brass)}
-  .slot.used{border:1px solid var(--line);opacity:.45;cursor:default}
-  @keyframes pop{from{transform:scale(.75);opacity:0}}
+  .slot.used{opacity:.4;cursor:default}
+  .slot.vacio .ic{opacity:.3}
 
-  aside{flex:1 1 268px;min-width:250px;max-width:340px;display:flex;flex-direction:column;gap:10px}
-  .card{background:var(--panel);border:1px solid var(--line);padding:11px 13px}
-  .card h3{margin:0 0 9px;font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--dim)}
-  .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .row+.row{margin-top:7px}
-  .big{font:400 20px/1 "Bodoni Moda",Georgia,serif;color:var(--ink);font-variant-numeric:tabular-nums}
+  .mps{display:flex;gap:6px;align-items:center}
+  .mp{width:16px;height:16px;border-radius:50%;background:var(--panel2);
+    border:1px solid var(--line)}
+  .mp.on{background:var(--brass);border-color:var(--brass)}
 
-  .goal{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px}
-  .goal+.goal{border-top:1px solid var(--line)}
-  .goal .n{width:19px;height:19px;border:1px solid var(--line);background:var(--panel2);
-    display:grid;place-items:center;font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim);flex:none}
-  .goal.done .n{background:var(--patina);border-color:var(--patina);color:#0C1A16}
-  .goal .t{flex:1} .goal.done .t{color:var(--dim);text-decoration:line-through}
-  .goal .v{font:500 12px/1 "IBM Plex Mono",monospace;color:var(--ink)}
+  .hintbar{padding:9px 12px;background:var(--brass-soft);border:1px solid var(--brass-dim);
+    color:var(--brass);font-size:13px;display:none;font-weight:600}
+  .hintbar.on{display:block}
 
-  .pips{display:flex;gap:5px}
-  .pip{width:15px;height:15px;background:var(--panel2);border:1px solid var(--line)}
-  .pip.on{background:var(--alarm);border-color:var(--alarm)}
-  .pip.mp{border-radius:50%;width:13px;height:13px}
-  .pip.mp.on{background:var(--brass);border-color:var(--brass)}
+  /* ---------- ayuda ---------- */
+  #overlay{position:fixed;inset:0;background:#05060899;backdrop-filter:blur(3px);
+    display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
+  body.claro #overlay{background:#3a382f66}
+  #overlay.off{display:none}
+  .modal{background:var(--panel);border:1px solid var(--line);padding:0;
+    max-width:860px;width:100%;max-height:calc(100vh - 36px);display:flex;
+    flex-direction:column;box-shadow:0 30px 80px #000c}
+  .modal h2{margin:0;font:400 30px/1.05 "Bodoni Moda",Georgia,serif;color:var(--ink);
+    padding:22px 26px 14px;border-bottom:1px solid var(--line);flex:none}
+  .modalbody{padding:20px 26px 24px;overflow-y:auto;overscroll-behavior:contain}
+  .modal .lead{color:var(--dim);font-size:14px;margin:0 0 14px;line-height:1.6}
+  .modal .lead b{color:var(--body)}
 
-  #foecard{border-left:2px solid var(--alarm);transition:.2s}
-  #foecard.pending{border-left-color:var(--brass);background:#241C0C;
-    box-shadow:0 0 0 1px var(--brass-dim)}
-  #foecard .name{font:600 13.5px/1.3 "Archivo",sans-serif;color:var(--ink);margin-bottom:3px}
-  #foecard .desc{color:var(--dim);font-size:12px;line-height:1.45;min-height:32px}
-  .deckline{color:var(--dim);font:500 10.5px/1 "IBM Plex Mono",monospace;margin-top:8px;
-    display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}
-  .deckstrip{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
-  .dcard{width:26px;height:33px;border:1px solid var(--line);display:grid;place-items:center;
-    font:600 12px/1 "Archivo",sans-serif;background:var(--panel2);color:var(--body)}
-  .dcard.back{background:repeating-linear-gradient(45deg,#241C0C,#241C0C 3px,#2C220F 3px,#2C220F 6px);
-    border-color:var(--brass-dim);color:var(--brass-dim);font-size:11px}
-  .dcard.rush{color:var(--alarm);border-color:var(--alarm)}
-  .deckfoot{color:var(--dim);font-size:10.5px;margin-top:8px;line-height:1.5}
-  .deckfoot b{color:var(--body)}
-  .deckfoot button{background:none;border:1px solid var(--line);color:var(--dim);
-    font:500 9.5px/1 "IBM Plex Mono",monospace;padding:3px 7px;margin-left:4px;cursor:pointer}
-  .deckfoot button:hover{border-color:var(--brass);color:var(--brass)}
-  .memoria .dcard.used{color:transparent;
-    background:repeating-linear-gradient(45deg,#20242C,#20242C 3px,#262B33 3px,#262B33 6px)}
-  .pip.alert.on{background:var(--brass);border-color:var(--brass)}
-  .pip.alert.on:nth-child(3){background:var(--alarm);border-color:var(--alarm)}
-  .pip.mp.foe{background:var(--alarm);border-color:var(--alarm)}
+  .wing{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--brass);margin:16px 0 8px;display:flex;align-items:center;gap:10px}
+  .wing::after{content:"";flex:1;height:1px;background:var(--line)}
+  .lvls{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+  .lv{display:flex;gap:11px;align-items:center;background:var(--panel2);
+    border:1px solid var(--line);padding:11px 13px;cursor:pointer;text-align:left;
+    transition:.12s;color:inherit}
+  .lv:hover{border-color:var(--brass);transform:translateY(-2px)}
+  .lv .num{font:400 26px/.85 "Bodoni Moda",Georgia,serif;color:var(--brass);flex:none;width:24px}
+  .lv b{display:block;font-size:14.5px;color:var(--ink)}
+  .lv small{color:var(--dim);font-size:12px;line-height:1.4;display:block}
+  .lv .foe{color:var(--alarm)}
 
-  .comp{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:4px 0}
-  .comp .sym{width:16px;height:16px;flex:none;display:grid;place-items:center;font-size:12px}
-  .comp .who{flex:1;color:var(--ink)}
-  .comp .st{font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim)}
-  .comp.done{opacity:.45} .comp.done .st{color:var(--patina)}
+  .btn{background:var(--brass);color:var(--bg);border:0;padding:13px 20px;
+    font:700 15px/1 "Archivo",sans-serif;cursor:pointer;margin:14px 8px 0 0}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
 
-  /* fuera del editor es una sola barra fina; dentro, un panel fijo al costado
-     para no tener que scrollear a buscar la herramienta en cada clic */
-  .editbar{margin-top:10px;background:var(--panel);border:1px solid var(--line);
-    padding:9px 12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-  .editbar.on{position:fixed;top:14px;right:14px;bottom:14px;width:270px;margin:0;
-    z-index:30;overflow-y:auto;align-content:flex-start;
+  .reglas{font-size:14px;color:var(--body);line-height:1.75}
+  .reglas h4{margin:20px 0 8px;font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--brass)}
+  .reglas b{color:var(--ink)}
+  .fases{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:6px 0}
+  .fase{background:var(--panel2);border:1px solid var(--line);padding:13px 15px}
+  .fase .n{font:400 30px/1 "Bodoni Moda",Georgia,serif;color:var(--brass);display:block;
+    margin-bottom:7px}
+  .fase p{margin:0;font-size:13.5px;line-height:1.55;color:var(--body)}
+  .leyenda{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));margin-top:6px}
+  .leg{display:flex;gap:10px;align-items:center}
+  .leg canvas{width:44px;height:44px;flex:none;border:1px solid var(--line)}
+  .leg b{display:block;font-size:13.5px;color:var(--ink)}
+  .leg small{color:var(--dim);font-size:12px;line-height:1.35;display:block}
+  .leg small b{display:inline;font-size:12px}
+  #reg{font:12.5px/1.75 "IBM Plex Mono",Consolas,monospace;color:var(--dim);
+    background:var(--sunk);border:1px solid var(--line);padding:12px 14px;
+    max-height:210px;overflow-y:auto;margin-top:6px}
+  #reg b{color:var(--ink)} #reg .r{color:var(--alarm)} #reg .g{color:var(--patina)}
+  #reg .y{color:var(--brass)} #reg .sep{color:var(--hair)}
+  .teclas{display:grid;gap:7px;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));margin-top:6px}
+  .tecla{display:flex;gap:9px;align-items:center;font-size:13.5px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+    padding:3px 8px;font:12px "IBM Plex Mono",monospace;color:var(--ink);flex:none}
+
+  /* ---------- editor (oculto salvo que se lo llame) ---------- */
+  .editbar{display:none}
+  body.editable .editbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);padding:9px 12px}
+  .editbar.on{position:fixed;top:14px;right:14px;bottom:14px;width:274px;margin:0;
+    z-index:50;overflow-y:auto;align-content:flex-start;
     box-shadow:0 20px 60px #000b;border-color:var(--brass)}
   .editbar.on .ebtn,.editbar.on .ehelp,.editbar.on .ecount,
   .editbar.on .emsg,.editbar.on .ewarn,.editbar.on #editcode{flex-basis:100%}
   .editbar.on .etitle{display:block}
   .etitle{display:none;flex-basis:100%;font:400 21px/1.1 "Bodoni Moda",Georgia,serif;
-    color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px}
+    color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:8px}
   .etitle small{display:block;font:500 10px/1.6 "IBM Plex Mono",monospace;
     letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
-  body.editing #tray,body.editing #legendbox,body.editing #log,body.editing .keys{display:none}
-  body.editing aside{display:none}
-  @media(max-width:900px){ .editbar.on{position:static;width:auto;box-shadow:none} }
-  .editbar .ehelp,.editbar .ecount,.editbar #editcode,.editbar .emsg{display:none}
-  .editbar.on{border-color:var(--brass);background:#241C0C}
-  .editbar.on .ehelp,.editbar.on .ecount,.editbar.on .emsg{display:inline}
-  .editbar.on #editcode{display:block}
   .ebtn{background:var(--panel2);border:1px solid var(--line);color:var(--body);
-    font:600 11.5px/1 "Archivo",sans-serif;padding:7px 11px;cursor:pointer}
+    font:600 12.5px/1 "Archivo",sans-serif;padding:8px 12px;cursor:pointer}
   .ebtn:hover{border-color:var(--brass);color:var(--brass)}
-  .ebtn.primary{background:var(--brass);color:#171208;border-color:var(--brass)}
-  .editbar .ehelp{font-size:11.5px;color:var(--body);flex:1;min-width:200px}
-  .editbar .ecount{font:600 11.5px/1 "IBM Plex Mono",monospace;color:var(--brass)}
-  .palette{display:none;flex-basis:100%;flex-direction:column;gap:5px;margin-top:4px}
-  .editbar.on .palette{display:flex}
+  .ebtn.primary{background:var(--brass);color:var(--bg);border-color:var(--brass)}
+  .editbar .ehelp,.editbar .ecount,.editbar .emsg,.editbar .ewarn,
+  .editbar #editcode,.editbar .palette{display:none}
+  .editbar.on .ehelp{display:block;font-size:12.5px;color:var(--body)}
+  .editbar.on .ecount{display:block;font:600 12px/1 "IBM Plex Mono",monospace;color:var(--brass)}
+  .editbar.on .emsg{display:block;font-size:12.5px;color:var(--patina)}
+  .editbar.on .ewarn{display:block;font-size:12.5px;line-height:1.5}
+  .editbar .ewarn .rompe{display:block;color:var(--alarm);font-weight:600}
+  .editbar .ewarn .ok{display:block;color:var(--dim)}
+  .editbar.on #editcode{display:block;width:100%;height:64px;background:var(--sunk);
+    color:var(--dim);border:1px solid var(--line);
+    font:11px/1.4 "IBM Plex Mono",monospace;padding:7px;resize:vertical}
+  .editbar.on .palette{display:flex;flex-direction:column;gap:5px;flex-basis:100%}
   .palette .grupo{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--dim);margin:8px 0 2px}
+    text-transform:uppercase;color:var(--dim);margin:9px 0 2px}
   .tool{display:flex;align-items:center;gap:9px;background:var(--panel2);
     border:1px solid var(--line);color:var(--body);padding:9px 11px;cursor:pointer;
     font:600 13.5px/1 "Archivo",sans-serif;text-align:left;width:100%}
   .tool:hover{border-color:var(--brass)}
-  .tool.on{background:var(--brass);color:#171208;border-color:var(--brass);
-    box-shadow:0 0 0 2px var(--brass-dim)}
+  .tool.on{background:var(--brass);color:var(--bg);border-color:var(--brass)}
   .tool .ti{font-size:19px;line-height:1;width:22px;text-align:center}
-  .editbar .emsg{font-size:11.5px;color:var(--patina)}
-  .editbar .ewarn{display:none;font-size:11.5px;flex-basis:100%;line-height:1.5}
-  .editbar .ewarn .rompe{display:block;color:var(--alarm);font-weight:600}
-  .editbar .ewarn .ok{display:block;color:var(--dim)}
-  .editbar.on .ewarn{display:block}
-  .editbar #editcode{width:100%;height:52px;background:var(--sunk);color:var(--dim);
-    border:1px solid var(--line);font:11px/1.4 "IBM Plex Mono",monospace;padding:6px;resize:vertical}
   body.editing canvas{cursor:crosshair}
+  body.editing aside{visibility:hidden}
 
-  #legendbox{margin-top:10px;background:var(--panel);border:1px solid var(--line);padding:9px 13px}
-  #legendbox summary{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--dim);cursor:pointer;padding:2px 0}
-  #legendbox summary:hover{color:var(--brass)}
-  #legend{display:grid;gap:8px;margin-top:10px;
-    grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
-  .leg{display:flex;gap:9px;align-items:center}
-  .leg canvas{width:38px;height:38px;flex:none;border:1px solid var(--line);image-rendering:auto}
-  .leg b{display:block;font-size:12px;color:var(--ink);font-weight:600}
-  .leg small{color:var(--dim);font-size:11px;line-height:1.35;display:block}
-  .leg small b{display:inline;font-size:11px}
-
-  #log{margin-top:12px;background:var(--panel);border:1px solid var(--line);padding:9px 13px;
-    font:12px/1.7 "IBM Plex Mono",Consolas,monospace;color:var(--dim);height:118px;overflow-y:auto}
-  #log b{color:var(--ink);font-weight:500}
-  #log .r{color:var(--alarm)} #log .g{color:var(--patina)} #log .y{color:var(--brass)}
-  #log .sep{color:var(--hair)}
-
-  .keys{color:var(--dim);font-size:11.5px;margin-top:10px;line-height:1.95}
-  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
-    padding:1px 6px;font:11px "IBM Plex Mono",monospace;color:var(--ink)}
-  .hintbar{margin-top:8px;padding:7px 11px;background:#241C0C;border:1px solid var(--brass-dim);
-    color:var(--brass);font-size:12.5px;display:none}
-  .hintbar.on{display:block}
-
-  #overlay{position:fixed;inset:0;background:#070809ee;display:flex;align-items:center;
-    justify-content:center;padding:16px;z-index:20;overflow:hidden}
-  body.locked{overflow:hidden}
-  #overlay.off{display:none}
-  .modal{background:var(--panel);border:1px solid var(--line);padding:26px 30px;
-    max-width:820px;width:100%;box-shadow:0 30px 80px #000c;
-    max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain}
-  .modal h2{margin:-26px -30px 6px;padding:22px 30px 10px;
-    font:400 30px/1.05 "Bodoni Moda",Georgia,serif;color:var(--ink);
-    position:sticky;top:-26px;background:var(--panel);z-index:2;
-    border-bottom:1px solid var(--line)}
-  .modal .lead{color:var(--dim);font-size:13px;margin:0 0 10px;line-height:1.55}
-  .modal .lead b{color:var(--body)}
-  .wing{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;
-    color:var(--brass);margin:12px 0 6px;display:flex;align-items:center;gap:10px}
-  .wing::after{content:"";flex:1;height:1px;background:var(--line)}
-  .lvls{display:grid;gap:6px}
-  @media(min-width:520px){.lvls{grid-template-columns:1fr 1fr}}
-  @media(min-width:800px){.lvls{grid-template-columns:repeat(3,1fr)}}
-  .lv{display:flex;gap:10px;align-items:center;background:var(--panel2);
-    border:1px solid var(--line);padding:8px 11px;cursor:pointer;text-align:left;transition:.12s}
-  .lv:hover{border-color:var(--brass);transform:translateX(2px)}
-  .lv .num{font:400 23px/.85 "Bodoni Moda",Georgia,serif;color:var(--brass);flex:none;width:20px}
-  .lv b{display:block;font-size:13px;color:var(--ink);line-height:1.25}
-  .lv small{color:var(--dim);font-size:11px;line-height:1.35;display:block}
-  .lv .foe{color:var(--alarm);font-size:11px}
-  .btn{background:var(--brass);color:#171208;border:0;padding:11px 18px;
-    font:600 14px/1 "Archivo",sans-serif;cursor:pointer;margin:12px 6px 0 0}
-  .btn:hover{filter:brightness(1.08)}
-  .btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-  .btn.piece{padding:14px 16px;display:inline-flex;align-items:center;gap:9px}
-  .rules{font-size:12.5px;color:var(--dim);line-height:1.7;border-top:1px solid var(--line);
-    padding-top:11px;margin-top:12px}
-  details.rules>summary{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--brass);cursor:pointer;padding:3px 0 9px;list-style:none}
-  details.rules>summary::-webkit-details-marker{display:none}
-  .rules b{color:var(--ink)}
-  .modal:focus-visible,.lv:focus-visible,.btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div class="logo">LOS <b>MUSEOS</b></div>
-    <div class="sub" id="salachip">—</div>
-    <div class="hchips">
-      <span class="chip" id="whochip">—</span>
-      <span class="chip" id="roundchip">Ronda 1</span>
+    <div class="salaname">
+      <div class="kicker" id="kicker">—</div>
+      <h1 id="salatitulo">—</h1>
     </div>
+    <button class="hbtn" onclick="ayuda()">Cómo se juega</button>
+    <button class="hbtn" onclick="menu()">Salas</button>
   </header>
 
   <div id="stage">
-    <div id="leftcol">
-      <div id="boardwrap">
-        <canvas id="c" width="544" height="544"></canvas>
-        <div id="tray">
-          <div class="traybox">
-            <h4><span>Piezas · salen de las vitrinas</span><span id="piecen"></span></h4>
-            <div class="slots" id="pieceslots"></div>
-          </div>
-          <div class="traybox">
-            <h4><span>Objetos · te los dan los cómplices</span><span id="objn"></span></h4>
-            <div class="slots" id="objslots"></div>
-          </div>
-        </div>
-      </div>
-      <div class="hintbar" id="hint"></div>
-      <div class="editbar" id="editbar">
-        <div class="etitle" id="etitle"></div>
-        <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor del nivel</button>
-        <span class="ehelp">Elegí una <b>herramienta</b> y hacé clic en el tablero para ponerla.
-          Con <b>Pared</b>, el clic va justo en el borde entre dos casillas. Se guarda solo
-          en esta compu, nivel por nivel.</span>
-        <span class="ecount" id="editcount"></span>
-        <div class="palette" id="palette"></div>
-        <button class="ebtn" onclick="clearWalls()">Limpiar paredes</button>
-        <button class="ebtn" onclick="resetNivel()">Restaurar nivel</button>
-        <button class="ebtn" onclick="copyWalls()">Copiar código</button>
-        <textarea id="editcode" readonly></textarea>
-        <span class="emsg" id="editmsg"></span>
-        <span class="ewarn" id="editwarn"></span>
-      </div>
-      <details id="legendbox" open>
-        <summary>Qué es cada cosa en el tablero</summary>
-        <div id="legend"></div>
-      </details>
-      <div id="log"></div>
-      <div class="keys">
-        <kbd>← ↑ → ↓</kbd> / <kbd>WASD</kbd> moverte · <kbd>Espacio</kbd> tomar mate · <kbd>Enter</kbd> cerrar ronda ·
-        <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> usar objeto · <kbd>R</kbd> reiniciar · <kbd>Esc</kbd> salas
-        <br>Movés <b>dos casilleros exactos</b>. Todo se activa al pasar por encima.
-      </div>
-    </div>
+    <div id="boardwrap"><canvas id="c" width="544" height="544"></canvas></div>
 
     <aside>
       <div class="card">
-        <h3>Para escapar</h3>
-        <div class="goal" id="g1"><div class="n">1</div><div class="t">Entregar las 3 piezas</div><div class="v" id="g1v">0/3</div></div>
-        <div class="goal" id="g2"><div class="n">2</div><div class="t">Llegar a la salida</div><div class="v" id="g2v">🔒</div></div>
-      </div>
-
-      <div class="card">
-        <div class="row"><span>Movimiento</span><div class="pips" id="mp"></div></div>
-        <div class="row"><span>Alerta</span>
-          <span style="display:flex;align-items:center;gap:8px">
-            <span class="pips" id="alertpips"></span><span class="big" id="alertv">1</span></span></div>
-        <div class="row"><span style="color:var(--dim);font-size:12px">Avanza</span>
-          <span style="display:flex;align-items:center;gap:8px">
-            <span class="pips" id="foepips"></span>
-            <span id="foespeed" style="font-size:12px">1 casillero</span></span></div>
-        <div class="row"><span>Piezas recuperadas</span><div class="pips" id="taken"></div></div>
+        <div class="yo">
+          <canvas id="retrato" width="88" height="88"></canvas>
+          <div>
+            <div class="n" id="yonombre">—</div>
+            <div class="p" id="yopoder">—</div>
+          </div>
+        </div>
+        <div class="goals" style="margin-top:12px">
+          <div class="goal" id="gpiezas"><div class="lbl">Entregadas</div><div class="val">0/3</div></div>
+          <div class="goal" id="gmov"><div class="lbl">Movimiento</div><div class="val"><span class="mps" id="mps"></span></div></div>
+          <div class="goal" id="gsalida"><div class="lbl">Salida</div><div class="val">🔒</div></div>
+        </div>
       </div>
 
       <div class="card" id="foecard">
-        <h3>Última acción</h3>
-        <div class="name" id="fcn">—</div>
-        <div class="desc" id="fcd">Todavía no jugó.</div>
-        <div class="deckline"><span>Pila de acciones</span><span id="deckn">—</span></div>
-        <div class="deckstrip" id="deckstrip"></div>
-        <div class="deckfoot">Al agotarse se mezcla y <b>sube la alerta</b>.
-          <button id="memtoggle" onclick="toggleMemoria()">Modo memoria</button></div>
+        <h3>Te persigue</h3>
+        <div class="foename" id="foename">—</div>
+        <div class="foewhy" id="foewhy">—</div>
+        <div class="foestats">
+          <div class="stat">
+            <div class="lbl">Alerta</div>
+            <div class="val" id="alertval">1<small>/3</small></div>
+            <div class="alertpips" id="alertpips"></div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Avanza</div>
+            <div class="val" id="pasosval">1<small> casillero</small></div>
+          </div>
+        </div>
+        <div class="deckwrap" id="deckwrap"></div>
+        <div class="deckfoot"><span>Le quedan <b id="quedan">9</b> de 9</span>
+          <span id="mazoaviso"></span></div>
       </div>
 
       <div class="card">
-        <h3>Cómplices</h3>
-        <div id="comps" style="display:flex;flex-direction:column;gap:2px"></div>
+        <h3>Piezas · salen de las vitrinas</h3>
+        <div class="slots" id="pieceslots"></div>
+        <h3 style="margin-top:14px">Objetos · te los dan los cómplices</h3>
+        <div class="slots" id="objslots"></div>
       </div>
+
+      <div class="hintbar" id="hint"></div>
     </aside>
+  </div>
+
+  <div class="editbar" id="editbar">
+    <div class="etitle" id="etitle"></div>
+    <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor del nivel</button>
+    <span class="ehelp">Elegí una <b>herramienta</b> y hacé clic en el tablero.
+      Con <b>Pared</b>, el clic va en el borde entre dos casillas.</span>
+    <span class="ecount" id="editcount"></span>
+    <div class="palette" id="palette"></div>
+    <button class="ebtn" onclick="clearWalls()">Limpiar paredes</button>
+    <button class="ebtn" onclick="resetNivel()">Restaurar nivel</button>
+    <button class="ebtn" onclick="copyWalls()">Copiar código</button>
+    <textarea id="editcode" readonly></textarea>
+    <span class="emsg" id="editmsg"></span>
+    <span class="ewarn" id="editwarn"></span>
   </div>
 </div>
 
-<div id="overlay"><div class="modal" id="modal"></div></div>
+<div id="overlay"><div class="modal"><h2 id="modaltit">Los Museos</h2>
+  <div class="modalbody" id="modal"></div></div></div>
 <script>
 /* ==========================================================================
    LOS MUSEOS · motor v2
@@ -657,9 +664,7 @@ function newGame(salaKey){
 
 function say(t,cls){
   S.log.push(`<span class="${cls||""}">${t}</span>`);
-  const el=document.getElementById("log");
-  el.innerHTML = S.log.slice(-60).join("<br>");
-  el.scrollTop = el.scrollHeight;
+  if(typeof renderLog==="function") renderLog();   // el registro vive en la ayuda
 }
 function float(x,y,txt,color){ fx.floats.push({x,y,txt,color:color||"#EAE8E2",t:0}); }
 
@@ -1064,7 +1069,7 @@ function gameWin(){
   S.over="win";
   float(S.exit.x,S.exit.y,"¡AFUERA!","#79AE9E");
   const keys=Object.keys(SALAS), next=keys[keys.indexOf(S.salaKey)+1];
-  showModal(`<h2>Se escapó ${S.hero.n}</h2>
+  showModal("Se escapó "+S.hero.n, `
     <p class="lead">Tres piezas entregadas y la puerta de emergencia atrás.
     <b>${S.foe.n}</b> se quedó con la alerta en ${S.alert}.</p>
     <div class="rules"><b>Ronda final:</b> ${S.round} · <b>Piezas que te recuperó:</b> ${S.taken}/3
@@ -1077,7 +1082,7 @@ function gameWin(){
 function gameLose(reason){
   S.over="lose"; fx.shake=TUNE.shakeMs*1.7;
   say(`💼 <b>${reason}</b>`,"r");
-  showModal(`<h2>Te agarraron</h2>
+  showModal("Te agarraron", `
     <p class="lead">${reason}</p>
     <div class="rules"><b>Rondas:</b> ${S.round} · <b>Entregadas:</b> ${S.delivered.length}/3
     · <b>Recuperadas por él:</b> ${S.taken}/3</div>
@@ -1128,6 +1133,19 @@ function buildFloorLayer(){
     gr.addColorStop(1, th.luz + "00");
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
+  // macetas decorativas en el vacío de alrededor: dan verde sin confundirse
+  // con las plantas del tablero, que sí son escondite
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(S.grid[y][x].play) continue;
+    const pegado = DIRS.some(([dx,dy])=>playable(x+dx,y+dy));
+    if(rnd(x,y,(S.sala.num||0)+3) < (pegado ? .45 : .82)) continue;
+    g.save(); g.translate(x*CS, y*CS); g.scale(CS/48, CS/48);
+    g.globalAlpha = pegado ? .9 : .55;
+    MACETA(g, x, y);
+    g.globalAlpha = 1;
+    g.restore();
+  }
+
   // borde del tablero: sombra hacia afuera
   g.strokeStyle="#00000055"; g.lineWidth=3;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
@@ -1142,6 +1160,21 @@ function buildFloorLayer(){
       g.stroke();
     }
   }
+}
+
+/* Maceta decorativa: no se pisa, no esconde, solo da verde alrededor. */
+function MACETA(g,x,y){
+  const s = .55 + rnd(x,y,4)*.35;
+  g.translate(24,30); g.scale(s,s); g.translate(-24,-30);
+  g.fillStyle="#00000035"; g.beginPath(); g.ellipse(24,42,13,4,0,0,7); g.fill();
+  g.fillStyle="#8A5A3C"; rr(g,15,28,18,14,2); g.fill();
+  g.fillStyle="#9B6845"; g.fillRect(14,26,20,4);
+  const verde=["#2F7D4F","#3B8F5C","#276943"][(x+y)%3];
+  g.fillStyle=verde;
+  [[24,16,10],[16,21,7],[32,21,7],[20,10,6],[29,11,6]].forEach(([cx,cy,r])=>{
+    g.beginPath(); g.arc(cx,cy,r,0,7); g.fill(); });
+  g.fillStyle="#ffffff18";
+  g.beginPath(); g.arc(20,13,4,0,7); g.fill();
 }
 
 function drawPiso(g,x,y,th){
@@ -1241,6 +1274,28 @@ function drawMate(g){
   const t=performance.now()/400;
   g.strokeStyle="#ffffff44"; g.lineWidth=1.5;
   g.beginPath(); g.moveTo(20,16); g.quadraticCurveTo(20+Math.sin(t)*3,11,20,7); g.stroke();
+}
+
+function drawPlanta(g){
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,42,15,5,0,0,7); g.fill();
+  g.fillStyle="#A8623C"; rr(g,13,27,22,16,3); g.fill();          // maceta
+  g.fillStyle="#BA7047"; g.fillRect(11,25,26,5);
+  g.fillStyle="#00000022"; g.fillRect(13,38,22,3);
+  g.fillStyle="#3A2A1C"; g.fillRect(17,24,14,3);                 // tierra
+  g.strokeStyle="#2A6B41"; g.lineWidth=2.2; g.lineCap="round";   // tallos
+  g.beginPath();
+  g.moveTo(24,26); g.lineTo(24,14);
+  g.moveTo(24,22); g.lineTo(16,15);
+  g.moveTo(24,22); g.lineTo(32,15);
+  g.stroke();
+  const hojas=[[24,10,10,7],[15,14,8,6],[33,14,8,6],[19,19,7,5],[29,19,7,5]];
+  g.fillStyle="#2F7D4F";
+  hojas.forEach(([cx,cy,rx,ry])=>{ g.beginPath(); g.ellipse(cx,cy,rx,ry,0,0,7); g.fill(); });
+  g.fillStyle="#429A63";
+  [[21,9,6,4],[28,12,6,4],[24,16,5,3.5]].forEach(([cx,cy,rx,ry])=>{
+    g.beginPath(); g.ellipse(cx,cy,rx,ry,0,0,7); g.fill(); });
+  g.fillStyle="#ffffff22";
+  g.beginPath(); g.ellipse(21,8,3.5,2.2,0,0,7); g.fill();
 }
 
 function drawEstatua(g){
@@ -1596,7 +1651,7 @@ function frame(now){
     switch(c.type){
       case "vitrina":  inCell(ctx,x,y,g=>drawVitrina(g,c)); break;
       case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
-      case "planta":   inCell(ctx,x,y,g=>drawEstatua(g)); break;
+      case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
       case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
       case "puesto":   inCell(ctx,x,y,g=>drawPuesto(g,true)); break;
@@ -1692,119 +1747,133 @@ const $ = id=>document.getElementById(id);
 
 function syncUI(){
   if(!S) return;
-  $("salachip").textContent = `Sala ${S.sala.num} · ${S.sala.name}`;
-  $("whochip").innerHTML = `<b>${S.hero.n}</b> · ${S.power.n}`;
-  const fase = {vos:"Tu turno", persecucion:"Te persigue", accion:"Su acción"}[S.phase||"vos"];
-  $("roundchip").innerHTML = `Ronda ${S.round} · <b>${fase}</b>`;
-  $("foecard").classList.toggle("pending", !!S.cardPending);
+  // las salas de piso gris llevan interfaz clara; las de madera, oscura
+  document.body.classList.toggle("claro", S.sala.piso==="gris");
 
-  const open = S.delivered.length>=3;
-  setGoal("g1", open, `${S.delivered.length}/3`);
-  setGoal("g2", false, open ? "abierta" : "🔒");
+  $("kicker").textContent = (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing;
+  $("salatitulo").textContent = S.sala.name;
 
-  $("mp").innerHTML = Array.from({length:Math.max(S.mp,TUNE.steps)},(_,i)=>
-    `<span class="pip mp ${i<S.mp?"on":""}"></span>`).join("");
-  $("alertv").textContent = `${S.alert}/${TUNE.alertMax}`;
-  $("foespeed").textContent = `${foeSpeed()} casillero${foeSpeed()>1?"s":""}`;
-  $("taken").innerHTML = Array.from({length:3},(_,i)=>
-    `<span class="pip ${i<S.taken?"on":""}"></span>`).join("");
+  drawRetrato();
+  $("yonombre").textContent = S.hero.n;
+  $("yopoder").innerHTML = "<b>"+S.power.n+"</b> · "+S.power.d;
 
-  $("fcn").textContent = S.lastCard ? S.lastCard.n : "—";
-  $("fcd").textContent = S.lastCard ? S.lastCard.d
-    : (S.peek ? `Ojo de halcón: la próxima es «${S.peek.n}».` : "Todavía no jugó.");
-  $("deckn").textContent = `Quedan ${S.deck.length} de 9`;
+  const abierta = S.delivered.length>=3;
+  setStat("gpiezas", S.delivered.length+"/3", abierta);
+  setStat("gsalida", abierta ? "🚪" : "🔒", abierta);
+  $("mps").innerHTML = Array.from({length:Math.max(S.mp,TUNE.steps)},(_,i)=>
+    '<span class="mp '+(i<S.mp?"on":"")+'"></span>').join("");
 
-  // pila de acciones: las gastadas boca arriba, las que faltan boca abajo
-  $("deckstrip").innerHTML = Array.from({length:9},(_,i)=>{
-    const c = S.played[i];
-    if(!c) return '<span class="dcard back" title="Sin salir">?</span>';
-    const cls = c.k==="rush" ? "dcard used rush" : "dcard used";
-    return `<span class="${cls}" title="${c.n}">${c.ic}</span>`;
-  }).join("");
-
-  // alerta y pasos, en cuadraditos
+  $("foename").textContent = S.foe.n;
+  $("foewhy").textContent  = S.foe.d;
+  $("alertval").innerHTML  = S.alert+"<small>/"+TUNE.alertMax+"</small>";
   $("alertpips").innerHTML = Array.from({length:TUNE.alertMax},(_,i)=>
-    `<span class="pip alert ${i<S.alert?"on":""}"></span>`).join("");
-  $("foepips").innerHTML = Array.from({length:TUNE.alertMax},(_,i)=>
-    `<span class="pip mp ${i<foeSpeed()?"foe":""}"></span>`).join("");
+    '<span class="apip '+(i<S.alert?"on":"")+(i===TUNE.alertMax-1?" max":"")+'"></span>').join("");
+  const sp=foeSpeed();
+  $("pasosval").innerHTML = sp+"<small> casillero"+(sp>1?"s":"")+"</small>";
 
-  $("piecen").textContent = `${S.delivered.length}/3 entregadas`;
+  // el mazo: se ve solo la última carta, con el resto apilado detrás
+  const c=S.lastCard, atras=Math.min(2, S.deck.length);
+  $("deckwrap").innerHTML =
+    Array.from({length:atras},()=>'<div class="deckback"></div>').join("") +
+    (c ? '<div class="deckcard '+(c.k==="rush"?"rush":"")+'">'+
+           '<div class="ic">'+c.ic+'</div>'+
+           '<div><div class="tt">'+c.n+'</div><div class="dd">'+c.d+'</div></div>'+
+         '</div>'
+       : '<div class="deckcard vacia"><div class="ic">·</div>'+
+         '<div class="tt">Todavía no jugó</div></div>');
+  $("quedan").textContent = S.deck.length;
+  $("mazoaviso").textContent = S.deck.length<=2 ? "al agotarse sube la alerta" : "";
+
   $("pieceslots").innerHTML = PIECES.map(p=>{
     if(S.delivered.includes(p.id))
-      return `<div class="slot done"><div class="ic">✓</div><div class="nm">${p.name}</div>
-              <div class="st">entregada</div></div>`;
+      return '<div class="slot done"><div class="ic">✓</div><div class="nm">'+p.name+
+             '</div><div class="st">entregada</div></div>';
     if(S.hand.includes(p.id))
-      return `<div class="slot hand" style="border-color:${p.color}">
-              <div class="ic" style="color:${p.color}">${p.sym}</div>
-              <div class="nm" style="color:${p.color}">${p.name}</div>
-              <div class="st">en mano</div></div>`;
-    return `<div class="slot hidden-piece">
-            <div class="ic" style="color:${p.color};opacity:.55">${p.sym}</div>
-            <div class="nm">${p.name}</div><div class="st">en vitrina</div></div>`;
+      return '<div class="slot hand" style="border-color:'+p.color+'">'+
+             '<div class="ic" style="color:'+p.color+'">'+p.sym+'</div>'+
+             '<div class="nm" style="color:'+p.color+'">'+p.name+'</div>'+
+             '<div class="st">en mano</div></div>';
+    return '<div class="slot vacio"><div class="ic" style="color:'+p.color+'">'+p.sym+
+           '</div><div class="nm">'+p.name+'</div><div class="st">en vitrina</div></div>';
   }).join("");
 
-  $("objn").textContent = `${S.objects.length-S.objUsed.length} sin usar`;
   $("objslots").innerHTML = Array.from({length:Math.max(3,S.objects.length)},(_,i)=>{
     if(i>=S.objects.length)
-      return `<div class="slot"><div class="ic" style="opacity:.3">🎁</div>
-              <div class="nm" style="color:var(--dim)">—</div><div class="st">vacío</div></div>`;
-    const o=OBJECTS[S.objects[i]], used=S.objUsed.includes(i);
-    return `<div class="slot ${used?"used":"obj"}" ${used?"":`onclick="useObject(${i})"`}
-            title="${o.d}"><div class="ic">${o.ic}</div><div class="nm">${o.n}</div>
-            <div class="st">${used?"usado":"tecla "+(i+1)}</div></div>`;
+      return '<div class="slot vacio"><div class="ic">🎁</div>'+
+             '<div class="nm" style="color:var(--dim)">—</div><div class="st">por ganar</div></div>';
+    const o=OBJECTS[S.objects[i]], usado=S.objUsed.includes(i);
+    return '<div class="slot '+(usado?"used":"obj")+'" '+(usado?"":'onclick="useObject('+i+')"')+
+           ' title="'+o.d+'"><div class="ic">'+o.ic+'</div><div class="nm">'+o.n+'</div>'+
+           '<div class="st">'+(usado?"usado":"tecla "+(i+1))+'</div></div>';
   }).join("");
 
-  $("comps").innerHTML = S.marks.comps.map(c=>{
-    const p=PIE[c.want], who=CREW[compOf(c.want)], done=S.delivered.includes(c.want);
-    return `<div class="comp ${done?"done":""}">
-      <span class="sym" style="color:${p.color}">${p.sym}</span>
-      <span class="who">${who.n}</span>
-      <span class="st">${done?"listo":"pide "+p.sym}</span></div>`;
-  }).join("");
+  const cel=S.grid[S.player.y][S.player.x];
+  const pistas=[];
+  if(canDrinkHere()) pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
+  if(S.awaitMate)    pistas.push("<b>Enter</b> para cerrar la ronda");
+  if(canOfferHere()) pistas.push("<b>E</b> para convencerlo de aceptar esta pieza");
+  if(S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm))
+    pistas.push("<b>F</b> para desactivar la alarma de una vitrina");
+  if(cel.type==="vitrina" && cel.alarm) pistas.push("Esta vitrina ya está vacía");
+  if(S.hand.length) pistas.push("Llevá " + S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
+  $("hint").className = pistas.length ? "hintbar on" : "hintbar";
+  $("hint").innerHTML = pistas.join(" &nbsp;·&nbsp; ");
 
-  const c=S.grid[S.player.y][S.player.x];
-  const canMate = canDrinkHere();
-  const canFix  = S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm);
-  const hints=[];
-  if(c.type==="vitrina" && c.alarm) hints.push("Esta vitrina ya tiene la alarma puesta");
-  if(S.hand.length) hints.push("Llevá "+S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
-  if(canMate) hints.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
-  if(S.awaitMate) hints.push("<b>Enter</b> para cerrar la ronda");
-  if(canFix)  hints.push("<b>F</b> para desactivar la alarma de una vitrina");
-  if(canOfferHere()) hints.push("<b>E</b> para convencerlo de aceptar esta pieza");
-  $("hint").className = hints.length ? "hintbar on" : "hintbar";
-  $("hint").innerHTML = hints.join(" · ");
+  renderLog();
+  if(typeof syncEditor==="function") syncEditor();
 }
 
-/* La leyenda usa exactamente las mismas funciones de dibujo que el tablero,
-   así nunca puede quedar desincronizada con lo que ves jugando. */
-function buildLegend(){
-  const box=$("legend"); if(!box) return;
-  const items=[
-    ["Vitrina",  "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
-    ["Con alarma","Vacía: ya te llevaste la gema",                        g=>drawVitrina(g,{alarm:1,piece:null})],
-    ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
-    ["Mate",     "Te devuelve los pasos del turno",                       g=>drawMate(g)],
-    ["Planta",   "Terminá el turno acá y no te persigue",                 g=>drawEstatua(g)],
-    ["Banana",   "Te come un movimiento",                                 g=>drawMojado(g)],
-    ["Tu puesto","Tu casilla de inicio. <b>No se toca nada acá</b>",      g=>drawPuesto(g,true)],
-    ["Su oficina","Donde empieza y vuelve él",                            g=>drawPuesto(g,false)],
-    ["Baño",     "El tuyo y el suyo, al lado de cada puesto",             g=>drawBanio(g)],
-    ["Salida",   "Al norte. Se abre con las 3 piezas entregadas",         g=>drawSalida(g,false)],
-  ];
+function setStat(id, val, listo){
+  const el=$(id); if(!el) return;
+  const v=el.querySelector(".val"); if(v) v.innerHTML=val;
+  el.classList.toggle("listo", !!listo);
+}
 
+/* el retrato del protagonista, con las mismas funciones del tablero */
+function drawRetrato(){
+  const el=$("retrato");
+  if(!el || !el.getContext) return;
+  const g=el.getContext("2d");
+  g.clearRect(0,0,88,88);
+  g.save(); g.translate(44,64); g.scale(1.6,1.6);
+  drawPerson(g, S.hero, 0);
+  g.restore();
+}
+
+function renderLog(){
+  const el=document.getElementById("reg");
+  if(!el || !S) return;
+  el.innerHTML = S.log.slice(-60).join("<br>");
+  el.scrollTop = el.scrollHeight;
+}
+
+
+/* La leyenda dibuja cada elemento con las mismas funciones que el tablero,
+   así nunca puede quedar desincronizada con lo que se ve jugando. */
+function buildLegend(){
+  const box=document.getElementById("legend");
+  if(!box || !box.querySelectorAll || !S) return;
+  const compCell = S.grid[S.marks.comps[0].y][S.marks.comps[0].x];
+  const items=[
+    ["Vitrina",   "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
+    ["Con alarma","Vacía: ya te llevaste la gema",                         g=>drawVitrina(g,{alarm:1,piece:null})],
+    ["Cómplice",  "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,compCell)],
+    ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
+    ["Planta",    "Terminá el turno acá y <b>no te persigue</b>",          g=>drawPlanta(g)],
+    ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
+    ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
+    ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
+    ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
+    ["Salida",    "Al norte. Se abre con las 3 piezas entregadas",         g=>drawSalida(g,false)],
+  ];
   box.innerHTML = items.map((it,i)=>
-    `<div class="leg"><canvas width="48" height="48" data-i="${i}"></canvas>
-      <div><b>${it[0]}</b><small>${it[1]}</small></div></div>`).join("");
+    '<div class="leg"><canvas width="48" height="48" data-i="'+i+'"></canvas>'+
+    '<div><b>'+it[0]+'</b><small>'+it[1]+'</small></div></div>').join("");
   box.querySelectorAll("canvas").forEach(c=>{
     const g=c.getContext("2d");
     g.fillStyle=S.th.piso[0]; g.fillRect(0,0,48,48);
     items[+c.dataset.i][2](g);
   });
-}
-
-function setGoal(id,done,val){
-  const el=$(id); el.classList.toggle("done",done); el.querySelector(".v").textContent=val;
 }
 
 /* ==========================================================================
@@ -2099,7 +2168,7 @@ function askWhichPiece(){
     return `<button class="btn piece" style="background:${p.color};color:#0F1114"
              onclick="pickPiece('${id}')">${p.sym} ${p.name}</button>`;
   }).join("");
-  showModal(`<h2>Te agarró con las manos llenas</h2>
+  showModal("Te agarró con las manos llenas", `
     <p class="lead"><b>${S.foe.n}</b> te revisa la mochila y se lleva <b>una</b> pieza.
     Elegí cuál devolvés.</p>${opts}
     <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`);
@@ -2107,49 +2176,104 @@ function askWhichPiece(){
 function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
 
 /* ---------- pantallas ---------- */
-function showModal(html){
-  $("modal").innerHTML=html;
+function showModal(titulo, html){
+  $("modaltit").textContent = titulo;
+  $("modal").innerHTML = html;
+  $("modal").scrollTop = 0;
   $("overlay").classList.remove("off");
-  $("modal").scrollTop=0;
-  document.body.classList.add("locked");
 }
-function closeModal(){
-  $("overlay").classList.add("off");
-  document.body.classList.remove("locked");
-}
+function closeModal(){ $("overlay").classList.add("off"); }
 function startSala(k){ newGame(k); closeModal(); }
 
 function menu(){
-  const wings={};
-  for(const [k,v] of Object.entries(SALAS)){ (wings[v.wing] ||= []).push([k,v]); }
-  const body = Object.entries(wings).map(([wing,list])=>`
-    <div class="wing">${wing}</div>
-    <div class="lvls">${list.map(([k,v])=>`
-      <button class="lv" onclick="startSala('${k}')" title="${v.name}">
-        <span class="num">${v.num===0?"·":v.num}</span>
-        <span><b>${v.name}</b>
-          <small><b style="color:var(--body)">${CREW[v.hero].n}</b>
-            <span class="foe">vs ${FOES[v.foe].n}</span></small></span>
-      </button>`).join("")}</div>`).join("");
+  const alas={};
+  for(const [k,v] of Object.entries(SALAS)){ (alas[v.wing] ||= []).push([k,v]); }
+  const cuerpo = Object.entries(alas).map(([ala,lista])=>
+    '<div class="wing">'+ala+'</div><div class="lvls">' +
+    lista.map(([k,v])=>
+      '<button class="lv" onclick="startSala(\''+k+'\')" title="'+v.name+'">'+
+        '<span class="num">'+(v.num===0?"·":v.num)+'</span>'+
+        '<span><b>'+v.name+'</b>'+
+          '<small>'+CREW[v.hero].n+'</small>'+
+          '<small class="foe">vs '+FOES[v.foe].n+'</small></span>'+
+      '</button>').join("") + '</div>').join("");
 
-  showModal(`<h2>Los Museos</h2>
-    <p class="lead">Nueve amigos, nueve salas. Robá <b>tres piezas</b>, pasáselas a los
-    cómplices que las piden y salí antes de que te agarren con las manos vacías.</p>
-    ${body}
-    <details class="rules"><summary>Cómo se juega</summary>
-      <b>Cada ronda son tres fases:</b> movés <b>dos casilleros exactos</b> (podés volver
-      sobre tus pasos), después te persigue, y después se da vuelta una de sus nueve acciones.<br>
-      <b>Todo se activa al pasar por encima</b> — vitrinas, cómplices y mates. La única que
-      exige terminar el turno ahí es la <b>planta</b>, que te esconde de la persecución.<br>
-      <b>El mate</b> te devuelve los pasos que ya diste en el turno.<br>
-      <b>El circuito:</b> la <b>vitrina</b> te da una <b>pieza</b>; el <b>objeto</b> te lo da el
-      <b>cómplice</b> cuando le llevás la pieza de su color.<br>
-      <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.<br>
-      <span style="color:var(--brass)">El tablero es el del manual: centro de 6×4 con las 6
-      losetas, y el marco fijo con las dos oficinas, sus baños y la salida al norte. Las paredes
-      las podés corregir vos con el <b>editor</b>.</span>
-    </details>`);
+  showModal("Las diez salas",
+    '<p class="lead">Nueve amigos, nueve salas y un tutorial. Robá <b>tres piezas</b> de las ' +
+    'vitrinas, pasáselas a los cómplices que las piden y salí antes de que te agarren ' +
+    'con las manos vacías.</p>' + cuerpo +
+    '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>');
 }
+
+function ayuda(){
+  showModal("Cómo se juega",
+   '<div class="reglas">' +
+    '<h4>Cada ronda son tres fases</h4>' +
+    '<div class="fases">' +
+      '<div class="fase"><span class="n">1</span><p><b>Movés vos.</b> Exactamente ' +
+        '<b>dos casilleros</b>, ni uno menos. Sin diagonales y sin atravesar paredes. ' +
+        'Podés volver sobre tus pasos.</p></div>' +
+      '<div class="fase"><span class="n">2</span><p><b>Te persigue.</b> Avanza hacia vos ' +
+        'por el camino más corto tantos casilleros como marque su <b>alerta</b>. ' +
+        'Nunca más de tres.</p></div>' +
+      '<div class="fase"><span class="n">3</span><p><b>Actúa.</b> Da vuelta una carta de sus ' +
+        'nueve. La mayoría lo manda lejos; solo dos lo traen derecho hacia vos.</p></div>' +
+    '</div>' +
+    '<h4>El circuito</h4>' +
+    '<p>La <b>vitrina</b> te da una <b>pieza</b>. El <b>objeto</b> te lo da el <b>cómplice</b> ' +
+    'cuando le llevás la pieza de su color. Con las tres entregadas se abre la <b>salida</b>.<br>' +
+    'No hay que apretar nada: <b>todo se activa al pasar por encima</b>. La única excepción es ' +
+    'la <b>planta</b>, donde hay que <b>terminar</b> el turno para esconderse.</p>' +
+    '<h4>Las piezas son tu escudo</h4>' +
+    '<p>Si te alcanza y <b>no llevás ninguna pieza</b>, perdiste. Si llevás alguna, solo te ' +
+    'saca una y los dos vuelven a sus puestos. A la tercera que te recupera, se termina.<br>' +
+    'Por eso conviene <b>juntar las tres antes de repartir ninguna</b>: lo bravo es la corrida ' +
+    'final a la salida, ya con las manos vacías.</p>' +
+    '<h4>La alerta</h4>' +
+    '<p>Cuando se le acaba el mazo de nueve acciones, se baraja y la alerta <b>sube un nivel</b>: ' +
+    'avanza un casillero más por ronda. El panel te muestra cuántas cartas le quedan.</p>' +
+    '<h4>El mate</h4>' +
+    '<p>Te devuelve <b>todos los pasos</b> que ya diste en el turno, así que encadenando mates ' +
+    'un turno puede ser larguísimo. Tres en la misma ronda y terminás en tu baño.</p>' +
+    '<h4>Qué es cada cosa</h4>' +
+    '<div class="leyenda" id="legend"></div>' +
+    '<h4>Controles</h4>' +
+    '<div class="teclas">' +
+      '<div class="tecla"><kbd>← ↑ → ↓</kbd> moverte</div>' +
+      '<div class="tecla"><kbd>Espacio</kbd> tomar mate</div>' +
+      '<div class="tecla"><kbd>Enter</kbd> cerrar la ronda</div>' +
+      '<div class="tecla"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> usar objeto</div>' +
+      '<div class="tecla"><kbd>R</kbd> reiniciar la sala</div>' +
+      '<div class="tecla"><kbd>Esc</kbd> las salas</div>' +
+    '</div>' +
+    '<p style="color:var(--dim);font-size:13px;margin-top:10px">También se juega con el mouse: ' +
+    'clic en una casilla resaltada y camina hasta ahí.</p>' +
+    '<h4>Registro de la partida</h4>' +
+    '<div id="reg"></div>' +
+   '</div>' +
+   '<button class="btn" onclick="closeModal()">Seguir jugando</button>' +
+   '<button class="btn alt" onclick="menu()">Cambiar de sala</button>');
+  if(typeof buildLegend==="function") buildLegend();
+  if(typeof renderLog==="function") renderLog();
+}
+
+/* El editor queda escondido: se abre con ?editor en la dirección o con
+   Ctrl+Shift+E. Los niveles ya están fijos; esto es para crear salas nuevas. */
+function editorDisponible(){
+  return /[?&]editor\b/.test(location.search) || document.body.classList.contains("editable");
+}
+function mostrarEditor(){
+  document.body.classList.add("editable");
+  if(typeof syncEditor==="function") syncEditor();
+}
+addEventListener("keydown", e=>{
+  if(e.ctrlKey && e.shiftKey && (e.key==="E" || e.key==="e")){
+    e.preventDefault();
+    document.body.classList.toggle("editable");
+    if(typeof syncEditor==="function") syncEditor();
+  }
+});
+if(/[?&]editor\b/.test(location.search)) mostrarEditor();
 
 requestAnimationFrame(frame);
 menu();
