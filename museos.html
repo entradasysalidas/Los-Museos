@@ -95,6 +95,18 @@
   .comp .st{font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim)}
   .comp.done{opacity:.45} .comp.done .st{color:var(--patina)}
 
+  #legendbox{margin-top:10px;background:var(--panel);border:1px solid var(--line);padding:9px 13px}
+  #legendbox summary{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);cursor:pointer;padding:2px 0}
+  #legendbox summary:hover{color:var(--brass)}
+  #legend{display:grid;gap:8px;margin-top:10px;
+    grid-template-columns:repeat(auto-fill,minmax(196px,1fr))}
+  .leg{display:flex;gap:9px;align-items:center}
+  .leg canvas{width:38px;height:38px;flex:none;border:1px solid var(--line);image-rendering:auto}
+  .leg b{display:block;font-size:12px;color:var(--ink);font-weight:600}
+  .leg small{color:var(--dim);font-size:11px;line-height:1.35;display:block}
+  .leg small b{display:inline;font-size:11px}
+
   #log{margin-top:12px;background:var(--panel);border:1px solid var(--line);padding:9px 13px;
     font:12px/1.7 "IBM Plex Mono",Consolas,monospace;color:var(--dim);height:118px;overflow-y:auto}
   #log b{color:var(--ink);font-weight:500}
@@ -166,6 +178,10 @@
         </div>
       </div>
       <div class="hintbar" id="hint"></div>
+      <details id="legendbox" open>
+        <summary>Qué es cada cosa en el tablero</summary>
+        <div id="legend"></div>
+      </details>
       <div id="log"></div>
       <div class="keys">
         <kbd>← ↑ → ↓</kbd> / <kbd>WASD</kbd> moverte · <kbd>Espacio</kbd> tomar mate · <kbd>Enter</kbd> cerrar ronda ·
@@ -220,8 +236,8 @@ const TUNE = {
   matesPerTurn : 3,    // al tercer mate en una misma fase, terminás en el baño
   bananaCost   : 1,    // movimiento que te come el piso mojado
   moveMs       : 115,   // interpolación de un paso tuyo
-  foeStepMs    : 380,   // pausa entre casillero y casillero del antagonista
-  cardMs       : 1300,  // cuánto se lee la carta antes de que actúe
+  foeStepMs    : 560,   // pausa entre casillero y casillero del antagonista
+  cardMs       : 2000,  // cuánto se lee la carta antes de que actúe
   shakeMs      : 340,
 };
 
@@ -399,6 +415,7 @@ function newGame(salaKey){
 
   fx.floats.length=0; fx.shake=0;
   buildFloorLayer();
+  buildLegend();
   say(`<b>Sala ${sala.num} · ${sala.name}</b>`,"y");
   say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
   say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
@@ -600,7 +617,7 @@ function chasePhase(hidden){
   if(hidden){
     banner("Escondido detrás de la estatua: no te persigue","#79AE9E");
     syncUI();
-    return setTimeout(actionPhase, 900);
+    return setTimeout(actionPhase, 1200);
   }
   banner(`${S.foe.n} te persigue · ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
   const n = S.foes.length>1 ? 1 : foeSpeed();       // Los Procuradores avanzan 1 cada uno
@@ -608,7 +625,7 @@ function chasePhase(hidden){
   syncUI();
   (function paso(){                                 // un casillero por vez, para poder seguirlo
     if(S.over) return;
-    if(i++ >= n) return setTimeout(actionPhase, 420);
+    if(i++ >= n) return setTimeout(actionPhase, 620);
     for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
     syncUI();
     setTimeout(paso, TUNE.foeStepMs);
@@ -666,14 +683,14 @@ function applyCard(card){
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
   if(card.k!=="refill") float(f.x,f.y,"↯","#D2A24C");   // se ve dónde reapareció
   syncUI();
-  setTimeout(nextRound, 420);
+  setTimeout(nextRound, 620);
 }
 
 function rushSteps(n){                              // la carga también, de a un casillero
   let i=0;
   (function paso(){
     if(S.over) return;
-    if(i++ >= n){ syncUI(); return setTimeout(nextRound, 380); }
+    if(i++ >= n){ syncUI(); return setTimeout(nextRound, 620); }
     for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
     syncUI();
     setTimeout(paso, TUNE.foeStepMs);
@@ -1122,7 +1139,7 @@ function frame(now){
 function drawBanner(dt){
   const b=fx.banner; if(!b) return;
   b.t+=dt;
-  const life=1900, p=b.t/life;
+  const life=2800, p=b.t/life;
   if(p>=1){ fx.banner=null; return; }
   const a = p<.08 ? p/.08 : (p>.85 ? (1-p)/.15 : 1);
   ctx.save();
@@ -1254,6 +1271,38 @@ function syncUI(){
   if(canOfferHere()) hints.push("<b>E</b> para convencerlo de aceptar esta pieza");
   $("hint").className = hints.length ? "hintbar on" : "hintbar";
   $("hint").innerHTML = hints.join(" · ");
+}
+
+/* La leyenda usa exactamente las mismas funciones de dibujo que el tablero,
+   así nunca puede quedar desincronizada con lo que ves jugando. */
+function buildLegend(){
+  const box=$("legend"); if(!box) return;
+  let wallXY=null;
+  for(let y=1;y<H-1&&!wallXY;y++) for(let x=1;x<W-1;x++)
+    if(S.grid[y][x].wall){ wallXY={x,y}; break; }
+
+  const items=[
+    ["Vitrina",  "Pasá por encima y sacás una <b>pieza</b>",           g=>drawVitrina(g,{alarm:0})],
+    ["Con alarma","Ya la usaste: no sirve más",                        g=>drawVitrina(g,{alarm:1})],
+    ["Cómplice", "Llevale <b>su</b> pieza y te da un <b>objeto</b>",   g=>drawComplice(g,S.grid[S.marks.comps[0].y][S.marks.comps[0].x])],
+    ["Mate",     "Te devuelve los pasos del turno",                    g=>drawMate(g)],
+    ["Estatua",  "Terminá el turno acá y no te persigue",              g=>drawEstatua(g)],
+    ["Piso mojado","Te come un movimiento",                            g=>drawMojado(g)],
+    ["Tu puesto","Donde empezás y adonde volvés si te agarra",         g=>drawPuesto(g,true)],
+    ["Su oficina","Donde empieza y vuelve el antagonista",             g=>drawPuesto(g,false)],
+    ["Baño",     "El tuyo y el suyo, uno al lado de cada puesto",      g=>drawBanio(g)],
+    ["Salida",   "Se abre con las 3 piezas entregadas",                g=>drawSalida(g,false)],
+    ["Mueble",   "Escenografía: no se cruza y no hace nada",           g=>wallXY&&drawWall(g,wallXY.x,wallXY.y)],
+  ];
+
+  box.innerHTML = items.map((it,i)=>
+    `<div class="leg"><canvas width="48" height="48" data-i="${i}"></canvas>
+      <div><b>${it[0]}</b><small>${it[1]}</small></div></div>`).join("");
+  box.querySelectorAll("canvas").forEach(c=>{
+    const g=c.getContext("2d");
+    g.fillStyle="#8C7355"; g.fillRect(0,0,48,48);
+    items[+c.dataset.i][2](g);
+  });
 }
 
 function setGoal(id,done,val){
