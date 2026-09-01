@@ -1142,11 +1142,20 @@ function drawPiso(g,x,y,th){
 function drawParedes(){
   const th=S.th, t=Math.max(5, CS*0.09);
   ctx.save();
-  ctx.lineCap="round";
+
+  // 1. el contorno del tablero, con la misma pared blanca que las de adentro
+  ctx.fillStyle=th.pared;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(!playable(x,y)) continue;
+    if(!playable(x+1,y)) ctx.fillRect((x+1)*CS - t/2, y*CS - t/2, t, CS + t);
+    if(!playable(x-1,y)) ctx.fillRect(x*CS - t/2,     y*CS - t/2, t, CS + t);
+    if(!playable(x,y+1)) ctx.fillRect(x*CS - t/2, (y+1)*CS - t/2, CS + t, t);
+    if(!playable(x,y-1)) ctx.fillRect(x*CS - t/2,     y*CS - t/2, CS + t, t);
+  }
+
+  // 2. las paredes de adentro, iguales
   S.walls.forEach(w=>{
     const [k,a,b]=w.split(":"), x=+a, y=+b;
-    ctx.fillStyle="#00000040";
-    ctx.fillStyle=th.pared;
     if(k==="v") ctx.fillRect((x+1)*CS - t/2, y*CS + 2, t, CS - 4);
     else        ctx.fillRect(x*CS + 2, (y+1)*CS - t/2, CS - 4, t);
   });
