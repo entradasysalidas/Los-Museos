@@ -113,8 +113,23 @@
   .comp .st{font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim)}
   .comp.done{opacity:.45} .comp.done .st{color:var(--patina)}
 
+  /* fuera del editor es una sola barra fina; dentro, un panel fijo al costado
+     para no tener que scrollear a buscar la herramienta en cada clic */
   .editbar{margin-top:10px;background:var(--panel);border:1px solid var(--line);
     padding:9px 12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .editbar.on{position:fixed;top:14px;right:14px;bottom:14px;width:270px;margin:0;
+    z-index:30;overflow-y:auto;align-content:flex-start;
+    box-shadow:0 20px 60px #000b;border-color:var(--brass)}
+  .editbar.on .ebtn,.editbar.on .ehelp,.editbar.on .ecount,
+  .editbar.on .emsg,.editbar.on .ewarn,.editbar.on #editcode{flex-basis:100%}
+  .editbar.on .etitle{display:block}
+  .etitle{display:none;flex-basis:100%;font:400 21px/1.1 "Bodoni Moda",Georgia,serif;
+    color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px}
+  .etitle small{display:block;font:500 10px/1.6 "IBM Plex Mono",monospace;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+  body.editing #tray,body.editing #legendbox,body.editing #log,body.editing .keys{display:none}
+  body.editing aside{display:none}
+  @media(max-width:900px){ .editbar.on{position:static;width:auto;box-shadow:none} }
   .editbar .ehelp,.editbar .ecount,.editbar #editcode,.editbar .emsg{display:none}
   .editbar.on{border-color:var(--brass);background:#241C0C}
   .editbar.on .ehelp,.editbar.on .ecount,.editbar.on .emsg{display:inline}
@@ -125,14 +140,17 @@
   .ebtn.primary{background:var(--brass);color:#171208;border-color:var(--brass)}
   .editbar .ehelp{font-size:11.5px;color:var(--body);flex:1;min-width:200px}
   .editbar .ecount{font:600 11.5px/1 "IBM Plex Mono",monospace;color:var(--brass)}
-  .palette{display:none;flex-basis:100%;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .palette{display:none;flex-basis:100%;flex-direction:column;gap:5px;margin-top:4px}
   .editbar.on .palette{display:flex}
-  .tool{display:flex;align-items:center;gap:5px;background:var(--panel2);
-    border:1px solid var(--line);color:var(--body);padding:6px 9px;cursor:pointer;
-    font:600 11.5px/1 "Archivo",sans-serif}
+  .palette .grupo{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim);margin:8px 0 2px}
+  .tool{display:flex;align-items:center;gap:9px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--body);padding:9px 11px;cursor:pointer;
+    font:600 13.5px/1 "Archivo",sans-serif;text-align:left;width:100%}
   .tool:hover{border-color:var(--brass)}
-  .tool.on{background:var(--brass);color:#171208;border-color:var(--brass)}
-  .tool .ti{font-size:14px;line-height:1}
+  .tool.on{background:var(--brass);color:#171208;border-color:var(--brass);
+    box-shadow:0 0 0 2px var(--brass-dim)}
+  .tool .ti{font-size:19px;line-height:1;width:22px;text-align:center}
   .editbar .emsg{font-size:11.5px;color:var(--patina)}
   .editbar .ewarn{display:none;font-size:11.5px;color:var(--alarm);flex-basis:100%}
   .editbar.on .ewarn{display:block}
@@ -233,7 +251,8 @@
       </div>
       <div class="hintbar" id="hint"></div>
       <div class="editbar" id="editbar">
-        <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor de paredes</button>
+        <div class="etitle" id="etitle"></div>
+        <button class="ebtn primary" id="editbtn" onclick="toggleEditor()">Editor del nivel</button>
         <span class="ehelp">Elegí una <b>herramienta</b> y hacé clic en el tablero para ponerla.
           Con <b>Pared</b>, el clic va justo en el borde entre dos casillas. Se guarda solo
           en esta compu, nivel por nivel.</span>
@@ -336,7 +355,7 @@ const FRAME_DEF = {
   "2,0":"salida",  "3,0":"baniojefe","4,0":"oficina","5,0":"oficina",
   "2,1":"vacio",   "3,1":"vacio",   "4,1":"vacio",  "5,1":"vacio",
   "3,6":"puesto",  "4,6":"puesto",
-  "3,7":"banio",   "4,7":"banio",
+  "3,7":"banio",   "4,7":"vacio",
 };
 const ROLES = ["vacio","oficina","baniojefe","salida","puesto","banio"];
 function frameStoreKey(){ return "museos.frame"; }
@@ -1938,9 +1957,15 @@ function syncEditor(){
   const bar=$("editbar"); if(!bar) return;
   bar.className = editMode ? "editbar on" : "editbar";
   $("editbtn").textContent = editMode ? "Salir del editor" : "Editor del nivel";
-  $("palette").innerHTML = TOOLS.map(t=>
-    '<button class="tool'+(t.id===tool?" on":"")+'" onclick="pickTool(\''+t.id+'\')">'+
-    '<span class="ti">'+t.ic+'</span>'+t.n+'</button>').join("");
+  const grupos=[["Paredes","arista"],["Dentro del tablero","centro"],["Marco de afuera","marco"]];
+  $("palette").innerHTML = grupos.map(([titulo,zona])=>
+    '<div class="grupo">'+titulo+'</div>' +
+    TOOLS.filter(t=>t.zona===zona).map(t=>
+      '<button class="tool'+(t.id===tool?" on":"")+'" onclick="pickTool(\''+t.id+'\')">'+
+      '<span class="ti">'+t.ic+'</span>'+t.n+'</button>').join("")
+  ).join("");
+  if(S) $("etitle").innerHTML = '<small>'+(S.sala.num===0?"Tutorial":"Nivel "+S.sala.num)+
+    '</small>'+S.sala.name;
   if(!editMode || !S){ if($("palette")) $("palette").innerHTML=""; return; }
   $("editcount").textContent = S.walls.size + (S.walls.size===1?" pared":" paredes");
   const mal = aislados();
