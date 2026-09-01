@@ -81,7 +81,9 @@
   .pip.mp{border-radius:50%;width:13px;height:13px}
   .pip.mp.on{background:var(--brass);border-color:var(--brass)}
 
-  #foecard{border-left:2px solid var(--alarm)}
+  #foecard{border-left:2px solid var(--alarm);transition:.2s}
+  #foecard.pending{border-left-color:var(--brass);background:#241C0C;
+    box-shadow:0 0 0 1px var(--brass-dim)}
   #foecard .name{font:600 13.5px/1.3 "Archivo",sans-serif;color:var(--ink);margin-bottom:3px}
   #foecard .desc{color:var(--dim);font-size:12px;line-height:1.45;min-height:32px}
   .deckline{color:var(--dim);font:500 10.5px/1 "IBM Plex Mono",monospace;margin-top:8px;
@@ -154,11 +156,11 @@
         <canvas id="c" width="660" height="480"></canvas>
         <div id="tray">
           <div class="traybox">
-            <h4><span>Piezas</span><span id="piecen"></span></h4>
+            <h4><span>Piezas · salen de las vitrinas</span><span id="piecen"></span></h4>
             <div class="slots" id="pieceslots"></div>
           </div>
           <div class="traybox">
-            <h4><span>Objetos</span><span id="objn"></span></h4>
+            <h4><span>Objetos · te los dan los cómplices</span><span id="objn"></span></h4>
             <div class="slots" id="objslots"></div>
           </div>
         </div>
@@ -217,7 +219,9 @@ const TUNE = {
   alertMax     : 3,    // tope de casilleros que avanza el antagonista
   matesPerTurn : 3,    // al tercer mate en una misma fase, terminás en el baño
   bananaCost   : 1,    // movimiento que te come el piso mojado
-  moveMs       : 115,
+  moveMs       : 115,   // interpolación de un paso tuyo
+  foeStepMs    : 380,   // pausa entre casillero y casillero del antagonista
+  cardMs       : 1300,  // cuánto se lee la carta antes de que actúe
   shakeMs      : 340,
 };
 
@@ -332,7 +336,8 @@ const SALAS = {
 
 /* ---------- estado ---------- */
 let S = null;
-const fx = { floats:[], shake:0 };
+const fx = { floats:[], shake:0, banner:null };
+function banner(txt,color){ fx.banner={txt, color:color||"#EAE8E2", t:0}; }
 
 function parseMap(rows){
   const grid=[], marks={vitrinas:[],comps:[],mates:[]};
@@ -384,7 +389,7 @@ function newGame(salaKey){
     alert:1, deck:shuffle(DECK.slice()), lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
-    over:null, busy:false, log:[],
+    over:null, busy:false, log:[], phase:"vos", cardPending:false,
   };
 
   // habilidades que actúan en la preparación
@@ -510,8 +515,9 @@ function takePiece(silent){
   const id = S.pile.pop();
   S.hand.push(id);
   if(!silent){
-    float(S.player.x,S.player.y, PIE[id].sym+" "+PIE[id].name, PIE[id].color);
-    say(`🖼️ Abriste la vitrina: <b>${PIE[id].name}</b> ${PIE[id].sym}. Buscá a su cómplice. La alarma dejó esa vitrina fuera de servicio.`,"y");
+    float(S.player.x,S.player.y, "PIEZA "+PIE[id].sym, PIE[id].color);
+    banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
+    say(`🖼️ Abriste la vitrina y sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b> para entregársela: <b>ahí</b> te dan el objeto. Esa vitrina quedó con alarma.`,"y");
   }
   return id;
 }
@@ -590,12 +596,23 @@ function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
 
 function chasePhase(hidden){
   if(S.over) return;
-  if(!hidden){
-    const n = S.foes.length>1 ? 1 : foeSpeed();     // Los Procuradores avanzan 1 cada uno
-    for(const f of S.foes)
-      for(let i=0;i<n;i++) if(chaseStep(f)) return resolveCatch();
+  S.phase = "persecucion";
+  if(hidden){
+    banner("Escondido detrás de la estatua: no te persigue","#79AE9E");
+    syncUI();
+    return setTimeout(actionPhase, 900);
   }
-  setTimeout(actionPhase, 240);
+  banner(`${S.foe.n} te persigue · ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
+  const n = S.foes.length>1 ? 1 : foeSpeed();       // Los Procuradores avanzan 1 cada uno
+  let i=0;
+  syncUI();
+  (function paso(){                                 // un casillero por vez, para poder seguirlo
+    if(S.over) return;
+    if(i++ >= n) return setTimeout(actionPhase, 420);
+    for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+    syncUI();
+    setTimeout(paso, TUNE.foeStepMs);
+  })();
 }
 
 /* ======================= FASE 3 · acción ======================= */
@@ -617,6 +634,17 @@ function actionPhase(){
   if(!S.deck.length) refillDeck();
   const card = S.deck.pop();
   S.lastCard = card;
+  S.phase = "accion";
+  S.cardPending = true;                             // se muestra antes de ejecutarse
+  banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : "#D2A24C");
+  say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
+  syncUI();
+  setTimeout(()=>applyCard(card), TUNE.cardMs);
+}
+
+function applyCard(card){
+  if(S.over) return;
+  S.cardPending = false;
   const f = S.foes[0];
   const put = (p)=>{ if(p){ f.x=p.x; f.y=p.y; } };
 
@@ -633,15 +661,23 @@ function actionPhase(){
     case "bath": put(S.foeBath); break;
     case "exit": put(S.exit);    break;
     case "home": put(S.foeHome); break;
-    case "rush":
-      for(const ff of S.foes)
-        for(let i=0;i<foeSpeed();i++) if(chaseStep(ff)) return resolveCatch();
-      break;
+    case "rush": return rushSteps(foeSpeed());
   }
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
+  if(card.k!=="refill") float(f.x,f.y,"↯","#D2A24C");   // se ve dónde reapareció
+  syncUI();
+  setTimeout(nextRound, 420);
+}
 
-  say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
-  nextRound();
+function rushSteps(n){                              // la carga también, de a un casillero
+  let i=0;
+  (function paso(){
+    if(S.over) return;
+    if(i++ >= n){ syncUI(); return setTimeout(nextRound, 380); }
+    for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+    syncUI();
+    setTimeout(paso, TUNE.foeStepMs);
+  })();
 }
 
 function nextRound(){
@@ -649,7 +685,7 @@ function nextRound(){
   S.round++;
   S.mp = TUNE.steps;
   S.matesTurn = 0; S.drunk.clear();
-  S.diagonal = false; S.busy = false; S.awaitMate = false;
+  S.diagonal = false; S.busy = false; S.awaitMate = false; S.phase = "vos";
   if(S.heroKey==="marian") S.peek = S.deck[S.deck.length-1];
   syncUI();
 }
@@ -1078,7 +1114,27 @@ function frame(now){
   actors.forEach(a=>a.f());
 
   drawFloats(dt);
+  drawBanner(dt);
   drawVignette();
+}
+
+/* cartel de fase: dice qué está pasando antes de que pase */
+function drawBanner(dt){
+  const b=fx.banner; if(!b) return;
+  b.t+=dt;
+  const life=1900, p=b.t/life;
+  if(p>=1){ fx.banner=null; return; }
+  const a = p<.08 ? p/.08 : (p>.85 ? (1-p)/.15 : 1);
+  ctx.save();
+  ctx.globalAlpha=Math.max(0,Math.min(1,a));
+  ctx.font='600 15px "Archivo",system-ui,sans-serif';
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  const w=Math.min(cv.width-24, ctx.measureText(b.txt).width+40);
+  const x=cv.width/2, y=26;
+  ctx.fillStyle="#0B0D12E8"; rr(ctx,x-w/2,y-15,w,30,2); ctx.fill();
+  ctx.strokeStyle=b.color; ctx.lineWidth=1.5; rr(ctx,x-w/2,y-15,w,30,2); ctx.stroke();
+  ctx.fillStyle=b.color; ctx.fillText(b.txt,x,y+1);
+  ctx.restore();
 }
 
 function drawOverlays(now){
@@ -1133,7 +1189,9 @@ function syncUI(){
   if(!S) return;
   $("salachip").textContent = `Sala ${S.sala.num} · ${S.sala.name}`;
   $("whochip").innerHTML = `<b>${S.hero.n}</b> · ${S.power.n}`;
-  $("roundchip").textContent = `Ronda ${S.round}`;
+  const fase = {vos:"Tu turno", persecucion:"Te persigue", accion:"Su acción"}[S.phase||"vos"];
+  $("roundchip").innerHTML = `Ronda ${S.round} · <b>${fase}</b>`;
+  $("foecard").classList.toggle("pending", !!S.cardPending);
 
   const open = S.delivered.length>=3;
   setGoal("g1", open, `${S.delivered.length}/3`);
@@ -1188,6 +1246,8 @@ function syncUI(){
   const canMate = canDrinkHere();
   const canFix  = S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm);
   const hints=[];
+  if(c.type==="vitrina" && c.alarm) hints.push("Esta vitrina ya tiene la alarma puesta");
+  if(S.hand.length) hints.push("Llevá "+S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
   if(canMate) hints.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
   if(S.awaitMate) hints.push("<b>Enter</b> para cerrar la ronda");
   if(canFix)  hints.push("<b>F</b> para desactivar la alarma de una vitrina");
@@ -1319,6 +1379,9 @@ function menu(){
       exige terminar el turno ahí es la <b>estatua</b>, que te esconde de la persecución.<br>
       <b>El mate</b> te devuelve los pasos que ya diste en el turno. Tres en el mismo turno y
       terminás en el baño.<br>
+      <b>Ojo con el circuito:</b> la <b>vitrina</b> te da una <b>pieza</b>; el <b>objeto</b> te lo
+      da el <b>cómplice</b> cuando le llevás la pieza de su color. No hay que apretar nada:
+      alcanza con pasarles por encima.<br>
       <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.
       Las piezas en la mano son tu escudo.<br>
       <span style="color:var(--brass)">Las salas 4 a 9 llegan en la próxima tanda.</span>
