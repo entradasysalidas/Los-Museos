@@ -393,7 +393,7 @@ function allOf(role){
    Las del marco (las que tocan una casilla de afuera del 6x4) son fijas para
    todos los niveles, igual que los roles del marco. Las de adentro son de
    cada nivel.                                                              */
-const FRAME_WALLS = ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1","h:4:5"];
+const FRAME_WALLS = ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"];
 function esParedDeMarco(k){
   const [t,a,b]=k.split(":"); const x=+a, y=+b;
   const c1={x,y}, c2 = (t==="v") ? {x:x+1,y} : {x,y:y+1};
