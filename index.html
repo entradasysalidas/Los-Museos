@@ -477,7 +477,8 @@ const FOES = {
   curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas.", twist:"vitrinas"},
   director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos."},
   seguridad:{n:"La Seguridad",   look:"guardia",d:"Si quedás en su línea recta sin pared, avanza un casillero extra.", twist:"linterna"},
-  procurad :{n:"Los Procuradores", look:"procurador", count:2, d:"Son dos y cada uno avanza un casillero."},
+  procurad :{n:"El Procurador",  look:"procurador",
+             d:"Está atento a las alarmas: cada vez que abrís una vitrina avanza un casillero al instante.", twist:"alarma"},
   perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las plantas: esconderse no sirve.", twist:"olfato"},
   restaura :{n:"El Restaurador", look:"guardapolvo", d:"Devuelve la pieza a la vitrina más cercana a él.", twist:"reponeCerca"},
   inspector:{n:"El Inspector",   look:"gabardina", d:"Cada objeto que usás le sube la alerta.", twist:"anota"},
@@ -779,6 +780,12 @@ function takePiece(cell, silent){
     float(S.player.x,S.player.y,"PIEZA "+PIE[id].sym,PIE[id].color);
     banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
     say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b>: <b>ahí</b> te dan el objeto.`,"y");
+    // El Procurador escucha la alarma y se acerca en el acto
+    if(S.foe.twist==="alarma"){
+      say("🚨 La alarma lo llamó: avanza un casillero al instante.","r");
+      fx.shake = TUNE.shakeMs*.6;
+      for(const f of S.foes) if(chaseStep(f)){ resolveCatch(); return id; }
+    }
   }
   return id;
 }
