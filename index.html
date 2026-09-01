@@ -487,9 +487,9 @@ const FOES = {
 
 const THEMES = {
   gris  :{ piso:["#9A968C","#928E84"], patron:"alfombra", junta:"#00000018",
-           luz:"#EAF2FF", luzA:.16, pared:"#E8E4DA", void:"#2A2D34", vineta:.34, fondo:"#2A2D34" },
+           luz:"#EAF2FF", luzA:.16, pared:"#F4F2EC", void:"#DAD8D1", vineta:.10, fondo:"#DAD8D1" },
   madera:{ piso:["#B08A5C","#A78254"], patron:"parquet", junta:"#00000016",
-           luz:"#FFF3D8", luzA:.28, pared:"#F2ECDC", void:"#33302B", vineta:.24, fondo:"#33302B" },
+           luz:"#FFF3D8", luzA:.28, pared:"#F6F0E2", void:"#2B2823", vineta:.26, fondo:"#2B2823" },
 };
 
 /* --- los 10 niveles del manual ---
@@ -1134,7 +1134,8 @@ function buildFloorLayer(){
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
   // borde del tablero: sombra hacia afuera
-  g.strokeStyle="#00000055"; g.lineWidth=3;
+  g.strokeStyle = S.sala.piso==="gris" ? "#00000022" : "#00000055";
+  g.lineWidth=3;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     if(!S.grid[y][x].play) continue;
     for(const [dx,dy] of DIRS){
@@ -1705,6 +1706,7 @@ function drawFloats(dt){
 }
 
 function drawVignette(){
+  if((S.th.vineta||0) < .12) return;         // en las salas claras no hace falta
   const a = Math.round((S.th.vineta||.4)*255).toString(16).padStart(2,"0");
   const g=ctx.createRadialGradient(cv.width/2,cv.height/2,cv.height*.40,
                                    cv.width/2,cv.height/2,cv.height*.95);
