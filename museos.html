@@ -90,6 +90,22 @@
   #foecard .desc{color:var(--dim);font-size:12px;line-height:1.45;min-height:32px}
   .deckline{color:var(--dim);font:500 10.5px/1 "IBM Plex Mono",monospace;margin-top:8px;
     display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}
+  .deckstrip{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+  .dcard{width:26px;height:33px;border:1px solid var(--line);display:grid;place-items:center;
+    font:600 12px/1 "Archivo",sans-serif;background:var(--panel2);color:var(--body)}
+  .dcard.back{background:repeating-linear-gradient(45deg,#241C0C,#241C0C 3px,#2C220F 3px,#2C220F 6px);
+    border-color:var(--brass-dim);color:var(--brass-dim);font-size:11px}
+  .dcard.rush{color:var(--alarm);border-color:var(--alarm)}
+  .deckfoot{color:var(--dim);font-size:10.5px;margin-top:8px;line-height:1.5}
+  .deckfoot b{color:var(--body)}
+  .deckfoot button{background:none;border:1px solid var(--line);color:var(--dim);
+    font:500 9.5px/1 "IBM Plex Mono",monospace;padding:3px 7px;margin-left:4px;cursor:pointer}
+  .deckfoot button:hover{border-color:var(--brass);color:var(--brass)}
+  .memoria .dcard.used{color:transparent;
+    background:repeating-linear-gradient(45deg,#20242C,#20242C 3px,#262B33 3px,#262B33 6px)}
+  .pip.alert.on{background:var(--brass);border-color:var(--brass)}
+  .pip.alert.on:nth-child(3){background:var(--alarm);border-color:var(--alarm)}
+  .pip.mp.foe{background:var(--alarm);border-color:var(--alarm)}
 
   .comp{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:4px 0}
   .comp .sym{width:16px;height:16px;flex:none;display:grid;place-items:center;font-size:12px}
@@ -201,8 +217,13 @@
 
       <div class="card">
         <div class="row"><span>Movimiento</span><div class="pips" id="mp"></div></div>
-        <div class="row"><span>Alerta</span><span class="big" id="alertv">1</span></div>
-        <div class="row"><span style="color:var(--dim);font-size:12px">Avanza</span><span id="foespeed" style="font-size:12px">1 casillero</span></div>
+        <div class="row"><span>Alerta</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="pips" id="alertpips"></span><span class="big" id="alertv">1</span></span></div>
+        <div class="row"><span style="color:var(--dim);font-size:12px">Avanza</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="pips" id="foepips"></span>
+            <span id="foespeed" style="font-size:12px">1 casillero</span></span></div>
         <div class="row"><span>Piezas recuperadas</span><div class="pips" id="taken"></div></div>
       </div>
 
@@ -210,7 +231,10 @@
         <h3>Última acción</h3>
         <div class="name" id="fcn">—</div>
         <div class="desc" id="fcd">Todavía no jugó.</div>
-        <div class="deckline"><span>Mazo</span><span id="deckn">—</span></div>
+        <div class="deckline"><span>Pila de acciones</span><span id="deckn">—</span></div>
+        <div class="deckstrip" id="deckstrip"></div>
+        <div class="deckfoot">Al agotarse se mezcla y <b>sube la alerta</b>.
+          <button id="memtoggle" onclick="toggleMemoria()">Modo memoria</button></div>
       </div>
 
       <div class="card">
@@ -295,15 +319,15 @@ const OBJECTS = {
 
 /* ---------- las 9 acciones del antagonista ---------- */
 const DECK = [
-  {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo"},
-  {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo"},
-  {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo"},
-  {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath"},
-  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit"},
-  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit"},
-  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.", k:"home"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush"},
+  {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath", ic:"WC"},
+  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit", ic:"🚬"},
+  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit", ic:"🚬"},
+  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.", k:"home", ic:"🏢"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush", ic:"⚡"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush", ic:"⚡"},
 ];
 
 /* ---------- antagonistas ---------- */
@@ -404,7 +428,7 @@ function newGame(salaKey){
     foes:[{x:p.foeHome.x, y:p.foeHome.y, px:p.foeHome.x, py:p.foeHome.y, bob:0}],
     pile, under, hand:[], delivered:[], taken:0, lost:[],
     objects:[], objUsed:[],
-    alert:1, deck:shuffle(DECK.slice()), lastCard:null, peek:null,
+    alert:1, deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
     over:null, busy:false, log:[], phase:"vos", cardPending:false,
@@ -640,6 +664,7 @@ function chasePhase(hidden){
    además no se saltea si la ronda anterior terminó en captura. */
 function refillDeck(){
   S.deck = shuffle(DECK.slice());
+  S.played = [];                                    // arranca un ciclo nuevo
   if(S.alert < TUNE.alertMax){
     S.alert++;
     fx.shake = TUNE.shakeMs;
@@ -652,6 +677,7 @@ function actionPhase(){
   if(S.over) return;
   if(!S.deck.length) refillDeck();
   const card = S.deck.pop();
+  S.played.push(card);
   S.lastCard = card;
   S.phase = "accion";
   S.cardPending = true;                             // se muestra antes de ejecutarse
@@ -1248,7 +1274,21 @@ function syncUI(){
   $("fcn").textContent = S.lastCard ? S.lastCard.n : "—";
   $("fcd").textContent = S.lastCard ? S.lastCard.d
     : (S.peek ? `Ojo de halcón: la próxima es «${S.peek.n}».` : "Todavía no jugó.");
-  $("deckn").textContent = `${S.deck.length}/9 · al agotarse sube la alerta`;
+  $("deckn").textContent = `Quedan ${S.deck.length} de 9`;
+
+  // pila de acciones: las gastadas boca arriba, las que faltan boca abajo
+  $("deckstrip").innerHTML = Array.from({length:9},(_,i)=>{
+    const c = S.played[i];
+    if(!c) return '<span class="dcard back" title="Sin salir">?</span>';
+    const cls = c.k==="rush" ? "dcard used rush" : "dcard used";
+    return `<span class="${cls}" title="${c.n}">${c.ic}</span>`;
+  }).join("");
+
+  // alerta y pasos, en cuadraditos
+  $("alertpips").innerHTML = Array.from({length:TUNE.alertMax},(_,i)=>
+    `<span class="pip alert ${i<S.alert?"on":""}"></span>`).join("");
+  $("foepips").innerHTML = Array.from({length:TUNE.alertMax},(_,i)=>
+    `<span class="pip mp ${i<foeSpeed()?"foe":""}"></span>`).join("");
 
   $("piecen").textContent = `${S.delivered.length}/3 entregadas`;
   $("pieceslots").innerHTML = PIECES.map(p=>{
@@ -1420,6 +1460,13 @@ function askWhichPiece(){
     <div class="rules">Llevás <b>${S.taken}/3</b> piezas recuperadas por él. A la tercera, se termina.</div>`);
 }
 function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
+
+/* Modo memoria: el reglamento pide no mirar la pila de descarte y acordarse
+   de qué salió. Se puede jugar así tapando las acciones ya usadas. */
+function toggleMemoria(){
+  const on = document.body.classList.toggle("memoria");
+  document.getElementById("memtoggle").textContent = on ? "Ver la pila" : "Modo memoria";
+}
 
 /* ---------- menú ---------- */
 function showModal(html){ $("modal").innerHTML=html; $("overlay").classList.remove("off"); }
