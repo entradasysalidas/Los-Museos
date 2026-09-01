@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Los Museos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#101216; --panel:#191C23; --panel2:#212530; --sunk:#0C0E12;
+    --line:#2C313C; --hair:#3A404E;
+    --ink:#EAE8E2; --body:#C3C6CE; --dim:#8A8F9C;
+    --brass:#D2A24C; --brass-dim:#8A6B31;
+    --alarm:#E0685D; --patina:#79AE9E;
+    --rombo:#3F7FD6; --triangulo:#D4534A; --circulo:#E09A3C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--body);
+    font:15px/1.55 "Archivo","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  #app{max-width:1220px;margin:0 auto;padding:16px 18px 40px}
+
+  header{display:flex;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .logo{font:400 34px/1 "Bodoni Moda",Didot,Georgia,serif;color:var(--ink);letter-spacing:-.01em}
+  .logo b{color:var(--brass);font-weight:400}
+  .sub{font:500 10px/1.6 "IBM Plex Mono",monospace;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--dim);padding-bottom:4px}
+  .hchips{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;padding-bottom:2px}
+  .chip{background:var(--panel2);border:1px solid var(--line);padding:5px 12px;
+    font:500 11px/1.4 "IBM Plex Mono",monospace;color:var(--dim);white-space:nowrap}
+  .chip b{color:var(--ink);font-weight:500}
+
+  #stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
+    box-shadow:0 18px 44px #0009}
+  canvas{display:block;max-width:100%;height:auto;background:#20242C;cursor:pointer}
+
+  /* ---- bandeja del jugador ---- */
+  #tray{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .traybox{flex:1;min-width:250px;background:var(--sunk);border:1px solid var(--line);padding:9px 11px}
+  .traybox h4{margin:0 0 8px;font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
+  .slots{display:flex;gap:7px}
+  .slot{flex:1;min-height:66px;padding:7px 5px;text-align:center;border:1px dashed var(--hair);
+    background:var(--panel);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;transition:.16s}
+  .slot .ic{font-size:19px;line-height:1}
+  .slot .nm{font:600 10.5px/1.25 "Archivo",sans-serif}
+  .slot .st{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim)}
+  .slot.hidden-piece .nm{color:var(--dim)}
+  .slot.hand{border:1px solid;animation:pop .3s ease-out}
+  .slot.done{border:1px solid var(--patina);background:#13251F}
+  .slot.done .nm{color:var(--patina)}
+  .slot.lost{border:1px solid var(--alarm);background:#2A1616}
+  .slot.lost .nm{color:var(--alarm)}
+  .slot.obj{border:1px solid var(--brass);background:#241C0C;cursor:pointer}
+  .slot.obj:hover{transform:translateY(-2px)}
+  .slot.obj .nm{color:var(--brass)}
+  .slot.used{border:1px solid var(--line);opacity:.45;cursor:default}
+  @keyframes pop{from{transform:scale(.75);opacity:0}}
+
+  aside{flex:1;min-width:268px;max-width:326px;display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);padding:11px 13px}
+  .card h3{margin:0 0 9px;font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .row+.row{margin-top:7px}
+  .big{font:400 20px/1 "Bodoni Moda",Georgia,serif;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .goal{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px}
+  .goal+.goal{border-top:1px solid var(--line)}
+  .goal .n{width:19px;height:19px;border:1px solid var(--line);background:var(--panel2);
+    display:grid;place-items:center;font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim);flex:none}
+  .goal.done .n{background:var(--patina);border-color:var(--patina);color:#0C1A16}
+  .goal .t{flex:1} .goal.done .t{color:var(--dim);text-decoration:line-through}
+  .goal .v{font:500 12px/1 "IBM Plex Mono",monospace;color:var(--ink)}
+
+  .pips{display:flex;gap:5px}
+  .pip{width:15px;height:15px;background:var(--panel2);border:1px solid var(--line)}
+  .pip.on{background:var(--alarm);border-color:var(--alarm)}
+  .pip.mp{border-radius:50%;width:13px;height:13px}
+  .pip.mp.on{background:var(--brass);border-color:var(--brass)}
+
+  #foecard{border-left:2px solid var(--alarm)}
+  #foecard .name{font:600 13.5px/1.3 "Archivo",sans-serif;color:var(--ink);margin-bottom:3px}
+  #foecard .desc{color:var(--dim);font-size:12px;line-height:1.45;min-height:32px}
+  .deckline{color:var(--dim);font:500 10.5px/1 "IBM Plex Mono",monospace;margin-top:8px;
+    display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}
+
+  .comp{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:4px 0}
+  .comp .sym{width:16px;height:16px;flex:none;display:grid;place-items:center;font-size:12px}
+  .comp .who{flex:1;color:var(--ink)}
+  .comp .st{font:500 10px/1 "IBM Plex Mono",monospace;color:var(--dim)}
+  .comp.done{opacity:.45} .comp.done .st{color:var(--patina)}
+
+  #log{margin-top:12px;background:var(--panel);border:1px solid var(--line);padding:9px 13px;
+    font:12px/1.7 "IBM Plex Mono",Consolas,monospace;color:var(--dim);height:118px;overflow-y:auto}
+  #log b{color:var(--ink);font-weight:500}
+  #log .r{color:var(--alarm)} #log .g{color:var(--patina)} #log .y{color:var(--brass)}
+  #log .sep{color:var(--hair)}
+
+  .keys{color:var(--dim);font-size:11.5px;margin-top:10px;line-height:1.95}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+    padding:1px 6px;font:11px "IBM Plex Mono",monospace;color:var(--ink)}
+  .hintbar{margin-top:8px;padding:7px 11px;background:#241C0C;border:1px solid var(--brass-dim);
+    color:var(--brass);font-size:12.5px;display:none}
+  .hintbar.on{display:block}
+
+  #overlay{position:fixed;inset:0;background:#070809ee;display:flex;align-items:center;
+    justify-content:center;padding:20px;z-index:20;overflow-y:auto}
+  #overlay.off{display:none}
+  .modal{background:var(--panel);border:1px solid var(--line);padding:26px 30px;
+    max-width:620px;width:100%;box-shadow:0 30px 80px #000c}
+  .modal h2{margin:0 0 6px;font:400 30px/1.05 "Bodoni Moda",Georgia,serif;color:var(--ink)}
+  .modal .lead{color:var(--dim);font-size:13.5px;margin:0 0 16px;line-height:1.6}
+  .modal .lead b{color:var(--body)}
+  .wing{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--brass);margin:16px 0 8px;display:flex;align-items:center;gap:10px}
+  .wing::after{content:"";flex:1;height:1px;background:var(--line)}
+  .lvls{display:grid;gap:7px}
+  @media(min-width:560px){.lvls{grid-template-columns:1fr 1fr}}
+  .lv{display:flex;gap:11px;align-items:flex-start;background:var(--panel2);
+    border:1px solid var(--line);padding:10px 12px;cursor:pointer;text-align:left;transition:.12s}
+  .lv:hover{border-color:var(--brass);transform:translateX(2px)}
+  .lv .num{font:400 26px/.85 "Bodoni Moda",Georgia,serif;color:var(--brass);flex:none;width:24px}
+  .lv b{display:block;font-size:13.5px;color:var(--ink)}
+  .lv small{color:var(--dim);font-size:11.5px;line-height:1.4;display:block}
+  .lv .foe{color:var(--alarm);font-size:11px}
+  .btn{background:var(--brass);color:#171208;border:0;padding:11px 18px;
+    font:600 14px/1 "Archivo",sans-serif;cursor:pointer;margin:12px 6px 0 0}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.piece{padding:14px 16px;display:inline-flex;align-items:center;gap:9px}
+  .rules{font-size:12.5px;color:var(--dim);line-height:1.7;border-top:1px solid var(--line);
+    padding-top:13px;margin-top:15px}
+  .rules b{color:var(--ink)}
+  .modal:focus-visible,.lv:focus-visible,.btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">LOS <b>MUSEOS</b></div>
+    <div class="sub" id="salachip">—</div>
+    <div class="hchips">
+      <span class="chip" id="whochip">—</span>
+      <span class="chip" id="roundchip">Ronda 1</span>
+    </div>
+  </header>
+
+  <div id="stage">
+    <div>
+      <div id="boardwrap">
+        <canvas id="c" width="660" height="480"></canvas>
+        <div id="tray">
+          <div class="traybox">
+            <h4><span>Piezas</span><span id="piecen"></span></h4>
+            <div class="slots" id="pieceslots"></div>
+          </div>
+          <div class="traybox">
+            <h4><span>Objetos</span><span id="objn"></span></h4>
+            <div class="slots" id="objslots"></div>
+          </div>
+        </div>
+      </div>
+      <div class="hintbar" id="hint"></div>
+      <div id="log"></div>
+      <div class="keys">
+        <kbd>← ↑ → ↓</kbd> / <kbd>WASD</kbd> moverte · <kbd>Espacio</kbd> tomar mate · <kbd>Enter</kbd> cerrar ronda ·
+        <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> usar objeto · <kbd>R</kbd> reiniciar · <kbd>Esc</kbd> salas
+        <br>Movés <b>dos casilleros exactos</b>. Todo se activa al pasar por encima.
+      </div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <h3>Para escapar</h3>
+        <div class="goal" id="g1"><div class="n">1</div><div class="t">Entregar las 3 piezas</div><div class="v" id="g1v">0/3</div></div>
+        <div class="goal" id="g2"><div class="n">2</div><div class="t">Llegar a la salida</div><div class="v" id="g2v">🔒</div></div>
+      </div>
+
+      <div class="card">
+        <div class="row"><span>Movimiento</span><div class="pips" id="mp"></div></div>
+        <div class="row"><span>Alerta</span><span class="big" id="alertv">1</span></div>
+        <div class="row"><span style="color:var(--dim);font-size:12px">Avanza</span><span id="foespeed" style="font-size:12px">1 casillero</span></div>
+        <div class="row"><span>Piezas recuperadas</span><div class="pips" id="taken"></div></div>
+      </div>
+
+      <div class="card" id="foecard">
+        <h3>Última acción</h3>
+        <div class="name" id="fcn">—</div>
+        <div class="desc" id="fcd">Todavía no jugó.</div>
+        <div class="deckline"><span>Mazo</span><span id="deckn">—</span></div>
+      </div>
+
+      <div class="card">
+        <h3>Cómplices</h3>
+        <div id="comps" style="display:flex;flex-direction:column;gap:2px"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div id="overlay"><div class="modal" id="modal"></div></div>
+<script>
+/* ==========================================================================
+   LOS MUSEOS · motor
+   Reglas tomadas del reglamento de LUNES (Tunni / Nassif · Super Noob):
+   ronda de 3 fases, movimiento de 2 casilleros exactos, activación al pasar
+   por encima, persecución con orden de prioridad, mazo de 9 acciones que al
+   agotarse sube la alerta, y captura que te saca una pieza en vez de matarte.
+   Capas: DATOS -> ESTADO -> LÓGICA (acá) -> RENDER -> INPUT.
+   ========================================================================== */
+
+const TUNE = {
+  steps        : 2,    // casilleros por ronda (el reglamento dice "exactos")
+  alertMax     : 3,    // tope de casilleros que avanza el antagonista
+  matesPerTurn : 3,    // al tercer mate en una misma fase, terminás en el baño
+  bananaCost   : 1,    // movimiento que te come el piso mojado
+  moveMs       : 115,
+  shakeMs      : 340,
+};
+
+const W = 11, H = 8, CS = 60;
+const DIRS  = [[1,0],[-1,0],[0,-1],[0,1]];   // prioridad del reglamento: → ← ↑ ↓
+const DIAGS = [[1,-1],[1,1],[-1,1],[-1,-1]];
+const key = (x,y)=>y*W+x;
+const inside = (x,y)=>x>=0&&y>=0&&x<W&&y<H;
+const shuffle = a=>{ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+/* ---------- el grupo ---------- */
+const CREW = {
+  tomy  :{n:"Tomy",      hair:"#C2571F", style:"rulos",  beard:false, tall:1.00, shirt:"#4E8FD0"},
+  lamber:{n:"Lamber",    hair:"#1E1A18", style:"corto",  beard:true,  tall:1.00, shirt:"#57A06B"},
+  chupa :{n:"Chupa",     hair:"#1E1A18", style:"corto",  beard:false, tall:1.00, shirt:"#C9603F"},
+  kzk   :{n:"Kzk",       hair:"#A9793F", style:"corto",  beard:true,  tall:1.00, shirt:"#8A6BC4"},
+  matxi :{n:"Matxi",     hair:"#6B4526", style:"corto",  beard:false, tall:1.00, shirt:"#D8A33C"},
+  chuna :{n:"Chuna",     hair:"#3A2416", style:"largorulos", beard:false, tall:1.00, shirt:"#3FA6A0"},
+  hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",  beard:false, tall:1.18, shirt:"#C25B93"},
+  marian:{n:"Marian",    hair:"#7A5230", style:"largo",  beard:false, tall:1.10, shirt:"#5B7FD4"},
+  damian:{n:"Damián",    hair:"#1E1A18", style:"medio",  beard:false, tall:1.00, shirt:"#7FA23E"},
+};
+
+/* habilidad propia de cada uno, solo cuando protagoniza su sala */
+const POWERS = {
+  hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una estatua."},
+  damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
+  lamber:{n:"Agenda llena",     d:"Cualquier cómplice te acepta cualquier pieza."},
+  kzk   :{n:"Manos de técnico", d:"Una vez por partida reactivás una vitrina con alarma."},
+  chuna :{n:"Piernas",          d:"Una vez por partida movés 4 casilleros en lugar de 2."},
+  tomy  :{n:"Mate infinito",    d:"Podés repetir el mismo mate dentro del mismo turno."},
+  matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
+  chupa :{n:"Bolsillos grandes",d:"Empezás con un objeto extra."},
+  marian:{n:"Ojo de halcón",    d:"Ves la próxima acción del antagonista antes de moverte."},
+};
+
+/* ---------- las 3 piezas: color + símbolo, como los informes ---------- */
+const PIECES = [
+  {id:"rombo",     sym:"◆", name:"Rombo azul",       color:"#3F7FD6"},
+  {id:"triangulo", sym:"▲", name:"Triángulo rojo",   color:"#D4534A"},
+  {id:"circulo",   sym:"●", name:"Círculo naranja",  color:"#E09A3C"},
+];
+const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
+
+/* ---------- objetos recompensa (se sortean 3 de 5) ---------- */
+const OBJECTS = {
+  mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
+  mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
+  fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal."},
+  empa  :{ic:"🥟", n:"Empanada", d:"Te teletransporta a tu baño. Salva de un encierro."},
+  altavoz:{ic:"📢",n:"Altavoz",  d:"Llamado falso: el antagonista vuelve a su oficina."},
+};
+
+/* ---------- las 9 acciones del antagonista ---------- */
+const DECK = [
+  {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo"},
+  {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo"},
+  {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo"},
+  {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath"},
+  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit"},
+  {n:"Sale a fumar",                   d:"Se va a la salida de emergencia a fumar.", k:"exit"},
+  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.", k:"home"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las estatuas no te salvan.", k:"rush"},
+];
+
+/* ---------- antagonistas ---------- */
+const FOES = {
+  encargado:{n:"El Encargado",   look:"overol",  d:"Camina y nada más. Es la sala escuela."},
+  curador  :{n:"El Curador",     look:"saco",    d:"Sus acciones lo llevan a las vitrinas, no a los puestos."},
+  director :{n:"El Director",    look:"traje",   d:"El perseguidor clásico. Sin trucos, sin descanso."},
+};
+
+/* ---------- las salas ----------
+   #pared  .piso  E salida  @tu puesto  b tu baño  J antagonista  x su baño
+   V vitrina  1 2 3 cómplices (rombo/triángulo/círculo)  M mate  T estatua  L piso mojado */
+const SALAS = {
+  s1:{ num:1, name:"Depósito de embalaje", wing:"Museo de Pueblo",
+       place:"Cajones, papel de burbuja y una sola puerta",
+       hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
+       map:[ "####E######",
+             "#@b......V#",
+             "#.........#",
+             "#..T#.#T..#",
+             "#1..#.#..2#",
+             "#..M...M..#",
+             "#V..LJx.V3#",
+             "###########" ]},
+  s2:{ num:2, name:"Sala de Arqueología", wing:"Museo Municipal",
+       place:"Vitrinas largas y pasillos angostos",
+       hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
+       map:[ "###E#######",
+             "#@b..#...1#",
+             "#..#L#.#..#",
+             "#V.#...#.V#",
+             "#..#T#T#..#",
+             "#2.M...M.3#",
+             "#..#Jx#..V#",
+             "###########" ]},
+  s3:{ num:3, name:"Oficinas administrativas", wing:"Museo Municipal",
+       place:"La parte aburrida del museo",
+       hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
+       map:[ "####E######",
+             "#@b..#..1.#",
+             "#...T#T...#",
+             "#V.......V#",
+             "#..#...#..#",
+             "#2.M.#.M.3#",
+             "#..L.Jx..V#",
+             "###########" ]},
+};
+
+/* ---------- estado ---------- */
+let S = null;
+const fx = { floats:[], shake:0 };
+
+function parseMap(rows){
+  const grid=[], marks={vitrinas:[],comps:[],mates:[]};
+  let exit=null, home=null, bath=null, foeHome=null, foeBath=null;
+  const compOrder = ["rombo","triangulo","circulo"];
+  for(let y=0;y<H;y++){
+    grid.push([]);
+    for(let x=0;x<W;x++){
+      const ch=rows[y][x];
+      const c={wall:ch==="#", type:null, deco:(x*7+y*13)%3, alarm:0, want:null};
+      if(ch==="V"){ c.type="vitrina"; marks.vitrinas.push({x,y}); }
+      if(ch==="M"){ c.type="mate";    marks.mates.push({x,y}); }
+      if(ch==="T"){ c.type="estatua"; }
+      if(ch==="L"){ c.type="mojado"; }
+      if(ch==="E"){ c.type="salida"; exit={x,y}; }
+      if(ch==="@"){ c.type="puesto";  home={x,y}; }
+      if(ch==="b"){ c.type="banio";   bath={x,y}; }
+      if(ch==="J"){ c.type="oficina"; foeHome={x,y}; }
+      if(ch==="x"){ c.type="baniojefe"; foeBath={x,y}; }
+      if("123".includes(ch)){
+        c.type="complice"; c.want=compOrder[+ch-1];
+        marks.comps.push({x,y,want:c.want});
+      }
+      grid[y].push(c);
+    }
+  }
+  return {grid,marks,exit,home,bath,foeHome,foeBath};
+}
+
+function newGame(salaKey){
+  const sala = SALAS[salaKey];
+  const p = parseMap(sala.map);
+  const hero = CREW[sala.hero], power = POWERS[sala.hero];
+
+  // las 3 piezas van boca abajo; cada vitrina revela la siguiente
+  const pile = shuffle(PIECES.map(o=>o.id));
+  // 3 objetos de los 5, uno debajo de cada pieza
+  const objs = shuffle(Object.keys(OBJECTS)).slice(0,3);
+  const under = {}; pile.forEach((id,i)=>under[id]=objs[i]);
+
+  S = {
+    salaKey, sala, hero, heroKey:sala.hero, power, foe:FOES[sala.foe], foeKey:sala.foe,
+    grid:p.grid, marks:p.marks,
+    exit:p.exit, home:p.home, bath:p.bath, foeHome:p.foeHome, foeBath:p.foeBath,
+    player:{x:p.home.x, y:p.home.y, px:p.home.x, py:p.home.y, bob:0},
+    foes:[{x:p.foeHome.x, y:p.foeHome.y, px:p.foeHome.x, py:p.foeHome.y, bob:0}],
+    pile, under, hand:[], delivered:[], taken:0, lost:[],
+    objects:[], objUsed:[],
+    alert:1, deck:shuffle(DECK.slice()), lastCard:null, peek:null,
+    round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
+    diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
+    over:null, busy:false, log:[],
+  };
+
+  // habilidades que actúan en la preparación
+  if(sala.hero==="damian" && S.pile.length){ takePiece(true); }
+  if(sala.hero==="chupa"){ const extra=shuffle(Object.keys(OBJECTS))[0]; S.objects.push(extra); }
+  if(sala.hero==="matxi") S.freeCatch = true;
+
+  fx.floats.length=0; fx.shake=0;
+  buildFloorLayer();
+  say(`<b>Sala ${sala.num} · ${sala.name}</b>`,"y");
+  say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
+  say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
+  if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
+  syncUI();
+}
+
+function say(t,cls){
+  S.log.push(`<span class="${cls||""}">${t}</span>`);
+  const el=document.getElementById("log");
+  el.innerHTML = S.log.slice(-60).join("<br>");
+  el.scrollTop = el.scrollHeight;
+}
+function float(x,y,txt,color){ fx.floats.push({x,y,txt,color:color||"#EAE8E2",t:0}); }
+
+const cellAt = (x,y)=> inside(x,y) ? S.grid[y][x] : null;
+const isWall = (x,y)=> !inside(x,y) || S.grid[y][x].wall;
+const foeOn = (x,y)=> S.foes.some(f=>f.x===x && f.y===y);
+
+function bfsFrom(from){
+  const d=new Array(W*H).fill(-1); d[key(from.x,from.y)]=0;
+  const q=[from];
+  while(q.length){
+    const c=q.shift();
+    for(const [dx,dy] of DIRS){
+      const nx=c.x+dx, ny=c.y+dy;
+      if(isWall(nx,ny)||d[key(nx,ny)]!==-1) continue;
+      d[key(nx,ny)]=d[key(c.x,c.y)]+1; q.push({x:nx,y:ny});
+    }
+  }
+  return d;
+}
+
+function reachableCells(steps){
+  const d=new Array(W*H).fill(-1); d[key(S.player.x,S.player.y)]=0;
+  const q=[{x:S.player.x,y:S.player.y}], out=new Map();
+  const dirs = S.diagonal ? DIRS.concat(DIAGS) : DIRS;
+  while(q.length){
+    const c=q.shift(), dist=d[key(c.x,c.y)];
+    if(dist>=steps) continue;
+    for(const [dx,dy] of dirs){
+      const nx=c.x+dx, ny=c.y+dy;
+      if(isWall(nx,ny)||d[key(nx,ny)]!==-1) continue;
+      d[key(nx,ny)]=dist+1; out.set(key(nx,ny),dist+1); q.push({x:nx,y:ny});
+    }
+  }
+  return out;
+}
+
+/* ======================= FASE 1 · movimiento ======================= */
+function step(dx,dy){
+  if(!S||S.over||S.busy||S.mp<=0) return;
+  if((dx&&dy) && !S.diagonal) return;                 // diagonal solo con fernet
+  const nx=S.player.x+dx, ny=S.player.y+dy;
+  if(isWall(nx,ny)) return;
+  S.player.x=nx; S.player.y=ny; S.mp--;
+  if(foeOn(nx,ny)){ resolveCatch(); return; }          // caíste encima: se resuelve
+  passThrough(nx,ny);                                  // todo se activa al pasar
+  if(S.over) return;
+  if(S.mp<=0){
+    // si te quedaste justo sobre un mate, la ronda espera: tomarlo te devuelve
+    // los pasos y podés seguir. Enter cierra la ronda.
+    if(canDrinkHere()){ S.awaitMate=true; syncUI(); return; }
+    S.busy=true; setTimeout(endMovement, TUNE.moveMs+110);
+  }
+  syncUI();
+}
+
+function canDrinkHere(){
+  const c=S.grid[S.player.y][S.player.x];
+  if(c.type!=="mate") return false;
+  if(S.matesTurn>=TUNE.matesPerTurn) return false;
+  return !S.drunk.has(key(S.player.x,S.player.y)) || S.heroKey==="tomy";
+}
+
+function finishRound(){                                 // Enter: cerrar la ronda a mano
+  if(!S||S.over||S.busy||!S.awaitMate) return;
+  S.awaitMate=false; S.busy=true;
+  setTimeout(endMovement, 60);
+}
+
+/* activación al pasar por encima */
+function passThrough(x,y){
+  const c=S.grid[y][x];
+  if(c.type==="vitrina" && !c.alarm && S.pile.length){
+    takePiece();
+    c.alarm = 1;
+    return;
+  }
+  if(c.type==="complice"){
+    // la entrega de la pieza correcta es automática al pasar, como en el reglamento.
+    // La entrega flexible de Lamber la decide él con E, para no quedarse sin escudo.
+    const wanted = S.hand.includes(c.want) ? c.want : null;
+    if(wanted && !S.delivered.includes(c.want)){
+      S.hand.splice(S.hand.indexOf(wanted),1);
+      S.delivered.push(c.want);
+      const obj = S.under[wanted];
+      if(obj){ S.objects.push(obj); }
+      float(x,y,"✓ "+CREW[compOf(c.want)].n, "#79AE9E");
+      say(`🤝 Le pasaste ${PIE[wanted].sym} <b>${PIE[wanted].name}</b> a ${CREW[compOf(c.want)].n}. Te dio: <b>${OBJECTS[obj].n}</b>.`,"g");
+      if(S.delivered.length===3) say(`Las tres piezas están afuera. <b>Corré a la salida.</b>`,"g");
+    }
+    return;
+  }
+  if(c.type==="mojado"){
+    if(S.mp>0){ S.mp-=TUNE.bananaCost; float(x,y,"¡PISO MOJADO!","#E0685D");
+                say("💧 Piso recién lavado: perdés un movimiento."); }
+    return;
+  }
+  if(c.type==="salida" && S.delivered.length>=3) return gameWin();
+}
+
+function takePiece(silent){
+  const id = S.pile.pop();
+  S.hand.push(id);
+  if(!silent){
+    float(S.player.x,S.player.y, PIE[id].sym+" "+PIE[id].name, PIE[id].color);
+    say(`🖼️ Abriste la vitrina: <b>${PIE[id].name}</b> ${PIE[id].sym}. Buscá a su cómplice. La alarma dejó esa vitrina fuera de servicio.`,"y");
+  }
+  return id;
+}
+const compOf = want => (S.sala.comps[["rombo","triangulo","circulo"].indexOf(want)]);
+
+/* Agenda llena: Lamber puede convencer a cualquier cómplice de aceptar cualquier
+   pieza, pero lo decide él — si fuera automático se quedaría sin escudo sin querer. */
+function canOfferHere(){
+  if(S.heroKey!=="lamber" || !S.hand.length) return false;
+  const c = S.grid[S.player.y][S.player.x];
+  return c.type==="complice" && !c.done && !S.delivered.includes(c.want);
+}
+function offerDelivery(){
+  if(!S||S.over||S.busy||!canOfferHere()) return;
+  const c = S.grid[S.player.y][S.player.x];
+  const id = S.hand.shift();
+  S.delivered.push(c.want); c.done=true;
+  const obj = S.under[id];
+  if(obj) S.objects.push(obj);
+  float(S.player.x,S.player.y,"✓ "+CREW[compOf(c.want)].n,"#79AE9E");
+  say(`🤝 Agenda llena: convenciste a ${CREW[compOf(c.want)].n} de aceptar ${PIE[id].sym} <b>${PIE[id].name}</b>. Te dio: <b>${OBJECTS[obj].n}</b>.`,"g");
+  if(S.delivered.length===3) say("Las tres piezas están afuera. <b>Corré a la salida.</b>","g");
+  syncUI();
+}
+
+/* mate: recupera los pasos ya dados en esta fase */
+function drinkMate(){
+  if(!S||S.over||S.busy) return;
+  const c=S.grid[S.player.y][S.player.x];
+  if(c.type!=="mate") return;
+  const k=key(S.player.x,S.player.y);
+  if(S.drunk.has(k) && S.heroKey!=="tomy"){ say("Ese mate ya lo tomaste este turno."); return; }
+  S.drunk.add(k);
+  S.matesTurn++;
+  S.mp = TUNE.steps;
+  S.awaitMate = false;
+  float(S.player.x,S.player.y,"+MATE","#D2A24C");
+  if(S.matesTurn>=TUNE.matesPerTurn){
+    say("🧉 Tercer mate del turno… terminás el turno en tu baño.","r");
+    S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
+    S.busy=true; return setTimeout(endMovement, TUNE.moveMs+110);
+  }
+  say("🧉 Mate: recuperaste los pasos de este turno.","g");
+  syncUI();
+}
+
+function endMovement(){
+  if(S.over) return;
+  const c=S.grid[S.player.y][S.player.x];
+  const hidden = c.type==="estatua" ||
+    (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
+      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="estatua"; }));
+  if(hidden) say("🗿 Terminaste el turno escondido: no te persigue.","g");
+  setTimeout(()=>chasePhase(hidden), 220);
+}
+
+/* ======================= FASE 2 · persecución ======================= */
+/* Un paso hacia el jugador. DIRS está en el orden de prioridad del reglamento
+   (→ ← ↑ ↓) y solo aceptamos una casilla que acorte de verdad la distancia, así
+   que ante un empate gana la primera dirección de la lista, como en el manual. */
+function chaseStep(f){
+  const d = bfsFrom({x:S.player.x, y:S.player.y});
+  let best=null, bd=d[key(f.x,f.y)];
+  for(const [dx,dy] of DIRS){
+    const nx=f.x+dx, ny=f.y+dy;
+    if(isWall(nx,ny)) continue;
+    const v=d[key(nx,ny)];
+    if(v>=0 && (bd<0 || v<bd)){ bd=v; best={x:nx,y:ny}; }
+  }
+  if(!best) return false;
+  f.x=best.x; f.y=best.y;
+  return f.x===S.player.x && f.y===S.player.y;
+}
+
+function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
+
+function chasePhase(hidden){
+  if(S.over) return;
+  if(!hidden){
+    const n = S.foes.length>1 ? 1 : foeSpeed();     // Los Procuradores avanzan 1 cada uno
+    for(const f of S.foes)
+      for(let i=0;i<n;i++) if(chaseStep(f)) return resolveCatch();
+  }
+  setTimeout(actionPhase, 240);
+}
+
+/* ======================= FASE 3 · acción ======================= */
+/* El reglamento: cuando se acaba la pila se mezcla, y a partir de la ronda
+   siguiente sube la alerta. Reponer al principio de la fase da justo eso, y
+   además no se saltea si la ronda anterior terminó en captura. */
+function refillDeck(){
+  S.deck = shuffle(DECK.slice());
+  if(S.alert < TUNE.alertMax){
+    S.alert++;
+    fx.shake = TUNE.shakeMs;
+    float(S.foes[0].x, S.foes[0].y, "ALERTA "+S.alert, "#E0685D");
+    say(`🚨 <b>Alerta ${S.alert}.</b> Se le acabó el mazo: ahora avanza ${foeSpeed()} casilleros.`,"r");
+  }
+}
+
+function actionPhase(){
+  if(S.over) return;
+  if(!S.deck.length) refillDeck();
+  const card = S.deck.pop();
+  S.lastCard = card;
+  const f = S.foes[0];
+  const put = (p)=>{ if(p){ f.x=p.x; f.y=p.y; } };
+
+  switch(card.k){
+    case "desk": {
+      // el Curador va a las vitrinas en vez de a los puestos
+      if(S.foeKey==="curador"){
+        const live = S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
+        put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
+      }else{
+        put(S.marks.comps.find(c=>c.want===card.t));
+      }
+      break; }
+    case "bath": put(S.foeBath); break;
+    case "exit": put(S.exit);    break;
+    case "home": put(S.foeHome); break;
+    case "rush":
+      for(const ff of S.foes)
+        for(let i=0;i<foeSpeed();i++) if(chaseStep(ff)) return resolveCatch();
+      break;
+  }
+  if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
+
+  say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
+  nextRound();
+}
+
+function nextRound(){
+  if(S.over) return;
+  S.round++;
+  S.mp = TUNE.steps;
+  S.matesTurn = 0; S.drunk.clear();
+  S.diagonal = false; S.busy = false; S.awaitMate = false;
+  if(S.heroKey==="marian") S.peek = S.deck[S.deck.length-1];
+  syncUI();
+}
+
+/* ======================= captura ======================= */
+function resolveCatch(){
+  fx.shake = TUNE.shakeMs;
+  if(S.hand.length===0){
+    return gameLose(`${S.foe.n} te encontró sin ninguna pieza en la mano. A tu escritorio.`);
+  }
+  if(S.freeCatch){                                   // Cara de piedra (Matxi)
+    S.freeCatch = false;
+    say("😐 Cara de piedra: zafaste sin entregar nada.","g");
+    return resetPositions();
+  }
+  if(S.hand.length===1) return losePiece(S.hand[0]);
+  askWhichPiece();                                   // el reglamento te deja elegir
+}
+
+function losePiece(id){
+  S.hand.splice(S.hand.indexOf(id),1);
+  S.pile.push(id);
+  S.taken++;
+  S.lost.push(id);
+  float(S.player.x,S.player.y,"−"+PIE[id].sym,"#E0685D");
+  // se reactiva la vitrina más lejana a tu puesto
+  const d = bfsFrom(S.home);
+  let far=null, fd=-1;
+  for(const v of S.marks.vitrinas){
+    const dd=d[key(v.x,v.y)];
+    if(S.grid[v.y][v.x].alarm && dd>fd){ fd=dd; far=v; }
+  }
+  if(far) S.grid[far.y][far.x].alarm = 0;
+  say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a la vitrina más lejana y los dos vuelven a sus puestos.`,"r");
+  if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas. Se terminó.`);
+  resetPositions();
+}
+
+function resetPositions(){
+  S.player.x=S.home.x; S.player.y=S.home.y;
+  S.foes.forEach((f,i)=>{ f.x=S.foeHome.x; f.y=S.foeHome.y; });
+  S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear(); S.diagonal=false; S.busy=false; S.awaitMate=false;
+  S.round++;
+  syncUI();
+}
+
+/* ======================= objetos ======================= */
+function useObject(i){
+  if(!S||S.over||S.busy) return;
+  if(i>=S.objects.length || S.objUsed.includes(i)) return;
+  const id=S.objects[i];
+  S.objUsed.push(i);
+  if(id==="mate1"||id==="mate2"){ S.matesTurn++; S.mp=TUNE.steps; say("🧉 Mate de la mochila: pasos recuperados.","g"); }
+  if(id==="fernet"){ S.diagonal=true; say("🥃 Fernet: este turno te movés en diagonal.","y"); }
+  if(id==="empa"){ S.player.x=S.bath.x; S.player.y=S.bath.y; say("🥟 Esa empanada estaba dudosa. Al baño.","y"); }
+  if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
+                      say("📢 Llamado falso por altavoz: volvió a su oficina.","g"); }
+  float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
+  syncUI();
+}
+
+/* habilidad de Kzk */
+function fixVitrina(){
+  if(S.heroKey!=="kzk" || S.powerUsed) return;
+  const broken = S.marks.vitrinas.filter(v=>S.grid[v.y][v.x].alarm);
+  if(!broken.length) return;
+  const d=bfsFrom({x:S.player.x,y:S.player.y});
+  broken.sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)]);
+  S.grid[broken[0].y][broken[0].x].alarm=0;
+  S.powerUsed=true;
+  say("🔧 Manos de técnico: desactivaste una alarma.","g");
+  syncUI();
+}
+
+/* ======================= fin ======================= */
+function gameWin(){
+  S.over="win";
+  float(S.exit.x,S.exit.y,"¡AFUERA!","#79AE9E");
+  const next = Object.keys(SALAS)[Object.keys(SALAS).indexOf(S.salaKey)+1];
+  showModal(`<h2>Se escapó ${S.hero.n}</h2>
+    <p class="lead">Tres piezas entregadas y la puerta de emergencia atrás.
+    <b>${S.foe.n}</b> se quedó con la alerta en ${S.alert} y una sala vacía.</p>
+    <div class="rules"><b>Ronda final:</b> ${S.round} · <b>Piezas recuperadas por él:</b> ${S.taken}/3
+    · <b>Sala:</b> ${S.sala.name}</div>
+    ${next?`<button class="btn" onclick="startSala('${next}')">Sala ${SALAS[next].num} · ${SALAS[next].name}</button>`:""}
+    <button class="btn alt" onclick="newGame('${S.salaKey}');closeModal()">Repetir</button>
+    <button class="btn alt" onclick="menu()">Todas las salas</button>`);
+}
+function gameLose(reason){
+  S.over="lose"; fx.shake=TUNE.shakeMs*1.7;
+  say(`💼 <b>${reason}</b>`,"r");
+  showModal(`<h2>Te agarraron</h2>
+    <p class="lead">${reason}</p>
+    <div class="rules"><b>Rondas:</b> ${S.round} · <b>Piezas entregadas:</b> ${S.delivered.length}/3
+    · <b>Piezas que te sacó:</b> ${S.taken}/3</div>
+    <button class="btn" onclick="newGame('${S.salaKey}');closeModal()">Otra vez</button>
+    <button class="btn alt" onclick="menu()">Todas las salas</button>`);
+}
+
+/* ==========================================================================
+   RENDER · museo dibujado a mano en canvas.
+   Todo el arte se dibuja en un espacio de casilla de 48u y se escala, así CS
+   se puede cambiar sin tocar una coordenada. El piso y los muebles no cambian
+   durante la partida: se cachean en un canvas aparte.
+   ========================================================================== */
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const U = CS/48;
+let floorLayer=null, mouseCell=null;
+
+const rr=(g,x,y,w,h,r)=>{ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r);
+  g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); };
+const rnd=(x,y,n)=>{ const s=Math.sin(x*127.1+y*311.7+n*74.7)*43758.5453; return s-Math.floor(s); };
+function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g); g.restore(); }
+function atPos(g,fx_,fy_,fn){ g.save(); g.translate(fx_*CS+CS/2, fy_*CS+CS/2+7*U); g.scale(U,U); fn(g); g.restore(); }
+
+/* ---------- piso y paredes ---------- */
+function buildFloorLayer(){
+  floorLayer=document.createElement("canvas");
+  floorLayer.width=W*CS; floorLayer.height=H*CS;
+  const g=floorLayer.getContext("2d");
+
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const px=x*CS, py=y*CS;
+    // parquet de museo: listones alternados
+    g.fillStyle=(x+y)%2 ? "#8C7355" : "#846B4E";
+    g.fillRect(px,py,CS,CS);
+    for(let i=0;i<4;i++){
+      g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0c";
+      g.fillRect(px, py+i*(CS/4)+rnd(x,y,i+9)*3, CS, 1.5);
+    }
+    g.strokeStyle="#00000018"; g.lineWidth=1; g.strokeRect(px+.5,py+.5,CS,CS);
+  }
+  // cenitales de la galería
+  for(let y=1;y<H;y+=3) for(let x=1;x<W;x+=4){
+    const cx=x*CS+CS, cy=y*CS+CS;
+    const gr=g.createRadialGradient(cx,cy,4,cx,cy,CS*2.3);
+    gr.addColorStop(0,"#fff3d822"); gr.addColorStop(1,"#fff3d800");
+    g.fillStyle=gr; g.fillRect(cx-CS*2.3,cy-CS*2.3,CS*4.6,CS*4.6);
+  }
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++)
+    if(S.grid[y][x].wall) inCell(g,x,y,gg=>drawWall(gg,x,y));
+}
+
+function drawWall(g,x,y){
+  const border = x===0||y===0||x===W-1||y===H-1;
+  if(border){                                   // muro de sala, con zócalo
+    g.fillStyle="#3A3F4A"; g.fillRect(0,0,48,48);
+    g.fillStyle="#454B58"; g.fillRect(0,0,48,6);
+    g.fillStyle="#2C313C"; g.fillRect(0,42,48,6);
+    return;
+  }
+  const kind=S.grid[y][x].deco;
+  g.fillStyle="#00000038"; rr(g,5,7,40,40,3); g.fill();
+  if(kind===0){                                  // panel expositor con cuadro
+    g.fillStyle="#4E5460"; rr(g,3,3,42,42,2); g.fill();
+    g.fillStyle="#3C424D"; g.fillRect(3,3,42,6);
+    g.fillStyle="#C0A063"; g.fillRect(10,12,28,24);          // marco dorado
+    g.fillStyle=["#7B4A3A","#3B5A76","#5A6B44"][(x+y)%3];    // lienzo
+    g.fillRect(13,15,22,18);
+    g.fillStyle="#ffffff18"; g.fillRect(13,15,22,6);
+  }else if(kind===1){                            // cajones de embalaje
+    g.fillStyle="#9A7647"; rr(g,4,5,40,38,2); g.fill();
+    g.fillStyle="#8A6739"; g.fillRect(4,5,40,7);
+    g.strokeStyle="#6E5129"; g.lineWidth=2;
+    g.beginPath(); g.moveTo(4,24); g.lineTo(44,24);
+    g.moveTo(6,7); g.lineTo(42,41); g.moveTo(42,7); g.lineTo(6,41); g.stroke();
+  }else{                                         // vitrina alta cerrada
+    g.fillStyle="#3F4653"; rr(g,6,4,36,40,2); g.fill();
+    g.fillStyle="#6E8598"; g.fillRect(9,8,30,30);
+    g.fillStyle="#ffffff22";
+    g.beginPath(); g.moveTo(11,38); g.lineTo(27,8); g.lineTo(33,8); g.lineTo(17,38); g.fill();
+    g.fillStyle="#2C313C"; g.fillRect(6,40,36,4);
+  }
+}
+
+/* ---------- elementos ---------- */
+function drawVitrina(g,c){
+  const on = !c.alarm;
+  g.fillStyle="#00000035"; rr(g,9,36,30,6,3); g.fill();
+  g.fillStyle="#2E3440"; rr(g,9,30,30,10,2); g.fill();       // base
+  g.fillStyle = on ? "#9FC6DE55" : "#7A828E55";              // cristal
+  g.fillRect(11,8,26,23);
+  g.strokeStyle = on ? "#C7DCEA" : "#767E8A"; g.lineWidth=1.6;
+  g.strokeRect(11,8,26,23);
+  g.fillStyle="#ffffff22";
+  g.beginPath(); g.moveTo(13,31); g.lineTo(26,8); g.lineTo(31,8); g.lineTo(18,31); g.fill();
+  if(on){                                                    // la pieza adentro
+    g.fillStyle="#D2A24C"; g.beginPath(); g.arc(24,22,5,0,7); g.fill();
+    g.fillStyle="#EBC77E"; g.beginPath(); g.arc(22.5,20.5,2,0,7); g.fill();
+  }
+  g.fillStyle = on ? "#79AE9E" : "#E0685D";                   // luz de alarma
+  g.beginPath(); g.arc(35,34,2.4,0,7); g.fill();
+  if(!on){ g.fillStyle="#E0685D33"; g.beginPath(); g.arc(35,34,6,0,7); g.fill(); }
+}
+
+function drawMate(g){
+  g.fillStyle="#00000035"; rr(g,15,36,18,5,2); g.fill();
+  g.fillStyle="#6B4A2A"; g.beginPath(); g.arc(24,28,10,0,7); g.fill();   // calabaza
+  g.fillStyle="#4E3620"; g.beginPath(); g.arc(24,28,10,Math.PI*.15,Math.PI*.85); g.fill();
+  g.fillStyle="#2E7D52"; g.beginPath(); g.arc(24,21,7,Math.PI,0); g.fill(); // yerba
+  g.strokeStyle="#C9CDD4"; g.lineWidth=2.4; g.lineCap="round";           // bombilla
+  g.beginPath(); g.moveTo(27,20); g.lineTo(33,10); g.stroke();
+  const t=performance.now()/400;
+  g.strokeStyle="#ffffff44"; g.lineWidth=1.5;
+  g.beginPath(); g.moveTo(20,16); g.quadraticCurveTo(20+Math.sin(t)*3,11,20,7); g.stroke();
+}
+
+function drawEstatua(g){
+  g.fillStyle="#00000035"; rr(g,12,37,24,6,3); g.fill();
+  g.fillStyle="#5A6069"; rr(g,14,32,20,9,1); g.fill();                  // pedestal
+  g.fillStyle="#6E757F"; g.fillRect(14,32,20,3);
+  g.fillStyle="#B9BEC6";                                                // torso
+  g.beginPath(); g.moveTo(19,32); g.lineTo(21,16); g.lineTo(27,16); g.lineTo(29,32); g.fill();
+  g.beginPath(); g.arc(24,12,5.5,0,7); g.fill();                        // cabeza
+  g.fillStyle="#9AA0A9";
+  g.beginPath(); g.moveTo(21,17); g.lineTo(15,26); g.lineTo(18,27); g.lineTo(23,19); g.fill();
+}
+
+function drawMojado(g){
+  g.fillStyle="#7FA8C466"; rr(g,7,20,34,18,9); g.fill();
+  g.strokeStyle="#A8CBE0AA"; g.lineWidth=1.4; rr(g,7,20,34,18,9); g.stroke();
+  g.fillStyle="#E0B33C"; g.beginPath();                                 // cartel
+  g.moveTo(24,6); g.lineTo(33,26); g.lineTo(15,26); g.fill();
+  g.fillStyle="#3A2E12"; g.font="bold 12px system-ui";
+  g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",24,20);
+}
+
+function drawSalida(g,open){
+  g.fillStyle="#232830"; g.fillRect(0,0,48,48);
+  g.fillStyle=open?"#2C4A3A":"#2E333C"; g.fillRect(8,12,32,36);         // puerta
+  g.strokeStyle=open?"#79AE9E":"#4A505C"; g.lineWidth=2; g.strokeRect(8,12,32,36);
+  g.fillStyle=open?"#79AE9E":"#4A505C"; g.beginPath(); g.arc(35,30,2,0,7); g.fill();
+  const gr=g.createLinearGradient(0,0,0,11);
+  gr.addColorStop(0,open?"#79AE9E":"#5A616D"); gr.addColorStop(1,open?"#3E7A66":"#454B56");
+  g.fillStyle=gr; rr(g,5,1,38,10,1); g.fill();
+  g.fillStyle=open?"#EAFFF5":"#9AA0AC"; g.font="bold 7px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText(open?"SALIDA":"CERRADO",24,6);
+  if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(121,174,158,${.10+p*.20})`; g.fillRect(0,0,48,48); }
+}
+
+function drawPuesto(g,mine){
+  g.fillStyle="#00000030"; rr(g,5,8,38,36,3); g.fill();
+  g.fillStyle=mine?"#4A5262":"#5A4A52"; rr(g,4,6,40,34,2); g.fill();
+  g.fillStyle=mine?"#586275":"#6B5760"; g.fillRect(4,6,40,8);
+  g.fillStyle="#2A2E38"; rr(g,14,14,20,13,1); g.fill();                 // monitor
+  g.fillStyle=mine?"#5A8FB8":"#B06A6A"; g.fillRect(16,16,16,9);
+  g.fillStyle="#D8D2C6"; rr(g,15,31,18,5,1); g.fill();
+  g.fillStyle=mine?"#79AE9E":"#E0685D"; g.beginPath(); g.arc(40,42,3,0,7); g.fill();
+}
+
+function drawBanio(g){
+  g.fillStyle="#00000030"; rr(g,13,34,22,6,3); g.fill();
+  g.fillStyle="#E8E6E0"; rr(g,16,18,16,18,4); g.fill();                 // inodoro
+  g.fillStyle="#D4D1C9"; rr(g,14,10,20,10,3); g.fill();
+  g.fillStyle="#BFBCB4"; g.beginPath(); g.ellipse(24,20,8,4,0,0,7); g.fill();
+  g.fillStyle="#9AA0A9"; g.fillRect(23,8,3,3);
+}
+
+function drawComplice(g,c){
+  const who = CREW[compOf(c.want)], piece = PIE[c.want];
+  const done = S.delivered.includes(c.want);
+  g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
+  g.fillStyle="#454C59"; rr(g,11,17,26,20,4); g.fill();                 // escritorio/silla
+  g.save(); g.translate(24,26); g.scale(.86,.86);
+  drawPerson(g, who, 0, done?.5:1);
+  g.restore();
+  // cartel con el símbolo que pide
+  const bx=34, by=4;
+  g.fillStyle="#00000040"; rr(g,bx-11,by+1,21,17,3); g.fill();
+  g.fillStyle= done ? "#2A3A34" : "#F4F2EC"; rr(g,bx-12,by,21,17,3); g.fill();
+  if(done){
+    g.strokeStyle="#79AE9E"; g.lineWidth=2.4; g.lineCap="round";
+    g.beginPath(); g.moveTo(bx-7,by+8); g.lineTo(bx-4,by+12); g.lineTo(bx+4,by+4); g.stroke();
+  }else{
+    g.fillStyle=piece.color; g.font="bold 13px system-ui";
+    g.textAlign="center"; g.textBaseline="middle"; g.fillText(piece.sym, bx-1.5, by+9);
+  }
+}
+
+/* ---------- personas ---------- */
+function drawPerson(g, look, bob, alpha){
+  const t = look.tall || 1;
+  g.save();
+  if(alpha!==undefined) g.globalAlpha=alpha;
+  g.scale(1, t);
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(0,15,11,4.5,0,0,7); g.fill();
+  g.fillStyle="#2B3140"; g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);      // piernas
+  g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();                 // remera
+  g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+  g.fillStyle="#EFC08C"; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
+  g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
+  drawHair(g, look, bob);
+  if(look.beard){                                                              // barba
+    g.fillStyle=look.hair;
+    g.beginPath(); g.arc(0,-11.5+bob,6.6,.15*Math.PI,.85*Math.PI); g.fill();
+  }
+  g.fillStyle="#1C1F26";
+  g.beginPath(); g.arc(-2.9,-14.8+bob,1.15,0,7); g.fill();
+  g.beginPath(); g.arc(2.9,-14.8+bob,1.15,0,7); g.fill();
+  g.globalAlpha=1;
+  g.restore();
+}
+
+function drawHair(g, look, bob){
+  const y=-14.5+bob;
+  g.fillStyle=look.hair;
+  if(look.style==="corto"){
+    g.beginPath(); g.arc(0,y-1.5,8,Math.PI,0); g.fill();
+    g.fillRect(-8,y-2,16,2.5);
+  }else if(look.style==="medio"){
+    g.beginPath(); g.arc(0,y-1.5,8.4,Math.PI,0); g.fill();
+    g.fillRect(-8.4,y-2,16.8,9);                                   // lacio hasta la mandíbula
+  }else if(look.style==="largo"){
+    g.beginPath(); g.arc(0,y-1.5,8.6,Math.PI,0); g.fill();
+    g.fillRect(-8.6,y-2,17.2,15);
+    g.beginPath(); g.arc(0,y+13,8.6,0,Math.PI); g.fill();
+  }else if(look.style==="rulos"){
+    for(const [cx,cy,r] of [[-6,y-4,4.2],[0,y-6.5,4.6],[6,y-4,4.2],[-8,y-.5,3.6],[8,y-.5,3.6]]){
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+    }
+  }else if(look.style==="largorulos"){
+    for(const [cx,cy,r] of [[-6,y-4,4.4],[0,y-6.8,4.8],[6,y-4,4.4],
+                            [-9,y+2,4.2],[9,y+2,4.2],[-8,y+8,4],[8,y+8,4],[0,y+11,4.4]]){
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+    }
+  }
+}
+
+/* antagonistas */
+function drawFoe(g,bob,look){
+  g.fillStyle="#00000042"; g.beginPath(); g.ellipse(0,16,13,5.5,0,0,7); g.fill();
+  g.fillStyle="#1A1D24"; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
+  const body = look==="overol" ? "#4E6B84" : look==="saco" ? "#8A7B5E" : "#262B38";
+  g.fillStyle=body; rr(g,-11.5,-9+bob,23,17,5); g.fill();
+  if(look==="traje"){
+    g.fillStyle="#F5F5F7";
+    g.beginPath(); g.moveTo(-4,-9+bob); g.lineTo(4,-9+bob); g.lineTo(2,2+bob); g.lineTo(-2,2+bob); g.fill();
+    g.fillStyle="#D4534A";
+    g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(3,-4+bob); g.lineTo(0,4+bob); g.lineTo(-3,-4+bob); g.fill();
+  }
+  if(look==="overol"){
+    g.fillStyle="#3C556B"; g.fillRect(-11.5,-3+bob,23,3);
+    g.fillStyle="#C9CDD4"; g.fillRect(-7,-9+bob,2.5,8); g.fillRect(4.5,-9+bob,2.5,8);
+  }
+  if(look==="saco"){
+    g.fillStyle="#6E6146"; g.fillRect(-2,-9+bob,4,14);
+    g.fillStyle="#EFE8D8"; g.fillRect(-1.2,-9+bob,2.4,9);
+  }
+  g.fillStyle=body; g.fillRect(-14.5,-6+bob,4,11); g.fillRect(10.5,-6+bob,4,11);
+  g.fillStyle="#E8B98A"; g.beginPath(); g.arc(0,-16+bob,8.6,0,7); g.fill();
+  if(look==="traje"){                                        // calvo con canas al costado
+    g.fillStyle="#8D939E";
+    g.beginPath(); g.arc(-6.8,-16+bob,3.2,0,7); g.fill();
+    g.beginPath(); g.arc(6.8,-16+bob,3.2,0,7); g.fill();
+  }else if(look==="overol"){                                 // gorra
+    g.fillStyle="#3C556B";
+    g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
+    g.fillRect(-8.4,-18+bob,17,2.5); g.fillRect(-12,-18.5+bob,10,2.5);
+  }else{                                                     // curador: pelo gris y anteojos
+    g.fillStyle="#9AA0A9";
+    g.beginPath(); g.arc(0,-17.5+bob,8.4,Math.PI,0); g.fill();
+    g.strokeStyle="#2C313C"; g.lineWidth=1.2;
+    g.beginPath(); g.arc(-3,-15.5+bob,2.6,0,7); g.arc(3,-15.5+bob,2.6,0,7); g.stroke();
+  }
+  g.strokeStyle="#4A4038"; g.lineWidth=2.1; g.lineCap="round";   // cejas de enojo
+  g.beginPath(); g.moveTo(-6,-19.5+bob); g.lineTo(-2,-17.5+bob);
+  g.moveTo(6,-19.5+bob); g.lineTo(2,-17.5+bob); g.stroke();
+  g.fillStyle="#1C1F26";
+  g.beginPath(); g.arc(-3,-15.2+bob,1.25,0,7); g.fill();
+  g.beginPath(); g.arc(3,-15.2+bob,1.25,0,7); g.fill();
+  const dist = Math.abs(S.foes[0].x-S.player.x)+Math.abs(S.foes[0].y-S.player.y);
+  if(dist<=2 && !S.over){
+    const b=Math.sin(performance.now()/150)*2;
+    g.fillStyle="#E0685D"; g.beginPath(); g.arc(15,-27+b,8.5,0,7); g.fill();
+    g.fillStyle="#fff"; g.font="bold 13px system-ui";
+    g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",15,-27+b);
+  }
+}
+
+/* ---------- bucle ---------- */
+let lastT=performance.now();
+function frame(now){
+  const dt=Math.min(50,now-lastT); lastT=now;
+  requestAnimationFrame(frame);
+  if(!S||!floorLayer) return;
+
+  const k = 1-Math.pow(0.001, dt/TUNE.moveMs);
+  for(const e of [S.player, ...S.foes]){
+    e.px += (e.x-e.px)*k; e.py += (e.y-e.py)*k;
+    const moving = Math.abs(e.x-e.px)+Math.abs(e.y-e.py) > .02;
+    e.bob = moving ? Math.sin(now/70)*1.6 : Math.sin(now/560)*.6;
+  }
+  if(fx.shake>0) fx.shake=Math.max(0,fx.shake-dt);
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(fx.shake>0){ const m=(fx.shake/TUNE.shakeMs)*7;
+    ctx.translate((Math.random()-.5)*m,(Math.random()-.5)*m); }
+
+  ctx.drawImage(floorLayer,0,0);
+  if(!S.over) drawOverlays(now);
+
+  const open = S.delivered.length>=3;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const c=S.grid[y][x];
+    switch(c.type){
+      case "vitrina":  inCell(ctx,x,y,g=>drawVitrina(g,c)); break;
+      case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
+      case "estatua":  inCell(ctx,x,y,g=>drawEstatua(g)); break;
+      case "mojado":   inCell(ctx,x,y,g=>drawMojado(g)); break;
+      case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
+      case "puesto":   inCell(ctx,x,y,g=>drawPuesto(g,true)); break;
+      case "oficina":  inCell(ctx,x,y,g=>drawPuesto(g,false)); break;
+      case "banio":
+      case "baniojefe":inCell(ctx,x,y,g=>drawBanio(g)); break;
+      case "complice": inCell(ctx,x,y,g=>drawComplice(g,c)); break;
+    }
+  }
+
+  const actors = [
+    {py:S.player.py, f:()=>atPos(ctx,S.player.px,S.player.py,g=>drawPerson(g,S.hero,S.player.bob))},
+    ...S.foes.map(f=>({py:f.py, f:()=>atPos(ctx,f.px,f.py,g=>drawFoe(g,f.bob,S.foe.look))})),
+  ].sort((a,b)=>a.py-b.py);
+  actors.forEach(a=>a.f());
+
+  drawFloats(dt);
+  drawVignette();
+}
+
+function drawOverlays(now){
+  const d=bfsFrom({x:S.foes[0].x,y:S.foes[0].y});
+  ctx.fillStyle="#E0685D18";
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const v=d[key(x,y)];
+    if(v>0 && v<=foeSpeed()) ctx.fillRect(x*CS,y*CS,CS,CS);
+  }
+  if(S.mp>0 && !S.busy){
+    const p=(Math.sin(now/420)+1)/2;
+    reachableCells(S.mp).forEach((dist,kk)=>{
+      const x=kk%W, y=(kk/W)|0;
+      ctx.fillStyle=`rgba(255,255,255,${.09+p*.06})`;
+      rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill();
+      ctx.strokeStyle=`rgba(210,162,76,${.40+p*.25})`; ctx.lineWidth=1.6;
+      rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.stroke();
+      if(mouseCell&&mouseCell.x===x&&mouseCell.y===y){
+        ctx.fillStyle="#D2A24C44"; rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill(); }
+    });
+  }
+}
+
+function drawFloats(dt){
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  for(let i=fx.floats.length-1;i>=0;i--){
+    const f=fx.floats[i]; f.t+=dt;
+    const p=f.t/1250;
+    if(p>=1){ fx.floats.splice(i,1); continue; }
+    ctx.globalAlpha=Math.max(0, p<.15 ? p/.15 : 1-(p-.15)/.85);
+    ctx.font='600 14px "Archivo",system-ui,sans-serif';
+    ctx.lineWidth=3.6; ctx.strokeStyle="#0B0D12cc";
+    const px=f.x*CS+CS/2, py=f.y*CS+CS/2-18-p*28;
+    ctx.strokeText(f.txt,px,py); ctx.fillStyle=f.color; ctx.fillText(f.txt,px,py);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawVignette(){
+  const g=ctx.createRadialGradient(cv.width/2,cv.height/2,cv.height*.40,
+                                   cv.width/2,cv.height/2,cv.height*.95);
+  g.addColorStop(0,"#00000000"); g.addColorStop(1,"#00000066");
+  ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
+}
+
+/* ==========================================================================
+   UI
+   ========================================================================== */
+const $ = id=>document.getElementById(id);
+
+function syncUI(){
+  if(!S) return;
+  $("salachip").textContent = `Sala ${S.sala.num} · ${S.sala.name}`;
+  $("whochip").innerHTML = `<b>${S.hero.n}</b> · ${S.power.n}`;
+  $("roundchip").textContent = `Ronda ${S.round}`;
+
+  const open = S.delivered.length>=3;
+  setGoal("g1", open, `${S.delivered.length}/3`);
+  setGoal("g2", false, open ? "abierta" : "🔒");
+
+  $("mp").innerHTML = Array.from({length:Math.max(S.mp,TUNE.steps)},(_,i)=>
+    `<span class="pip mp ${i<S.mp?"on":""}"></span>`).join("");
+  $("alertv").textContent = `${S.alert}/${TUNE.alertMax}`;
+  $("foespeed").textContent = `${foeSpeed()} casillero${foeSpeed()>1?"s":""}`;
+  $("taken").innerHTML = Array.from({length:3},(_,i)=>
+    `<span class="pip ${i<S.taken?"on":""}"></span>`).join("");
+
+  $("fcn").textContent = S.lastCard ? S.lastCard.n : "—";
+  $("fcd").textContent = S.lastCard ? S.lastCard.d
+    : (S.peek ? `Ojo de halcón: la próxima es «${S.peek.n}».` : "Todavía no jugó.");
+  $("deckn").textContent = `${S.deck.length}/9 · al agotarse sube la alerta`;
+
+  $("piecen").textContent = `${S.delivered.length}/3 entregadas`;
+  $("pieceslots").innerHTML = PIECES.map(p=>{
+    if(S.delivered.includes(p.id))
+      return `<div class="slot done"><div class="ic">✓</div><div class="nm">${p.name}</div>
+              <div class="st">entregada</div></div>`;
+    if(S.hand.includes(p.id))
+      return `<div class="slot hand" style="border-color:${p.color}">
+              <div class="ic" style="color:${p.color}">${p.sym}</div>
+              <div class="nm" style="color:${p.color}">${p.name}</div>
+              <div class="st">en mano</div></div>`;
+    return `<div class="slot hidden-piece"><div class="ic">▨</div><div class="nm">Sin abrir</div>
+            <div class="st">en vitrina</div></div>`;
+  }).join("");
+
+  $("objn").textContent = `${S.objects.length-S.objUsed.length} sin usar`;
+  $("objslots").innerHTML = Array.from({length:Math.max(3,S.objects.length)},(_,i)=>{
+    if(i>=S.objects.length)
+      return `<div class="slot"><div class="ic" style="opacity:.3">🎁</div>
+              <div class="nm" style="color:var(--dim)">—</div><div class="st">vacío</div></div>`;
+    const o=OBJECTS[S.objects[i]], used=S.objUsed.includes(i);
+    return `<div class="slot ${used?"used":"obj"}" ${used?"":`onclick="useObject(${i})"`}
+            title="${o.d}"><div class="ic">${o.ic}</div><div class="nm">${o.n}</div>
+            <div class="st">${used?"usado":"tecla "+(i+1)}</div></div>`;
+  }).join("");
+
+  $("comps").innerHTML = S.marks.comps.map(c=>{
+    const p=PIE[c.want], who=CREW[compOf(c.want)], done=S.delivered.includes(c.want);
+    return `<div class="comp ${done?"done":""}">
+      <span class="sym" style="color:${p.color}">${p.sym}</span>
+      <span class="who">${who.n}</span>
+      <span class="st">${done?"listo":"pide "+p.sym}</span></div>`;
+  }).join("");
+
+  const c=S.grid[S.player.y][S.player.x];
+  const canMate = canDrinkHere();
+  const canFix  = S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm);
+  const hints=[];
+  if(canMate) hints.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
+  if(S.awaitMate) hints.push("<b>Enter</b> para cerrar la ronda");
+  if(canFix)  hints.push("<b>F</b> para desactivar la alarma de una vitrina");
+  if(canOfferHere()) hints.push("<b>E</b> para convencerlo de aceptar esta pieza");
+  $("hint").className = hints.length ? "hintbar on" : "hintbar";
+  $("hint").innerHTML = hints.join(" · ");
+}
+
+function setGoal(id,done,val){
+  const el=$(id); el.classList.toggle("done",done); el.querySelector(".v").textContent=val;
+}
+
+/* ==========================================================================
+   INPUT y PANTALLAS
+   ========================================================================== */
+const KEYS = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
+              w:[0,-1],d:[1,0],s:[0,1],a:[-1,0]};
+let walking = false;
+
+addEventListener("keydown", e=>{
+  const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
+  if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(); } return; }
+  if(k==="Escape"){ menu(); return; }
+  if(!S || S.over || S.busy || walking || picking) return;
+  if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
+  if(k===" "){ e.preventDefault(); drinkMate(); return; }
+  if(k==="Enter"){ e.preventDefault(); finishRound(); return; }
+  if(k==="f"){ fixVitrina(); return; }
+  if(k==="e"){ offerDelivery(); return; }
+  if(/^[123]$/.test(k)) useObject(+k-1);
+});
+
+function cellFromEvent(e){
+  const r=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left)/(r.width /W));
+  const y=Math.floor((e.clientY-r.top )/(r.height/H));
+  return inside(x,y) ? {x,y} : null;
+}
+cv.addEventListener("mousemove", e=>{ mouseCell=cellFromEvent(e); });
+cv.addEventListener("mouseleave", ()=>{ mouseCell=null; });
+
+cv.addEventListener("click", e=>{
+  if(!S||S.over||S.busy||walking||picking) return;
+  if(S.mp<=0 && !S.awaitMate) return;
+  const t=cellFromEvent(e); if(!t) return;
+  if(t.x===S.player.x && t.y===S.player.y){ return canDrinkHere() ? drinkMate() : finishRound(); }
+  const path=pathTo(t,S.mp); if(!path) return;
+  walkPath(path);
+});
+
+function pathTo(target,maxSteps){
+  if(isWall(target.x,target.y)) return null;
+  const dirs = S.diagonal ? DIRS.concat(DIAGS) : DIRS;
+  const prev=new Map(), seen=new Set([key(S.player.x,S.player.y)]);
+  let frontier=[{x:S.player.x,y:S.player.y}];
+  for(let depth=0; depth<maxSteps; depth++){
+    const next=[];
+    for(const c of frontier) for(const [dx,dy] of dirs){
+      const nx=c.x+dx, ny=c.y+dy, kk=key(nx,ny);
+      if(isWall(nx,ny)||seen.has(kk)) continue;
+      seen.add(kk); prev.set(kk,{from:c,d:[dx,dy]}); next.push({x:nx,y:ny});
+    }
+    frontier=next;
+    if(seen.has(key(target.x,target.y))) break;
+  }
+  if(!prev.has(key(target.x,target.y))) return null;
+  const out=[]; let cur=target;
+  while(prev.has(key(cur.x,cur.y))){ const p=prev.get(key(cur.x,cur.y)); out.unshift(p.d); cur=p.from; }
+  return out.length && out.length<=maxSteps ? out : null;
+}
+
+function walkPath(path){
+  if(walking) return;
+  walking=true;
+  let i=0;
+  (function go(){
+    if(!S||S.over||i>=path.length||S.mp<=0){ walking=false; return; }
+    step(...path[i++]);
+    if(S && !S.over && S.mp>0 && i<path.length) setTimeout(go, TUNE.moveMs+40);
+    else walking=false;
+  })();
+}
+
+/* ---------- elegir qué pieza te saca ---------- */
+let picking = false;
+function askWhichPiece(){
+  picking = true;
+  const opts = S.hand.map(id=>{
+    const p=PIE[id];
+    return `<button class="btn piece" style="background:${p.color};color:#0F1114"
+             onclick="pickPiece('${id}')">${p.sym} ${p.name}</button>`;
+  }).join("");
+  showModal(`<h2>Te agarró con las manos llenas</h2>
+    <p class="lead"><b>${S.foe.n}</b> te revisa la mochila y se lleva <b>una</b> pieza.
+    Elegí cuál devolvés: vuelve boca abajo y se reactiva la vitrina más lejana a tu puesto.</p>
+    ${opts}
+    <div class="rules">Llevás <b>${S.taken}/3</b> piezas recuperadas por él. A la tercera, se termina.</div>`);
+}
+function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
+
+/* ---------- menú ---------- */
+function showModal(html){ $("modal").innerHTML=html; $("overlay").classList.remove("off"); }
+function closeModal(){ $("overlay").classList.add("off"); }
+function startSala(k){ newGame(k); closeModal(); }
+
+function menu(){
+  const wings={};
+  for(const [k,v] of Object.entries(SALAS)){ (wings[v.wing] ||= []).push([k,v]); }
+  const body = Object.entries(wings).map(([wing,list])=>`
+    <div class="wing">${wing}</div>
+    <div class="lvls">${list.map(([k,v])=>`
+      <button class="lv" onclick="startSala('${k}')">
+        <span class="num">${v.num}</span>
+        <span><b>${v.name}</b>
+          <small>${v.place}</small>
+          <small>Protagoniza <b style="color:var(--ink)">${CREW[v.hero].n}</b>
+            · <span class="foe">${FOES[v.foe].n}</span></small></span>
+      </button>`).join("")}</div>`).join("");
+
+  showModal(`<h2>Los Museos</h2>
+    <p class="lead">Nueve amigos, nueve salas. Robás <b>tres piezas</b> de las vitrinas,
+    se las pasás a los cómplices que las piden y salís por la puerta de emergencia
+    antes de que te agarren con las manos vacías.</p>
+    ${body}
+    <div class="rules">
+      <b>Cada ronda son tres fases:</b> movés <b>dos casilleros exactos</b> (podés volver
+      sobre tus pasos), después te persigue, y después se da vuelta una de sus nueve acciones.<br>
+      <b>Todo se activa al pasar por encima</b> — vitrinas, cómplices y mates. La única que
+      exige terminar el turno ahí es la <b>estatua</b>, que te esconde de la persecución.<br>
+      <b>El mate</b> te devuelve los pasos que ya diste en el turno. Tres en el mismo turno y
+      terminás en el baño.<br>
+      <b>Perdés</b> si te alcanza sin ninguna pieza en la mano, o si te recupera tres piezas.
+      Las piezas en la mano son tu escudo.<br>
+      <span style="color:var(--brass)">Las salas 4 a 9 llegan en la próxima tanda.</span>
+    </div>`);
+}
+
+requestAnimationFrame(frame);
+menu();
+</script>
+</body>
+</html>
