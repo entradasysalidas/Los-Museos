@@ -460,7 +460,14 @@ const FRAME_DEF = {
 };
 const ROLES = ["vacio","oficina","baniojefe","salida","puesto","banio"];
 function frameStoreKey(){ return "museos.frame"; }
+/* lo guardado en el navegador solo manda si estas editando */
+function usarGuardado(){
+  try{ return typeof editorDisponible==="function" && editorDisponible(); }
+  catch(e){ return false; }
+}
+
 function loadFrame(){
+  if(!usarGuardado()) return null;
   try{ const r=localStorage.getItem(frameStoreKey()); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
 }
@@ -496,6 +503,7 @@ function esParedDeMarco(k){
 }
 function framWallsKey(piso){ return "museos.framewalls.v2."+piso; }
 function loadFrameWalls(piso){
+  if(!usarGuardado()) return null;
   try{ const r=localStorage.getItem(framWallsKey(piso)); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
 }
@@ -660,6 +668,7 @@ const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 /* Los elementos editados pisan a los del manual, por nivel. */
 function elemsStoreKey(k){ return "museos.elems."+k; }
 function loadElems(k){
+  if(!usarGuardado()) return null;
   try{ const r=localStorage.getItem(elemsStoreKey(k)); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
 }
@@ -805,6 +814,7 @@ function reachableCells(steps){
 /* ---------- paredes guardadas por el editor ---------- */
 function wallsStoreKey(k){ return "museos.walls."+k; }
 function loadWalls(k){
+  if(!usarGuardado()) return null;
   try{ const raw=localStorage.getItem(wallsStoreKey(k)); return raw ? JSON.parse(raw) : null; }
   catch(e){ return null; }
 }
