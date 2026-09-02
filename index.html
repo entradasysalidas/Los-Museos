@@ -486,7 +486,7 @@ function allOf(role){
    cada nivel.                                                              */
 const FRAME_WALLS = {
   gris  : ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
-  madera: ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
+  madera: ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1"],   // la puerta extra del jefe
 };
 function esParedDeMarco(k){
   const [t,a,b]=k.split(":"); const x=+a, y=+b;
@@ -494,7 +494,7 @@ function esParedDeMarco(k){
   const enCore = c => c.x>=CX0 && c.x<CX0+CW && c.y>=CY0 && c.y<CY0+CH;
   return !(enCore(c1) && enCore(c2));
 }
-function framWallsKey(piso){ return "museos.framewalls."+piso; }
+function framWallsKey(piso){ return "museos.framewalls.v2."+piso; }
 function loadFrameWalls(piso){
   try{ const r=localStorage.getItem(framWallsKey(piso)); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
