@@ -400,6 +400,7 @@
     <button class="ebtn" onclick="clearWalls()">Limpiar paredes</button>
     <button class="ebtn" onclick="resetNivel()">Restaurar nivel</button>
     <button class="ebtn" onclick="copyWalls()">Copiar código</button>
+    <button class="ebtn primary" onclick="copiarTodo()">Copiar los diez niveles</button>
     <textarea id="editcode" readonly></textarea>
     <span class="emsg" id="editmsg"></span>
     <span class="ewarn" id="editwarn"></span>
@@ -2388,6 +2389,35 @@ if(/[?&]editor\b/.test(location.search)) mostrarEditor();
 
 requestAnimationFrame(frame);
 menu();
+
+/* Vuelca los diez niveles como esten ahora mismo: lo guardado en el navegador
+   si existe, y si no lo del codigo. Asi no se pierde ninguna edicion que no
+   haya llegado nunca al codigo. */
+function copiarTodo(){
+  const NL2 = String.fromCharCode(10);
+  const leer = (clave)=>{ try{ const a=localStorage.getItem(clave); return a ? JSON.parse(a) : null; }catch(e){ return null; } };
+  const partes=[];
+  for(const k of Object.keys(SALAS)){
+    const s=SALAS[k];
+    const elems   = leer(elemsStoreKey(k));
+    const paredes = leer(wallsStoreKey(k));
+    const editado = (elems?"objetos":"") + (elems&&paredes?" y ":"") + (paredes?"paredes":"");
+    partes.push(
+      "Sala " + s.num + " · " + s.name +
+      (editado ? "   (editado: " + editado + ")" : "   (sin editar)") + NL2 +
+      "paredes: " + JSON.stringify(paredes || s.w) + NL2 +
+      "objetos: " + JSON.stringify(elems  || s.e));
+  }
+  partes.push("marco: " + JSON.stringify(leer(frameStoreKey()) || FRAME_DEF));
+  partes.push("paredes del marco (gris):   " + JSON.stringify(leer(framWallsKey("gris"))   || FRAME_WALLS.gris));
+  partes.push("paredes del marco (madera): " + JSON.stringify(leer(framWallsKey("madera")) || FRAME_WALLS.madera));
+
+  const t=$("editcode");
+  t.value = partes.join(NL2+NL2);
+  t.select(); t.setSelectionRange(0, 999999);
+  try{ document.execCommand("copy"); $("editmsg").textContent="Copiados los diez. Pegamelos y los dejo fijos."; }
+  catch(e){ $("editmsg").textContent="Copialo a mano del cuadro de texto."; }
+}
 </script>
 </body>
 </html>
