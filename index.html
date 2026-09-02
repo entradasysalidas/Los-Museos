@@ -990,6 +990,16 @@ function chasePhase(hidden){
 }
 
 /* ======================= FASE 3 · acción ======================= */
+function pisoAlerta(){ return S.foe.alert || 0; }
+
+/* se distrae y afloja un nivel, nunca por debajo de su piso */
+function calmar(){
+  if(S.alert <= pisoAlerta()) return;
+  S.alert--;
+  float(S.foes[0].x, S.foes[0].y, "ALERTA " + S.alert, "#7BC08A");
+  say(`😮‍💨 Se distrajo: <b>alerta ${S.alert}</b>, ahora avanza ${foeSpeed()} casillero${foeSpeed()===1?"":"s"}.`,"g");
+}
+
 function refillDeck(){
   S.deck = shuffle(DECK.slice());
   S.played = [];
@@ -1025,9 +1035,9 @@ function applyCard(card){
         put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
       }else put(S.marks.comps.find(c=>c.want===card.t));
       break;
-    case "bath": put(S.foeBath); break;
+    case "bath": put(S.foeBath); calmar(); break;
     case "exit": put(S.exit);    break;
-    case "home": put(S.foeHome); break;
+    case "home": put(S.foeHome); calmar(); break;
     case "rush": return rushSteps(S.foes.length>1 ? 1 : foeSpeed());
   }
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
@@ -2320,6 +2330,9 @@ function ayuda(){
     '<h4>La alerta</h4>' +
     '<p>Cuando se le acaba el mazo de nueve acciones, se baraja y la alerta <b>sube un nivel</b>: ' +
     'avanza un casillero más por ronda. El panel te muestra cuántas cartas le quedan.</p>' +
+    '<p>Al revés, si una carta lo manda <b>al baño o a su oficina</b> se distrae y la alerta ' +
+    '<b>baja un nivel</b>. Ojo que cada antagonista tiene su piso: el Director General ' +
+    'nunca afloja por debajo de 2.</p>' +
     '<h4>El mate</h4>' +
     '<p>Te devuelve <b>todos los pasos</b> que ya diste en el turno, así que encadenando mates ' +
     'un turno puede ser larguísimo. Tres en la misma ronda y terminás en tu baño.</p>' +
