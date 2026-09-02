@@ -238,9 +238,15 @@
     border:1px solid var(--line)}
   .mp.on{background:var(--brass);border-color:var(--brass)}
 
-  .hintbar{padding:9px 12px;background:var(--brass-soft);border:1px solid var(--brass-dim);
+  .hintbar{padding:11px 16px;background:var(--brass-soft);border:2px solid var(--brass);
+    width:100%;max-width:100%;text-align:center;font-size:15px;line-height:1.45;flex:none;
     color:var(--brass);font-size:13px;display:none;font-weight:600}
   .hintbar.on{display:block}
+  /* cuando la ronda espera una decisión tuya, late */
+  .hintbar.urgente{animation:pideAccion 1.5s ease-in-out infinite}
+  @keyframes pideAccion{
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--brass) 55%, transparent)}
+    50%{box-shadow:0 0 0 7px color-mix(in srgb, var(--brass) 0%, transparent)} }
 
   /* ---------- ayuda ---------- */
   /* la tapa, grande, antes de entrar al museo */
@@ -532,7 +538,7 @@
     .slot{min-height:50px}
     .slot .nm{font-size:9.5px}
     .slot .st{font-size:7.5px}
-    .hintbar{flex:1 1 100%;padding:8px 10px;font-size:12.5px}
+    .hintbar{padding:9px 11px;font-size:13.5px}
 
     .modal{max-height:calc(100vh - 20px)}
     .modal h2{padding:16px 18px 12px;font-size:24px}
@@ -608,12 +614,12 @@
         <div class="slots" id="objslots"></div>
       </div>
 
-      <div class="hintbar" id="hint"></div>
     </aside>
 
     <div id="boardwrap">
       <canvas id="c" width="544" height="544"></canvas>
       <div id="cartel"></div>
+      <div class="hintbar" id="hint"></div>
     </div>
 
     <section id="relato">
@@ -2282,8 +2288,16 @@ function syncUI(){
 
   const cel=S.grid[S.player.y][S.player.x];
   const pistas=[];
-  if(canDrinkHere()) pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
-  if(S.awaitMate)    pistas.push("<b>Enter</b> para cerrar la ronda");
+  /* Si la ronda quedó esperando una decisión tuya, eso va primero y bien
+     visible: sin verlo el juego parece colgado. */
+  const esperando = S.awaitMate;
+  if(esperando){
+    pistas.push(canDrinkHere()
+      ? "Te toca decidir · <b>Espacio</b> tomás el mate y recuperás los pasos · <b>Enter</b> cerrás la ronda"
+      : "Te toca decidir · <b>Enter</b> para cerrar la ronda");
+  } else if(canDrinkHere()){
+    pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
+  }
   if(canOfferHere()) pistas.push(
     "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\">Convencerlo de aceptar esta pieza</button>");
   if(S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm))
@@ -2291,7 +2305,7 @@ function syncUI(){
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"fixVitrina()\">Desactivar la alarma de una vitrina</button>");
   if(cel.type==="vitrina" && cel.alarm) pistas.push("Esta vitrina ya está vacía");
   if(S.hand.length) pistas.push("Llevá " + S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
-  $("hint").className = pistas.length ? "hintbar on" : "hintbar";
+  $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
   $("hint").innerHTML = pistas.join(" &nbsp;·&nbsp; ");
 
   renderLog();
