@@ -11,14 +11,14 @@
 <meta property="og:site_name" content="Super Noob">
 <meta property="og:title" content="Los Museos">
 <meta property="og:description" content="9 amigos. 1 misión: escapar del museo.">
-<meta property="og:image" content="https://entradasysalidas.github.io/Lunes/caja.jpg">
+<meta property="og:image" content="https://entradasysalidas.github.io/Los-Museos/caja.jpg">
 <meta property="og:image:width" content="1250">
 <meta property="og:image:height" content="1250">
-<meta property="og:url" content="https://entradasysalidas.github.io/Lunes/">
+<meta property="og:url" content="https://entradasysalidas.github.io/Los-Museos/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Los Museos">
 <meta name="twitter:description" content="9 amigos. 1 misión: escapar del museo.">
-<meta name="twitter:image" content="https://entradasysalidas.github.io/Lunes/caja.jpg">
+<meta name="twitter:image" content="https://entradasysalidas.github.io/Los-Museos/caja.jpg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* ---------- paleta: oscura por defecto, clara en las salas de piso gris --- */
@@ -131,6 +131,18 @@
   @media(max-width:560px){ .portada{flex-direction:column;align-items:center;text-align:center}
     .portada img{width:180px} }
 
+  /* el latido del panel del antagonista cuando cambia de velocidad */
+  #foecard.sube{animation:alertaSube .9s ease}
+  #foecard.baja{animation:alertaBaja .9s ease}
+  @keyframes alertaSube{
+    0%{box-shadow:0 0 0 0 var(--alarm)}
+    18%{box-shadow:0 0 0 5px color-mix(in srgb, var(--alarm) 45%, transparent)}
+    100%{box-shadow:0 0 0 0 transparent} }
+  @keyframes alertaBaja{
+    0%{box-shadow:0 0 0 0 var(--patina)}
+    18%{box-shadow:0 0 0 5px color-mix(in srgb, var(--patina) 45%, transparent)}
+    100%{box-shadow:0 0 0 0 transparent} }
+
   .card{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
   .card h3{margin:0 0 10px;font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;
     text-transform:uppercase;color:var(--brass)}
@@ -202,9 +214,18 @@
   .slot.hand{border-style:solid;border-width:2px}
   .slot.done{border:1px solid var(--patina);background:var(--panel)}
   .slot.done .nm{color:var(--patina)}
-  .slot.obj{border:1px solid var(--brass);background:var(--brass-soft);cursor:pointer}
-  .slot.obj:hover{transform:translateY(-2px)}
-  .slot.obj .nm{color:var(--brass)}
+  /* un objeto listo para usar tiene que gritar que esta ahi */
+  .slot.obj{border:2px solid var(--brass);background:var(--brass-soft);cursor:pointer;
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--brass) 18%, transparent);
+    animation:objLatido 2.4s ease-in-out infinite}
+  .slot.obj:hover{transform:translateY(-3px);animation:none;
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--brass) 30%, transparent)}
+  .slot.obj .ic{font-size:26px}
+  .slot.obj .nm{color:var(--brass);font-weight:700}
+  .slot.obj .st{color:var(--brass);font-weight:700;opacity:.85}
+  @keyframes objLatido{
+    0%,100%{box-shadow:0 0 0 3px color-mix(in srgb, var(--brass) 16%, transparent)}
+    50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--brass) 6%, transparent)} }
   .slot.used{opacity:.4;cursor:default}
   .slot.vacio .ic{opacity:.3}
 
@@ -218,6 +239,19 @@
   .hintbar.on{display:block}
 
   /* ---------- ayuda ---------- */
+  /* la tapa, grande, antes de entrar al museo */
+  #portal{position:fixed;inset:0;z-index:60;background:var(--bg);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;padding:22px;animation:portalEntra .55s ease}
+  #portal.off{display:none}
+  #portal img{max-width:min(88vw,430px);max-height:64vh;width:auto;height:auto;
+    display:block;box-shadow:0 26px 60px #00000070}
+  #portal .pie{font:600 12px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--dim)}
+  #portal.sale{animation:portalSale .4s ease forwards;pointer-events:none}
+  @keyframes portalEntra{from{opacity:0}to{opacity:1}}
+  @keyframes portalSale{to{opacity:0}}
+
   #overlay{position:fixed;inset:0;background:#05060899;backdrop-filter:blur(3px);
     display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
   body.claro #overlay{background:#3a382f66}
@@ -251,6 +285,14 @@
     font:700 15px/1 "Archivo",sans-serif;cursor:pointer;margin:14px 8px 0 0}
   .btn:hover{filter:brightness(1.08)}
   .btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+
+  .premios{display:flex;flex-direction:column;gap:10px;margin:12px 0 4px}
+  .premio{display:flex;gap:13px;align-items:flex-start;padding:11px 13px;
+    background:var(--panel2);border-left:3px solid var(--brass)}
+  .premio .ic{font-size:27px;line-height:1;flex:none;width:32px;text-align:center}
+  .premio b{color:var(--ink);font-size:15px}
+  .premio p{margin:3px 0 0;font-size:13.5px;line-height:1.6;color:var(--body)}
+  .premio em{color:var(--alarm);font-style:normal;font-weight:700}
 
   .reglas{font-size:14px;color:var(--body);line-height:1.75}
   .reglas h4{margin:20px 0 8px;font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
@@ -475,6 +517,12 @@
   </div>
 </div>
 
+<div id="portal" onclick="entrar()">
+  <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
+  <button class="btn" onclick="entrar()">Entrar al museo</button>
+  <div class="pie">o tocá donde quieras</div>
+</div>
+
 <div id="overlay"><div class="modal"><h2 id="modaltit">Los Museos</h2>
   <div class="modalbody" id="modal"></div></div></div>
 <script>
@@ -528,7 +576,7 @@ const FRAME_DEF = {
   "4,7":"puesto",
 };
 const ROLES = ["vacio","oficina","baniojefe","salida","puesto","banio"];
-function frameStoreKey(){ return "museos.frame"; }
+function frameStoreKey(){ return "museos.frame.v2"; }
 /* lo guardado en el navegador solo manda si estas editando */
 function usarGuardado(){
   try{ return typeof editorDisponible==="function" && editorDisponible(); }
@@ -592,7 +640,7 @@ const CREW = {
   hippie:{n:"El Hippie", hair:"#1E1A18", style:"corto",      beard:false, tall:1.18, shirt:"#22242A"},
   marian:{n:"Marian",    hair:"#7A5230", style:"largo",      beard:false, tall:1.10, shirt:"#5B7FD4"},
   damian:{n:"Damián",    hair:"#1E1A18", style:"medio",      beard:false, tall:1.00, shirt:"#7FA23E"},
-  negro :{n:"El Negro",  hair:"#4A3524", style:"corto",      beard:true,  tall:1.00, shirt:"#9A6BD4"},
+  negro :{n:"El Negro",  hair:"#2A1D14", style:"corto",      beard:true,  tall:1.00, shirt:"#6B4A2F", skin:"#8A5A38"},
 };
 Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); });
 
@@ -631,6 +679,7 @@ const DECK = [
   {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath", ic:"🚽"},
   {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
   {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
+  {n:"Va a tu escritorio",             d:"Se planta en tu puesto a esperarte.",   k:"mydesk", ic:"🪑"},
   {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.",      k:"home", ic:"💼"},
   {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
   {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
@@ -738,7 +787,7 @@ const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana",
 const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 
 /* Los elementos editados pisan a los del manual, por nivel. */
-function elemsStoreKey(k){ return "museos.elems."+k; }
+function elemsStoreKey(k){ return "museos.elems.v2."+k; }
 function loadElems(k){
   if(!usarGuardado()) return null;
   try{ const r=localStorage.getItem(elemsStoreKey(k)); return r ? JSON.parse(r) : null; }
@@ -886,7 +935,7 @@ function reachableCells(steps){
 }
 
 /* ---------- paredes guardadas por el editor ---------- */
-function wallsStoreKey(k){ return "museos.walls."+k; }
+function wallsStoreKey(k){ return "museos.walls.v2."+k; }
 function loadWalls(k){
   if(!usarGuardado()) return null;
   try{ const raw=localStorage.getItem(wallsStoreKey(k)); return raw ? JSON.parse(raw) : null; }
@@ -1075,13 +1124,15 @@ function chasePhase(hidden){
 }
 
 /* ======================= FASE 3 · acción ======================= */
-function pisoAlerta(){ return S.foe.alert || 0; }
+function pisoAlerta(){ return Math.max(1, S.foe.alert || 1); }
 
 /* se distrae y afloja un nivel, nunca por debajo de su piso */
 function calmar(){
   if(S.alert <= pisoAlerta()) return;
   S.alert--;
   float(S.foes[0].x, S.foes[0].y, "ALERTA " + S.alert, "#7BC08A");
+  banner(`Se distrajo · alerta ${S.alert}, avanza ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#7BC08A");
+  if(typeof latidoAlerta==="function") latidoAlerta("baja");
   say(`😮‍💨 Se distrajo: <b>alerta ${S.alert}</b>, ahora avanza ${foeSpeed()} casillero${foeSpeed()===1?"":"s"}.`,"g");
 }
 
@@ -1092,7 +1143,9 @@ function refillDeck(){
     S.alert++;
     fx.shake=TUNE.shakeMs;
     float(S.foes[0].x,S.foes[0].y,"ALERTA "+S.alert,"#E0685D");
-    say(`🚨 <b>Alerta ${S.alert}.</b> Se le acabó el mazo: ahora avanza ${foeSpeed()} casilleros.`,"r");
+    banner(`ALERTA ${S.alert} · ahora avanza ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
+    if(typeof latidoAlerta==="function") latidoAlerta("sube");
+    say(`🚨 <b>Alerta ${S.alert}.</b> Se le acabó el mazo: ahora avanza <b>${foeSpeed()} casillero${foeSpeed()>1?"s":""}</b>.`,"r");
   }
 }
 
@@ -1118,8 +1171,10 @@ function applyCard(card){
       if(S.foe.twist==="vitrinas"){
         const live=S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
         put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
+        say(`<span class="ico">🖼</span><span>Pero <b>${S.foe.n}</b> no va al escritorio: sus acciones lo llevan siempre a una <b>vitrina</b>.</span>`,"carta r");
       }else put(S.marks.comps.find(c=>c.want===card.t));
       break;
+    case "mydesk": put(S.home); break;
     case "bath": put(S.foeBath); calmar(); break;
     case "exit": put(S.exit);    break;
     case "home": put(S.foeHome); calmar(); break;
@@ -1199,7 +1254,17 @@ function useObject(i){
   if(i>=S.objects.length || S.objUsed.includes(i)) return;
   const id=S.objects[i];
   S.objUsed.push(i);
-  if(id==="mate1"||id==="mate2"){ S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false; say("🧉 Mate de la mochila: pasos recuperados.","g"); }
+  if(id==="mate1"||id==="mate2"){
+    S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
+    if(S.diagonal){ S.diagonal=false; say("🥃 Con el mate se te fue el efecto del fernet.","r"); }
+    say("🧉 Mate de la mochila: pasos recuperados.","g");
+    if(S.matesTurn>=TUNE.matesPerTurn){
+      say("🧉 Tercer mate del turno… terminás en tu baño.","r");
+      S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
+      float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
+      S.busy=true; return setTimeout(endMovement, TUNE.moveMs+110);
+    }
+  }
   if(id==="fernet"){ S.diagonal=true; say("🥃 Fernet: este turno te movés en diagonal.","y"); }
   if(id==="empa"){ S.player.x=S.bath.x; S.player.y=S.bath.y; say("🥟 Esa empanada estaba dudosa. Al baño.","y"); }
   if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
@@ -1581,8 +1646,9 @@ function drawPerson(g, look, bob, alpha){
     g.fillText(look.tag, 0, -0.5+bob);
     g.restore();
   }
-  g.fillStyle="#EFC08C"; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
-  g.fillStyle="#EFC08C";
+  const piel = look.skin || "#EFC08C";
+  g.fillStyle=piel; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
+  g.fillStyle=piel;
   g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
   drawHair(g, look, bob);
   if(look.beard){                                                              // barba
@@ -2080,6 +2146,16 @@ function pushEvento(t, cls){
   el.scrollTop = el.scrollHeight;
 }
 
+/* Un latido en el panel del antagonista: subir o bajar de velocidad es lo mas
+   importante que pasa en la partida y antes se perdia entre los renglones. */
+function latidoAlerta(comoV){
+  const el=document.getElementById("foecard");
+  if(!el || !el.classList) return;
+  el.classList.remove("sube","baja");
+  void el.offsetWidth;
+  el.classList.add(comoV);
+}
+
 /* ==========================================================================
    INPUT, EDITOR DE PAREDES Y PANTALLAS
    ========================================================================== */
@@ -2404,12 +2480,9 @@ function menu(){
       '</button>').join("") + '</div>').join("");
 
   showModal("Las diez salas",
-    '<div class="portada">' +
-      '<img src="caja.jpg" alt="La caja de Los Museos">' +
-      '<p class="lead">Nueve amigos, nueve salas y un tutorial. Robá <b>tres piezas</b> de las ' +
-      'vitrinas, pasáselas a los cómplices que las piden y salí antes de que te agarren ' +
-      'con las manos vacías.</p>' +
-    '</div>' + cuerpo +
+    '<p class="lead">Nueve amigos, nueve salas y un tutorial. Robá <b>tres piezas</b> de las ' +
+    'vitrinas, pasáselas a los cómplices que las piden y salí antes de que te agarren ' +
+    'con las manos vacías.</p>' + cuerpo +
     '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>');
 }
 
@@ -2446,6 +2519,26 @@ function ayuda(){
     '<h4>El mate</h4>' +
     '<p>Te devuelve <b>todos los pasos</b> que ya diste en el turno, así que encadenando mates ' +
     'un turno puede ser larguísimo. Tres en la misma ronda y terminás en tu baño.</p>' +
+    '<h4>Los objetos recompensa</h4>' +
+    '<p>Te los dan los cómplices cuando les entregás la pieza que piden. Podés usarlos ' +
+    '<b>sólo en tu fase de movimiento</b>, antes, durante o después de moverte, y una vez ' +
+    'usados se descartan. En el panel de la izquierda se prenden cuando los tenés listos, ' +
+    'y se disparan con las teclas <b>1</b>, <b>2</b> y <b>3</b>.</p>' +
+    '<div class="premios">' +
+      '<div class="premio"><span class="ic">🧉</span><div><b>Mate</b>' +
+        '<p>Te devuelve todos los pasos del turno, igual que los del tablero. ' +
+        '<em>Cuidado:</em> si tomás tres en la misma fase de movimiento, contando los del ' +
+        'tablero, terminás el turno en tu baño.</p></div></div>' +
+      '<div class="premio"><span class="ic">🥃</span><div><b>Fernet</b>' +
+        '<p>Durante ese turno podés moverte en diagonal. ' +
+        '<em>Cuidado:</em> si después tomás un mate, se te va el efecto.</p></div></div>' +
+      '<div class="premio"><span class="ic">🥟</span><div><b>Empanada</b>' +
+        '<p>Te manda derecho a tu baño. Sirve para salvarte cuando el antagonista ' +
+        'te tiene arrinconado.</p></div></div>' +
+      '<div class="premio"><span class="ic">📢</span><div><b>Altavoz</b>' +
+        '<p>Un llamado falso a la oficina: el antagonista vuelve a su escritorio, ' +
+        'esté donde esté.</p></div></div>' +
+    '</div>' +
     '<h4>Qué es cada cosa</h4>' +
     '<div class="leyenda" id="legend"></div>' +
     '<h4>Controles</h4>' +
@@ -2489,7 +2582,21 @@ addEventListener("keydown", e=>{
 if(/[?&]editor\b/.test(location.search)) mostrarEditor();
 
 requestAnimationFrame(frame);
-menu();
+
+/* La tapa recibe. Con un clic se corre y aparece el listado de salas. */
+let yaEntre=false;
+function entrar(){
+  if(yaEntre) return;
+  yaEntre=true;
+  const p=document.getElementById("portal");
+  if(!p || !p.classList) return menu();
+  p.classList.add("sale");
+  setTimeout(()=>{ p.classList.add("off"); menu(); }, 380);
+}
+addEventListener("keydown", e=>{
+  if(!yaEntre && (e.key==="Enter" || e.key===" ")){ e.preventDefault(); entrar(); }
+});
+if(/[?&]editor/.test(location.search)) entrar();   // editando no hace falta la tapa
 
 /* Vuelca los diez niveles como esten ahora mismo: lo guardado en el navegador
    si existe, y si no lo del codigo. Asi no se pierde ninguna edicion que no
