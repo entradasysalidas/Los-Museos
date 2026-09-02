@@ -1570,10 +1570,10 @@ function pantallaFinal(gano, titulo, bajada, salaKey){
       (gano && next
         ? '<button class="btn" onclick="startSala(&quot;' + next + '&quot;)">Seguir: ' +
           SALAS[next].name + '</button>'
-        : '<button class="btn" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal()">' +
+        : '<button class="btn" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal(true)">' +
           (gano ? "Repetir" : "Otra vez") + '</button>') +
       (gano && next
-        ? '<button class="btn alt" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal()">Repetir</button>'
+        ? '<button class="btn alt" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal(true)">Repetir</button>'
         : "") +
       '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
       '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
@@ -2599,7 +2599,7 @@ let editMode = false, hoverEdge = null, mouseCellEdit = null;
 
 addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
-  if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(); } return; }
+  if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(true); } return; }
   if(k==="Escape"){
     if(editMode) return toggleEditor();
     if(modalAbierto()) return closeModal();   // salir, no volver a abrir
@@ -2891,7 +2891,7 @@ function askWhichPiece(){
     Elegí cuál devolvés.</p>${opts}
     <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`, false);
 }
-function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
+function pickPiece(id){ picking=false; closeModal(true); losePiece(id); }
 
 /* ---------- pantallas ---------- */
 /* Se puede salir de casi todas las pantallas: con la cruz, con Escape o
@@ -2912,14 +2912,15 @@ function modalAbierto(){
   const o = $("overlay");
   return !!(o && o.classList && !o.classList.contains("off"));
 }
-function closeModal(){
-  if(!modalCerrable) return;
+function closeModal(forzar){
+  if(!forzar && !modalCerrable) return;   // el candado es para el que mira
+  modalCerrable = true;
   $("overlay").classList.add("off");
 }
 function fondoCierra(e){
   if(e && e.target && e.target.id === "overlay") closeModal();
 }
-function startSala(k){ newGame(k); closeModal(); }
+function startSala(k){ newGame(k); closeModal(true); }
 
 function menu(){
   /* Las diez de una, sin scroll. Arriba el plano con el nombre al lado, y
@@ -3178,7 +3179,7 @@ function ficha(){
 function olvidarLegajo(){
   LEGAJO = {nombre:"", salas:{}};
   guardarLegajo(LEGAJO);
-  closeModal();
+  closeModal(true);
   const p = document.getElementById("portal");
   if(p && p.classList){
     p.classList.remove("sale","off");
