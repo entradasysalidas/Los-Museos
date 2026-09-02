@@ -2004,12 +2004,15 @@ function syncUI(){
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
   document.body.classList.toggle("claro", S.sala.piso==="gris");
   // y cada sala pinta su propio acento, según su temática
+  /* El acento va en el body, no en :root. La paleta clara define sus colores
+     en body.claro, que es hijo de :root: escribiendolo arriba, el body lo
+     tapaba y en las salas de alfombra nunca se veia el color del nivel. */
   const ac = S.sala.ac || ["#D2A24C","#8A6B31","#241C0C"];
-  const raiz = document.documentElement;
-  if(raiz && raiz.style && raiz.style.setProperty){
-    raiz.style.setProperty("--brass", ac[0]);
-    raiz.style.setProperty("--brass-dim", ac[1]);
-    raiz.style.setProperty("--brass-soft", ac[2]);
+  const cuerpo = document.body;
+  if(cuerpo && cuerpo.style && cuerpo.style.setProperty){
+    cuerpo.style.setProperty("--brass", ac[0]);
+    cuerpo.style.setProperty("--brass-dim", ac[1]);
+    cuerpo.style.setProperty("--brass-soft", ac[2]);
   }
 
   $("numnivel").textContent = S.sala.num===0 ? "0" : String(S.sala.num);
