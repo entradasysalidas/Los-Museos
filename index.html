@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Los Museos</title>
+<link rel="icon" href="caja.jpg">
+<link rel="apple-touch-icon" href="caja.jpg">
+<meta name="description" content="9 amigos. 1 misión: escapar del museo. Robá tres piezas, pasáselas a tus cómplices y salí antes de que te agarren.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Super Noob">
+<meta property="og:title" content="Los Museos">
+<meta property="og:description" content="9 amigos. 1 misión: escapar del museo.">
+<meta property="og:image" content="https://entradasysalidas.github.io/Lunes/caja.jpg">
+<meta property="og:image:width" content="1250">
+<meta property="og:image:height" content="1250">
+<meta property="og:url" content="https://entradasysalidas.github.io/Lunes/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Los Museos">
+<meta name="twitter:description" content="9 amigos. 1 misión: escapar del museo.">
+<meta name="twitter:image" content="https://entradasysalidas.github.io/Lunes/caja.jpg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* ---------- paleta: oscura por defecto, clara en las salas de piso gris --- */
@@ -107,6 +122,14 @@
     color:var(--dim)}
   #eventos:empty::after{content:"Acá vas a ver lo que hace el antagonista.";
     font:400 13px/1.6 "Archivo",sans-serif;color:var(--dim)}
+
+  /* la tapa de la caja, arriba del listado de salas */
+  .portada{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px}
+  .portada img{width:150px;flex:none;border:1px solid var(--line);
+    box-shadow:var(--shadow);display:block}
+  .portada .lead{margin:0}
+  @media(max-width:560px){ .portada{flex-direction:column;align-items:center;text-align:center}
+    .portada img{width:180px} }
 
   .card{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
   .card h3{margin:0 0 10px;font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;
@@ -2381,9 +2404,12 @@ function menu(){
       '</button>').join("") + '</div>').join("");
 
   showModal("Las diez salas",
-    '<p class="lead">Nueve amigos, nueve salas y un tutorial. Robá <b>tres piezas</b> de las ' +
-    'vitrinas, pasáselas a los cómplices que las piden y salí antes de que te agarren ' +
-    'con las manos vacías.</p>' + cuerpo +
+    '<div class="portada">' +
+      '<img src="caja.jpg" alt="La caja de Los Museos">' +
+      '<p class="lead">Nueve amigos, nueve salas y un tutorial. Robá <b>tres piezas</b> de las ' +
+      'vitrinas, pasáselas a los cómplices que las piden y salí antes de que te agarren ' +
+      'con las manos vacías.</p>' +
+    '</div>' + cuerpo +
     '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>');
 }
 
