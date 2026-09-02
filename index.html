@@ -68,7 +68,19 @@
   @media(max-width:1120px){ #stage{grid-template-columns:280px minmax(0,1fr)} #relato{display:none} }
 
   #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
-    box-shadow:var(--shadow);display:grid;place-items:center;min-height:0;min-width:0}
+    box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:6px;min-height:0;min-width:0}
+
+  /* el cartel vive fuera del lienzo: asi nunca tapa la puerta de salida */
+  #cartel{flex:none;min-height:34px;display:flex;align-items:center;justify-content:center;
+    font:600 14.5px/1.3 "Archivo",system-ui,sans-serif;text-align:center;
+    padding:7px 18px;border:1px solid transparent;opacity:0;max-width:100%}
+  #cartel.on{animation:cartel 2.8s ease forwards}
+  @keyframes cartel{
+    0%{opacity:0;transform:translateY(7px)}
+    9%{opacity:1;transform:none}
+    86%{opacity:1;transform:none}
+    100%{opacity:0;transform:translateY(-3px)} }
   canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
     background:#20242C;cursor:pointer}
 
@@ -88,6 +100,8 @@
   .ev.r{border-left-color:var(--alarm);color:var(--ink)}
   .ev.g{border-left-color:var(--patina)}
   .ev.y{border-left-color:var(--brass)}
+  .ev.carta{display:flex;gap:11px;align-items:flex-start}
+  .ev .ico{font-size:25px;line-height:1.05;flex:none;width:30px;text-align:center}
   .ev.ronda{background:none;border:none;padding:10px 2px 2px;
     font:700 10px/1 "Archivo",sans-serif;letter-spacing:.18em;text-transform:uppercase;
     color:var(--dim)}
@@ -410,7 +424,10 @@
       <div class="hintbar" id="hint"></div>
     </aside>
 
-    <div id="boardwrap"><canvas id="c" width="544" height="544"></canvas></div>
+    <div id="boardwrap">
+      <canvas id="c" width="544" height="544"></canvas>
+      <div id="cartel"></div>
+    </div>
 
     <section id="relato">
       <h3>Lo que va pasando</h3>
@@ -588,12 +605,12 @@ const DECK = [
   {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo",     ic:"◆"},
   {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo", ic:"▲"},
   {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo",   ic:"●"},
-  {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath", ic:"WC"},
+  {n:"Va al baño",                     d:"Se mete en su baño y te deja respirar.", k:"bath", ic:"🚽"},
   {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
   {n:"Sale a fumar",                   d:"Se va a la salida a fumar.",            k:"exit", ic:"🚬"},
-  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.",      k:"home", ic:"🏢"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"⚡"},
-  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"⚡"},
+  {n:"Vuelve a su oficina",            d:"Se acuerda de que tenía trabajo.",      k:"home", ic:"💼"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
+  {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
 ];
 
 const FOES = {
@@ -688,7 +705,10 @@ const SALAS = {
 /* ---------- estado ---------- */
 let S = null;
 const fx = { floats:[], shake:0, banner:null };
-function banner(txt,color){ fx.banner={txt, color:color||"#EAE8E2", t:0}; }
+function banner(txt,color){
+  fx.banner={txt, color:color||"#EAE8E2", t:0};
+  if(typeof pintarCartel==="function") pintarCartel(txt, color);
+}
 
 const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana",
                  D:"complice", T:"complice", C:"complice"};
@@ -1009,6 +1029,7 @@ function chasePhase(hidden){
     return setTimeout(actionPhase, 1200);
   }
   banner(`${S.foe.n} te persigue · ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
+  say(`<span class="ico">👣</span><span>Te persigue · <b>${foeSpeed()} casillero${foeSpeed()>1?"s":""}</b></span>`, "carta r");
   const n = S.foes.length>1 ? 1 : foeSpeed();
   let i=0;
   syncUI();
@@ -1059,7 +1080,7 @@ function actionPhase(){
   S.played.push(card);
   S.lastCard=card; S.phase="accion"; S.cardPending=true;
   banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
-  say(`<span class="sep">${S.foe.n}:</span> <b>${card.n}</b> — ${card.d}`);
+  say(`<span class="ico">${card.ic}</span><span><b>${card.n}</b> — ${card.d}</span>`, "carta");
   syncUI();
   setTimeout(()=>applyCard(card), TUNE.cardMs);
 }
@@ -1796,28 +1817,23 @@ function frame(now){
 
   if(typeof drawEditorOverlay==="function") drawEditorOverlay();
   drawFloats(dt);
-  drawBanner(dt);
   drawVignette();
 }
 
 /* cartel de fase: dice qué está pasando antes de que pase */
-function drawBanner(dt){
-  const b=fx.banner; if(!b) return;
-  b.t+=dt;
-  const life=2800, p=b.t/life;
-  if(p>=1){ fx.banner=null; return; }
-  const a = p<.08 ? p/.08 : (p>.85 ? (1-p)/.15 : 1);
-  ctx.save();
-  ctx.globalAlpha=Math.max(0,Math.min(1,a));
-  ctx.font='600 15px "Archivo",system-ui,sans-serif';
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  // abajo, sobre el muro inferior: arriba tapaba la puerta de salida
-  const w=Math.min(cv.width-24, ctx.measureText(b.txt).width+40);
-  const x=cv.width/2, y=cv.height-27;
-  ctx.fillStyle="#0B0D12E8"; rr(ctx,x-w/2,y-15,w,30,2); ctx.fill();
-  ctx.strokeStyle=b.color; ctx.lineWidth=1.5; rr(ctx,x-w/2,y-15,w,30,2); ctx.stroke();
-  ctx.fillStyle=b.color; ctx.fillText(b.txt,x,y+1);
-  ctx.restore();
+/* El cartel vive abajo del tablero, en HTML. Adentro del lienzo no habia
+   lugar: quedaba pegado al muro de abajo y tapaba las casillas del puesto. */
+function pintarCartel(txt, color){
+  const el=document.getElementById("cartel");
+  if(!el || !el.style) return;
+  el.textContent = txt;
+  el.style.color = color || "";
+  el.style.borderColor = color || "";
+  if(el.classList){
+    el.classList.remove("on");
+    void el.offsetWidth;              // reiniciar la animación
+    el.classList.add("on");
+  }
 }
 
 function drawOverlays(now){
