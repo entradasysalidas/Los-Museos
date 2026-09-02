@@ -51,7 +51,7 @@
     display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px}
 
   /* ---------- cabecera ---------- */
-  header{display:flex;align-items:stretch;gap:0;min-width:0;
+  header{border-top:3px solid var(--brass);display:flex;align-items:stretch;gap:0;min-width:0;
     background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--brass)}
   .logo{display:flex;align-items:center;padding:0 18px;border-right:1px solid var(--line);
     font:400 15px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
@@ -82,7 +82,8 @@
   @media(max-width:1360px){ #stage{grid-template-columns:300px minmax(0,1fr) 280px} }
   @media(max-width:1120px){ #stage{grid-template-columns:280px minmax(0,1fr)} #relato{display:none} }
 
-  #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
+  #boardwrap{background:var(--panel);padding:10px;
+    border:1px solid color-mix(in srgb, var(--brass) 26%, var(--line));
     box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:6px;min-height:0;min-width:0}
 
@@ -103,7 +104,7 @@
 
   /* ---------- el relato: lo que va haciendo el antagonista ---------- */
   #relato{display:flex;flex-direction:column;min-height:0;background:var(--panel);
-    border:1px solid var(--line)}
+    border:1px solid color-mix(in srgb, var(--brass) 20%, var(--line))}
   #relato > h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);
     font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;text-transform:uppercase;
     color:var(--brass);flex:none}
@@ -117,9 +118,11 @@
   .ev.y{border-left-color:var(--brass)}
   .ev.carta{display:flex;gap:11px;align-items:flex-start}
   .ev .ico{font-size:25px;line-height:1.05;flex:none;width:30px;text-align:center}
-  .ev.ronda{background:none;border:none;padding:10px 2px 2px;
-    font:700 10px/1 "Archivo",sans-serif;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--dim)}
+  .ev.ronda{background:none;border:none;padding:12px 2px 3px;
+    font:700 10px/1 "Archivo",sans-serif;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--brass);display:flex;align-items:center;gap:9px}
+  .ev.ronda::after{content:"";flex:1;height:1px;
+    background:color-mix(in srgb, var(--brass) 35%, transparent)}
   #eventos:empty::after{content:"Acá vas a ver lo que hace el antagonista.";
     font:400 13px/1.6 "Archivo",sans-serif;color:var(--dim)}
 
@@ -385,14 +388,14 @@
   @media (max-width:860px){
     html,body{overflow:auto;height:auto}
     #app{height:auto;min-height:100%;display:block;padding:8px 8px 16px}
-    header{margin-bottom:8px}
+    header{border-top:3px solid var(--brass);margin-bottom:8px}
     #stage{display:block}
     #boardwrap{width:100%;margin-bottom:8px;order:-1}
     #relato{display:flex;max-height:40vh;margin-top:8px}
     .ev{font-size:14px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
-    header{border-left-width:5px}
+    header{border-top:3px solid var(--brass);border-left-width:5px}
     .logo{display:none}
     .numnivel{width:56px;font-size:28px}
     .salaname{padding:8px 12px}
@@ -861,7 +864,7 @@ function newGame(salaKey){
 
   S = {
     salaKey, sala, hero, heroKey:sala.hero, power,
-    foe:FOES[sala.foe], foeKey:sala.foe, th:THEMES[sala.piso],
+    foe:FOES[sala.foe], foeKey:sala.foe, th:(typeof temaDeSala==="function" ? temaDeSala(sala) : THEMES[sala.piso]),
     grid:b.grid, marks:b.marks, walls,
     exit:firstOf("salida"), home:firstOf("puesto"), bath:firstOf("banio"),
     foeHome:firstOf("oficina"), foeBath:firstOf("baniojefe"),
@@ -2264,6 +2267,33 @@ function dibujarCara(el, heroKey){
   g.scale(1.35,1.35);
   drawPerson(g, CREW[heroKey], 0);
   g.restore();
+}
+
+/* ---------- el color de la sala tiñe todo el tablero ----------
+   Las cinco salas de alfombra se veían idénticas entre sí, y las cinco de
+   parquet también. Cada nivel ya tenía su color: acá se mezcla con el piso, la
+   luz y el vacío de alrededor, apenas lo justo para que cada sala se reconozca
+   sin dejar de ser alfombra o parquet. */
+function mezcla(a, b, t){
+  const A = parseInt((a||"#888888").slice(1),16), B = parseInt((b||"#888888").slice(1),16);
+  const r = Math.round(((A>>16)&255)*(1-t) + ((B>>16)&255)*t);
+  const g = Math.round(((A>>8)&255)*(1-t)  + ((B>>8)&255)*t);
+  const z = Math.round((A&255)*(1-t)       + (B&255)*t);
+  return "#" + ((1<<24) + (r<<16) + (g<<8) + z).toString(16).slice(1);
+}
+function temaDeSala(sala){
+  const base = THEMES[sala.piso];
+  const ac = sala.ac && sala.ac[0];
+  if(!ac) return base;
+  const oscuro = sala.piso === "madera";
+  return Object.assign({}, base, {
+    piso  : [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)],
+    luz   : mezcla(base.luz, ac, 0.30),
+    pared : mezcla(base.pared, ac, 0.05),
+    void  : mezcla(base.void, ac, oscuro ? 0.16 : 0.10),
+    fondo : mezcla(base.fondo, ac, oscuro ? 0.16 : 0.10),
+    junta : base.junta,
+  });
 }
 
 /* ==========================================================================
