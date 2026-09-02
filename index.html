@@ -486,7 +486,7 @@ function allOf(role){
    cada nivel.                                                              */
 const FRAME_WALLS = {
   gris  : ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
-  madera: ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1"],   // la puerta extra del jefe
+  madera: ["v:2:0","v:3:0","v:3:7","h:3:1","h:2:1"],  // se cierra la bajada a la salida y se abren la del medio y la de la oficina
 };
 function esParedDeMarco(k){
   const [t,a,b]=k.split(":"); const x=+a, y=+b;
