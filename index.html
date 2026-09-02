@@ -88,9 +88,10 @@
     justify-content:center;gap:6px;min-height:0;min-width:0}
 
   /* el cartel vive fuera del lienzo: asi nunca tapa la puerta de salida */
-  #cartel{flex:none;min-height:34px;display:flex;align-items:center;justify-content:center;
-    font:600 14.5px/1.3 "Archivo",system-ui,sans-serif;text-align:center;
-    padding:7px 18px;border:1px solid transparent;opacity:0;max-width:100%}
+  #cartel{flex:none;min-height:46px;display:flex;align-items:center;justify-content:center;
+    font:700 19px/1.25 "Archivo",system-ui,sans-serif;text-align:center;
+    letter-spacing:-.01em;padding:11px 24px;border:2px solid transparent;
+    opacity:0;max-width:100%}
   #cartel.on{animation:cartel 2.8s ease forwards}
   @keyframes cartel{
     0%{opacity:0;transform:translateY(7px)}
@@ -243,17 +244,29 @@
 
   /* ---------- ayuda ---------- */
   /* la tapa, grande, antes de entrar al museo */
-  #portal{position:fixed;inset:0;z-index:60;background:var(--bg);cursor:pointer;
+  #portal{position:fixed;inset:0;z-index:60;background:var(--bg);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:20px;padding:22px;animation:portalEntra .55s ease}
+    gap:22px;padding:22px;animation:portalEntra .55s ease}
   #portal.off{display:none}
-  #portal img{max-width:min(88vw,430px);max-height:64vh;width:auto;height:auto;
+  #portal img{max-width:min(88vw,390px);max-height:56vh;width:auto;height:auto;
     display:block;box-shadow:0 26px 60px #00000070}
-  #portal .pie{font:600 12px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
-    text-transform:uppercase;color:var(--dim)}
   #portal.sale{animation:portalSale .4s ease forwards;pointer-events:none}
   @keyframes portalEntra{from{opacity:0}to{opacity:1}}
   @keyframes portalSale{to{opacity:0}}
+
+  .quiensos{display:flex;flex-direction:column;align-items:center;gap:9px;width:min(92vw,380px)}
+  .quiensos label{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--dim)}
+  .quiensos .fila{display:flex;gap:8px;width:100%}
+  .quiensos input{flex:1;min-width:0;background:var(--panel);color:var(--ink);
+    border:1px solid var(--hair);padding:13px 14px;
+    font:600 16px/1 "Archivo",system-ui,sans-serif;outline:none}
+  .quiensos input:focus{border-color:var(--brass)}
+  .quiensos input::placeholder{color:var(--dim);font-weight:400}
+  .quiensos .btn{margin:0;flex:none}
+  .quiensos .pie{font:400 12px/1.5 "Archivo",sans-serif;color:var(--dim);
+    text-align:center;min-height:18px}
+  .quiensos .pie b{color:var(--brass)}
 
   #overlay{position:fixed;inset:0;background:#05060899;backdrop-filter:blur(3px);
     display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
@@ -303,6 +316,22 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lv .foe{color:var(--alarm);font-size:10.5px}
 
+
+  /* lo ya resuelto, en el menú */
+  .menucab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding-bottom:11px;margin-bottom:12px;border-bottom:1px solid var(--line);
+    font:400 13px/1.2 "Archivo",sans-serif;color:var(--dim)}
+  .menucab b{color:var(--ink);font-weight:700}
+  .menucab .cuenta{font:400 22px/.9 "Archivo Black","Archivo",sans-serif;
+    color:var(--brass);letter-spacing:-.02em}
+  .menucab .cuenta small{font-size:11px;color:var(--dim);letter-spacing:0}
+  .lv .plano{position:relative}
+  .lv .tilde{position:absolute;right:-5px;top:-5px;width:21px;height:21px;
+    display:flex;align-items:center;justify-content:center;background:var(--ac);
+    color:var(--bg);font:700 12px/1 "Archivo",sans-serif;border-radius:50%}
+  .lv.hecha{border-color:color-mix(in srgb, var(--ac) 45%, var(--line))}
+  .lv .mejor{display:block;margin-top:6px;font:500 9px/1 "IBM Plex Mono",monospace;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
   @media(max-width:1240px){ .lvls{grid-template-columns:repeat(4,minmax(0,1fr))} }
   @media(max-width:1000px){ .lvls{grid-template-columns:repeat(3,minmax(0,1fr))} }
   @media(max-width:760px){  .lvls{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -320,6 +349,71 @@
   .premio b{color:var(--ink);font-size:15px}
   .premio p{margin:3px 0 0;font-size:13.5px;line-height:1.6;color:var(--body)}
   .premio em{color:var(--alarm);font-style:normal;font-weight:700}
+
+  /* ---------- las pantallas del final y la ficha ---------- */
+  .final{display:flex;gap:20px;align-items:flex-start;margin-bottom:6px}
+  .finplano{flex:none;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .finplano canvas{width:230px;height:230px;display:block;background:var(--sunk);
+    border:1px solid color-mix(in srgb, var(--ac) 40%, var(--line))}
+  .finsala{text-align:center}
+  .finsala b{display:block;font:400 14px/1.15 "Archivo Black","Archivo",sans-serif;
+    color:var(--ink);text-transform:uppercase;letter-spacing:-.01em}
+  .finsala small{display:block;margin-top:3px;font:500 9px/1 "IBM Plex Mono",monospace;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+  .findatos{flex:1;min-width:0}
+  .datos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+  .dato{background:var(--panel2);border-left:3px solid var(--line);padding:9px 11px}
+  .dato.fuerte{border-left-color:var(--ac)}
+  .dato .l{display:block;font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim)}
+  .dato .v{display:block;margin-top:5px;font:400 24px/.9 "Archivo Black","Archivo",sans-serif;
+    color:var(--ink);letter-spacing:-.03em}
+  .dato.fuerte .v{color:var(--ac)}
+  .pzs{display:flex;gap:9px;margin-top:4px}
+  .pz{font-size:26px;line-height:1;opacity:.22;filter:grayscale(1)}
+  .pz.ok{opacity:1;filter:none}
+  .marca{margin:12px 0 0;font-size:13px;color:var(--dim)}
+  .marca.nueva{color:var(--ac);font-weight:600}
+  .marca b{color:var(--ink)}
+  .finbotones{display:flex;flex-wrap:wrap;gap:0}
+
+  .fichacab{display:flex;gap:12px;margin-bottom:14px}
+  .frango,.fprog{flex:1;background:var(--panel2);border-left:3px solid var(--brass);
+    padding:11px 13px}
+  .frango .l,.fprog .l{display:block;font:500 8.5px/1 "IBM Plex Mono",monospace;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+  .frango b,.fprog b{font:400 22px/.9 "Archivo Black","Archivo",sans-serif;color:var(--brass);
+    letter-spacing:-.02em}
+  .fprog b small{font-size:13px;color:var(--dim)}
+  .fbarra{margin-top:9px;height:5px;background:var(--sunk)}
+  .fbarra i{display:block;height:100%;background:var(--brass)}
+
+  .fsalas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .fsala{display:flex;gap:10px;align-items:center;background:var(--panel2);
+    border-left:3px solid var(--line);padding:8px 11px;opacity:.5}
+  .fsala.ok{opacity:1;border-left-color:var(--ac)}
+  .fsala .fn{font:400 18px/.8 "Archivo Black","Archivo",sans-serif;color:var(--dim);
+    flex:none;width:20px}
+  .fsala.ok .fn{color:var(--ac)}
+  .fsala .fnom{flex:1;min-width:0}
+  .fsala .fnom b{display:block;font:400 11px/1.15 "Archivo Black","Archivo",sans-serif;
+    color:var(--ink);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .fsala .fnom small{display:block;font-size:10px;color:var(--dim);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fsala .fmarca{flex:none;text-align:right}
+  .fsala .fmarca b{display:block;font:400 16px/.9 "Archivo Black","Archivo",sans-serif;
+    color:var(--ink)}
+  .fsala .fmarca small{display:block;font-size:8px;color:var(--dim);margin-top:3px;
+    text-transform:uppercase;letter-spacing:.1em}
+  .fsala .pend{color:var(--hair);font-size:18px}
+
+  @media(max-width:760px){
+    .final{flex-direction:column;align-items:stretch}
+    .finplano canvas{width:100%;height:auto;max-width:280px;margin:0 auto}
+    .fsalas,.fichacab{grid-template-columns:1fr;display:grid}
+  }
 
   .reglas{font-size:14px;color:var(--body);line-height:1.75}
   .reglas h4{margin:20px 0 8px;font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
@@ -398,6 +492,7 @@
     #boardwrap{width:100%;margin-bottom:8px;order:-1}
     #relato{display:flex;max-height:40vh;margin-top:8px}
     .ev{font-size:14px}
+    #cartel{font-size:16px;padding:9px 16px;min-height:40px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -544,10 +639,16 @@
   </div>
 </div>
 
-<div id="portal" onclick="entrar()">
+<div id="portal">
   <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
-  <button class="btn" onclick="entrar()">Entrar al museo</button>
-  <div class="pie">o tocá donde quieras</div>
+  <div class="quiensos">
+    <label for="nombre">¿Quién entra al museo?</label>
+    <div class="fila">
+      <input id="nombre" type="text" maxlength="16" placeholder="Tu nombre" autocomplete="off" spellcheck="false">
+      <button class="btn" onclick="entrar()">Entrar</button>
+    </div>
+    <div class="pie" id="portalpie"></div>
+  </div>
 </div>
 
 <div id="overlay"><div class="modal"><h2 id="modaltit">Los Museos</h2>
@@ -883,7 +984,7 @@ function newGame(salaKey){
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
-    deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
+    ruta:[], deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
     over:null, busy:false, phase:"vos", cardPending:false, log:[],
@@ -973,6 +1074,49 @@ function saveWalls(k, arr){
   catch(e){ return false; }
 }
 
+/* ---------- el legajo: quién sos y qué resolviste ----------
+   Sin cuentas ni servidor: el nombre y las marcas viven en este dispositivo.
+   Para competir en el grupo está la ficha, que se saca por captura. */
+function legajoKey(){ return "museos.legajo.v1"; }
+function leerLegajo(){
+  try{
+    const r = localStorage.getItem(legajoKey());
+    const l = r ? JSON.parse(r) : null;
+    return (l && typeof l === "object") ? {nombre: l.nombre || "", salas: l.salas || {}} : {nombre:"", salas:{}};
+  }catch(e){ return {nombre:"", salas:{}}; }
+}
+function guardarLegajo(l){ try{ localStorage.setItem(legajoKey(), JSON.stringify(l)); }catch(e){} }
+
+let LEGAJO = {nombre:"", salas:{}};
+
+/* una sala resuelta guarda su mejor marca: menos rondas es mejor */
+function anotarSala(salaKey, rondas, sinPerder){
+  const previo = LEGAJO.salas[salaKey];
+  LEGAJO.salas[salaKey] = {
+    hecha  : true,
+    rondas : previo && previo.rondas ? Math.min(previo.rondas, rondas) : rondas,
+    limpia : (previo && previo.limpia) || sinPerder,
+  };
+  guardarLegajo(LEGAJO);
+}
+function salasHechas(){ return Object.values(LEGAJO.salas).filter(s=>s && s.hecha).length; }
+function rondasTotales(){
+  return Object.values(LEGAJO.salas).reduce((a,s)=> a + ((s && s.rondas) || 0), 0);
+}
+
+/* el rango sale de cuántas salas resolviste, con el chiste de la escalada */
+const RANGOS = [
+  [0,  "Pasante"], [1, "Cadete"], [2, "Administrativo"], [3, "Empleado"],
+  [4,  "Empleado del mes"], [5, "Encargado"], [6, "Mano derecha"],
+  [7,  "Ladrón de oficio"], [8, "Profesional"], [9, "Leyenda"], [10, "Dueño del museo"],
+];
+function rangoActual(){
+  const n = salasHechas();
+  let r = RANGOS[0][1];
+  for(const [min, nom] of RANGOS) if(n >= min) r = nom;
+  return r;
+}
+
 /* ======================= FASE 1 · movimiento ======================= */
 function step(dx,dy){
   if(!S||S.over||S.busy||S.mp<=0) return;
@@ -980,6 +1124,7 @@ function step(dx,dy){
   const nx=S.player.x+dx, ny=S.player.y+dy;
   if(!canStep(S.player.x,S.player.y,nx,ny)) return;
   S.player.x=nx; S.player.y=ny; S.mp--;
+  if(S.ruta) S.ruta.push({x:nx, y:ny});
   if(foeOn(nx,ny)){ resolveCatch(); return; }
   passThrough(nx,ny);
   if(S.over) return;
@@ -1346,29 +1491,85 @@ function aislados(){
 /* ======================= fin ======================= */
 function salaLabel(s){ return s.num===0 ? "Tutorial" : "Nivel "+s.num; }
 
+/* ---------- las pantallas del final ----------
+   Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
+   marca que quedó y en qué anda tu legajo. */
+function pantallaFinal(gano, titulo, bajada, salaKey){
+  const s = SALAS[salaKey];
+  const ac = s.ac ? s.ac[0] : "#D9A94F";
+  const keys = Object.keys(SALAS), next = keys[keys.indexOf(salaKey)+1];
+  const marcaSala = LEGAJO.salas[salaKey];
+
+  const dato = (lbl, val, fuerte) =>
+    '<div class="dato' + (fuerte ? " fuerte" : "") + '">' +
+      '<span class="l">' + lbl + '</span><span class="v">' + val + '</span></div>';
+
+  const piezas = PIECES.map(p => {
+    const id = p.id;
+    const ok = S.delivered.includes(id);
+    return '<span class="pz' + (ok ? " ok" : "") + '" style="color:' + PIE[id].color + '">' +
+           PIE[id].sym + '</span>';
+  }).join("");
+
+  showModal(titulo,
+    '<div class="final" style="--ac:' + ac + '">' +
+      '<div class="finplano">' +
+        '<canvas id="finlienzo" width="300" height="300"></canvas>' +
+        '<div class="finsala"><b>' + s.name + '</b>' +
+          '<small>' + (s.num===0 ? "Tutorial" : "Nivel " + s.num) + ' · ' + s.wing + '</small></div>' +
+      '</div>' +
+      '<div class="findatos">' +
+        '<p class="lead">' + bajada + '</p>' +
+        '<div class="datos">' +
+          dato("Rondas", S.round, gano) +
+          dato("Entregadas", S.delivered.length + "/3", false) +
+          dato("Te recuperó", S.taken + "/3", false) +
+          dato("Alerta final", S.alert + "/" + TUNE.alertMax, false) +
+        '</div>' +
+        '<div class="pzs">' + piezas + '</div>' +
+        (gano && marcaSala && marcaSala.rondas < S.round
+          ? '<p class="marca">Tu mejor marca en esta sala sigue siendo <b>' +
+            marcaSala.rondas + ' rondas</b>.</p>'
+          : gano ? '<p class="marca nueva">Mejor marca: <b>' + S.round + ' rondas</b>.</p>' : "") +
+      '</div>' +
+    '</div>' +
+    '<div class="finbotones">' +
+      (gano && next
+        ? '<button class="btn" onclick="startSala(&quot;' + next + '&quot;)">Seguir: ' +
+          SALAS[next].name + '</button>'
+        : '<button class="btn" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal()">' +
+          (gano ? "Repetir" : "Otra vez") + '</button>') +
+      (gano && next
+        ? '<button class="btn alt" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal()">Repetir</button>'
+        : "") +
+      '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
+      '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
+    '</div>');
+
+  const lienzo = $("finlienzo");
+  if(lienzo) dibujarPlanoFinal(lienzo, salaKey, S.ruta,
+    gano ? S.exit : {x:S.player.x, y:S.player.y},
+    gano ? "#7BC08A" : "#E0685D");
+}
+
 function gameWin(){
-  S.over="win";
-  float(S.exit.x,S.exit.y,"¡AFUERA!","#79AE9E");
-  const keys=Object.keys(SALAS), next=keys[keys.indexOf(S.salaKey)+1];
-  showModal("Se escapó "+S.hero.n, `
-    <p class="lead">Tres piezas entregadas y la puerta de emergencia atrás.
-    <b>${S.foe.n}</b> se quedó con la alerta en ${S.alert}.</p>
-    <div class="rules"><b>Ronda final:</b> ${S.round} · <b>Piezas que te recuperó:</b> ${S.taken}/3
-    · <b>Sala:</b> ${salaLabel(S.sala)} ${S.sala.name}</div>
-    ${next?`<button class="btn" onclick="startSala('${next}')">${salaLabel(SALAS[next])} · ${SALAS[next].name}</button>`:""}
-    <button class="btn alt" onclick="newGame('${S.salaKey}');closeModal()">Repetir</button>
-    <button class="btn alt" onclick="menu()">Todas las salas</button>`);
+  S.over = "win";
+  float(S.exit.x, S.exit.y, "¡AFUERA!", "#79AE9E");
+  const primeraVez = !(LEGAJO.salas[S.salaKey] && LEGAJO.salas[S.salaKey].hecha);
+  anotarSala(S.salaKey, S.round, S.taken === 0);
+  const hechas = salasHechas();
+  pantallaFinal(true, "Se escapó " + S.hero.n,
+    "Tres piezas entregadas y la puerta de emergencia atrás. <b>" + S.foe.n +
+    "</b> se quedó con la alerta en " + S.alert + "." +
+    (primeraVez ? " Van <b>" + hechas + " de 10</b> salas: sos <b>" + rangoActual() + "</b>." : ""),
+    S.salaKey);
 }
 
 function gameLose(reason){
-  S.over="lose"; fx.shake=TUNE.shakeMs*1.7;
-  say(`💼 <b>${reason}</b>`,"r");
-  showModal("Te agarraron", `
-    <p class="lead">${reason}</p>
-    <div class="rules"><b>Rondas:</b> ${S.round} · <b>Entregadas:</b> ${S.delivered.length}/3
-    · <b>Recuperadas por él:</b> ${S.taken}/3</div>
-    <button class="btn" onclick="newGame('${S.salaKey}');closeModal()">Otra vez</button>
-    <button class="btn alt" onclick="menu()">Todas las salas</button>`);
+  S.over = "lose";
+  fx.shake = TUNE.shakeMs * 1.7;
+  say("💼 <b>" + reason + "</b>", "r");
+  pantallaFinal(false, "Te agarraron", reason, S.salaKey);
 }
 
 /* ==========================================================================
@@ -2308,6 +2509,45 @@ function temaDeSala(sala){
   });
 }
 
+/* ---------- el plano del final: por dónde anduviste ----------
+   La pantalla de victoria y la de derrota muestran la sala con tu recorrido
+   encima. Es lo que da ganas de sacarle una foto y tirarla al grupo. */
+function dibujarPlanoFinal(el, salaKey, ruta, marca, colorMarca){
+  dibujarPlano(el, salaKey);
+  if(!el || !el.getContext) return;
+  const g = el.getContext("2d");
+  const AW = el.width, AH = el.height;
+  const c = Math.min(AW/W, AH/H);
+  const ox = (AW - c*W)/2, oy = (AH - c*H)/2;
+  const centro = p => ({ x: ox + p.x*c + c/2, y: oy + p.y*c + c/2 });
+
+  if(ruta && ruta.length > 1){
+    g.save();
+    g.strokeStyle = "#FFFFFF";
+    g.globalAlpha = 0.30;
+    g.lineWidth = Math.max(2, c*0.30);
+    g.lineJoin = "round"; g.lineCap = "round";
+    g.beginPath();
+    let previo = null;
+    for(const p of ruta){
+      const q = centro(p);
+      const seguido = previo && (Math.abs(previo.x-p.x) + Math.abs(previo.y-p.y)) === 1;
+      if(seguido) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y);
+      previo = p;
+    }
+    g.stroke();
+    g.restore();
+  }
+  if(marca){
+    const q = centro(marca);
+    g.save();
+    g.strokeStyle = colorMarca || "#FFFFFF";
+    g.lineWidth = Math.max(2, c*0.16);
+    g.beginPath(); g.arc(q.x, q.y, c*0.42, 0, 7); g.stroke();
+    g.restore();
+  }
+}
+
 /* ==========================================================================
    INPUT, EDITOR DE PAREDES Y PANTALLAS
    ========================================================================== */
@@ -2620,17 +2860,23 @@ function startSala(k){ newGame(k); closeModal(); }
 
 function menu(){
   /* Las diez de una, sin scroll. Arriba el plano con el nombre al lado, y
-     abajo, a todo el ancho, quien la juega y contra quien. */
+     abajo, a todo el ancho, quién la juega y contra quién. Las resueltas
+     llevan su mejor marca. */
   const cuerpo = '<div class="lvls">' + Object.entries(SALAS).map(([k,v]) => {
     const ac = v.ac ? v.ac[0] : "#D9A94F";
-    return '<button class="lv" style="--ac:'+ac+'" title="'+v.name+'" ' +
-           'onclick="startSala(&quot;'+k+'&quot;)">' +
+    const m = LEGAJO.salas[k];
+    const hecha = !!(m && m.hecha);
+    return '<button class="lv' + (hecha ? " hecha" : "") + '" style="--ac:'+ac+'" ' +
+           'title="'+v.name+'" onclick="startSala(&quot;'+k+'&quot;)">' +
       '<span class="arriba">' +
-        '<span class="plano"><canvas width="150" height="150" data-sala="'+k+'"></canvas></span>' +
+        '<span class="plano"><canvas width="150" height="150" data-sala="'+k+'"></canvas>' +
+          (hecha ? '<span class="tilde">✓</span>' : '') + '</span>' +
         '<span class="txt">' +
           '<span class="ala">'+v.wing+'</span>' +
           '<span class="num">'+(v.num===0?"·":v.num)+'</span>' +
           '<b>'+v.name+'</b>' +
+          (hecha ? '<span class="mejor">' + m.rondas + ' rondas' +
+                   (m.limpia ? ' · limpia' : '') + '</span>' : '') +
         '</span>' +
       '</span>' +
       '<span class="quien">' +
@@ -2641,10 +2887,18 @@ function menu(){
     '</button>';
   }).join("") + '</div>';
 
+  const hechas = salasHechas();
+  const cabecera = LEGAJO.nombre
+    ? '<div class="menucab"><span><b>' + LEGAJO.nombre + '</b> · ' + rangoActual() + '</span>' +
+      '<span class="cuenta">' + hechas + '<small>/10 salas</small></span></div>'
+    : "";
+
   showModal("Las diez salas",
+    cabecera +
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
-    '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>');
+    '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
+    '<button class="btn alt" onclick="ficha()">Mi ficha</button>');
 
   const raiz = $("modal");
   if(raiz && raiz.querySelectorAll){
@@ -2751,20 +3005,52 @@ if(/[?&]editor\b/.test(location.search)) mostrarEditor();
 
 requestAnimationFrame(frame);
 
-/* La tapa recibe. Con un clic se corre y aparece el listado de salas. */
-let yaEntre=false;
+/* La tapa recibe y pregunta quién sos. El nombre y las marcas quedan en este
+   dispositivo: sin cuentas ni servidor. Para competir está la ficha. */
+let yaEntre = false;
+
+function prepararPortal(){
+  LEGAJO = leerLegajo();
+  const inp = document.getElementById("nombre");
+  const pie = document.getElementById("portalpie");
+  if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
+  if(pie){
+    const n = salasHechas();
+    pie.innerHTML = LEGAJO.nombre
+      ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
+           : "Te estábamos esperando, <b>" + LEGAJO.nombre + "</b>")
+      : "Se guarda en este dispositivo, no hace falta cuenta.";
+  }
+  if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
+}
+
 function entrar(){
   if(yaEntre) return;
-  yaEntre=true;
-  const p=document.getElementById("portal");
+  const inp = document.getElementById("nombre");
+  const nom = (inp && inp.value ? inp.value : "").trim().slice(0,16);
+  if(!nom){
+    const pie = document.getElementById("portalpie");
+    if(pie) pie.innerHTML = "Poné un nombre, aunque sea un apodo.";
+    if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
+    return;
+  }
+  LEGAJO.nombre = nom;
+  guardarLegajo(LEGAJO);
+  yaEntre = true;
+  const p = document.getElementById("portal");
   if(!p || !p.classList) return menu();
   p.classList.add("sale");
   setTimeout(()=>{ p.classList.add("off"); menu(); }, 380);
 }
+
 addEventListener("keydown", e=>{
-  if(!yaEntre && (e.key==="Enter" || e.key===" ")){ e.preventDefault(); entrar(); }
+  if(!yaEntre && e.key === "Enter"){ e.preventDefault(); entrar(); }
 });
-if(/[?&]editor/.test(location.search)) entrar();   // editando no hace falta la tapa
+prepararPortal();
+if(/[?&]editor\b/.test(location.search)){   // editando no hace falta la tapa
+  LEGAJO.nombre = LEGAJO.nombre || "Editor";
+  entrar();
+}
 
 /* Vuelca los diez niveles como esten ahora mismo: lo guardado en el navegador
    si existe, y si no lo del codigo. Asi no se pierde ninguna edicion que no
@@ -2793,6 +3079,49 @@ function copiarTodo(){
   t.select(); t.setSelectionRange(0, 999999);
   try{ document.execCommand("copy"); $("editmsg").textContent="Copiados los diez. Pegamelos y los dejo fijos."; }
   catch(e){ $("editmsg").textContent="Copialo a mano del cuadro de texto."; }
+}
+
+/* ---------- la ficha: para sacarle captura y tirarla al grupo ---------- */
+function ficha(){
+  const hechas = salasHechas();
+  const filas = Object.entries(SALAS).map(([k,v])=>{
+    const m = LEGAJO.salas[k];
+    const ac = v.ac ? v.ac[0] : "#D9A94F";
+    return '<div class="fsala' + (m && m.hecha ? " ok" : "") + '" style="--ac:' + ac + '">' +
+      '<span class="fn">' + (v.num===0 ? "·" : v.num) + '</span>' +
+      '<span class="fnom"><b>' + v.name + '</b>' +
+        '<small>' + CREW[v.hero].n + ' vs ' + FOES[v.foe].n + '</small></span>' +
+      '<span class="fmarca">' +
+        (m && m.hecha
+          ? '<b>' + m.rondas + '</b><small>rondas' + (m.limpia ? " · limpia" : "") + '</small>'
+          : '<span class="pend">—</span>') +
+      '</span>' +
+    '</div>';
+  }).join("");
+
+  showModal("Ficha de " + (LEGAJO.nombre || "ladrón"),
+    '<div class="fichacab">' +
+      '<div class="frango"><span class="l">Rango</span><b>' + rangoActual() + '</b></div>' +
+      '<div class="fprog"><span class="l">Salas resueltas</span><b>' + hechas + '<small>/10</small></b>' +
+        '<div class="fbarra"><i style="width:' + (hechas*10) + '%"></i></div></div>' +
+    '</div>' +
+    '<div class="fsalas">' + filas + '</div>' +
+    '<p class="lead" style="margin-top:14px">Sacale una captura y tirala al grupo. ' +
+    'Las marcas se guardan en este dispositivo.</p>' +
+    '<button class="btn" onclick="menu()">Todas las salas</button>' +
+    '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>');
+}
+
+function olvidarLegajo(){
+  LEGAJO = {nombre:"", salas:{}};
+  guardarLegajo(LEGAJO);
+  closeModal();
+  const p = document.getElementById("portal");
+  if(p && p.classList){
+    p.classList.remove("sale","off");
+    yaEntre = false;
+    prepararPortal();
+  }
 }
 </script>
 </body>
