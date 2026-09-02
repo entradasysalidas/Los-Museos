@@ -475,7 +475,7 @@
           </div>
         </div>
         <div class="deckwrap" id="deckwrap"></div>
-        <div class="deckfoot"><span>Le quedan <b id="quedan">9</b> de 9</span>
+        <div class="deckfoot"><span>Le quedan <b id="quedan">9</b> de <b id="mazototal">10</b></span>
           <span id="mazoaviso"></span></div>
       </div>
 
@@ -2023,6 +2023,7 @@ function syncUI(){
        : '<div class="deckcard vacia"><div class="ic">·</div>'+
          '<div class="tt">Todavía no jugó</div></div>');
   $("quedan").textContent = S.deck.length;
+  $("mazototal").textContent = DECK.length;
   $("mazoaviso").textContent = S.deck.length<=2 ? "al agotarse sube la alerta" : "";
 
   $("pieceslots").innerHTML = PIECES.map(p=>{
@@ -2511,7 +2512,8 @@ function ayuda(){
     'Por eso conviene <b>juntar las tres antes de repartir ninguna</b>: lo bravo es la corrida ' +
     'final a la salida, ya con las manos vacías.</p>' +
     '<h4>La alerta</h4>' +
-    '<p>Cuando se le acaba el mazo de nueve acciones, se baraja y la alerta <b>sube un nivel</b>: ' +
+    '<p>Cuando se le acaba el mazo de <b>' + DECK.length + ' acciones</b>, se baraja y la alerta ' +
+    '<b>sube un nivel</b>: ' +
     'avanza un casillero más por ronda. El panel te muestra cuántas cartas le quedan.</p>' +
     '<p>Al revés, si una carta lo manda <b>al baño o a su oficina</b> se distrae y la alerta ' +
     '<b>baja un nivel</b>. Ojo que cada antagonista tiene su piso: el Director General ' +
