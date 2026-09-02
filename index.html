@@ -63,8 +63,9 @@
   .hbtn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
   /* ---------- escenario ---------- */
-  #stage{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px;min-height:0}
-  @media(max-width:1040px){ #stage{grid-template-columns:minmax(0,1fr) 300px} }
+  #stage{display:grid;grid-template-columns:330px minmax(0,1fr) 320px;gap:14px;min-height:0}
+  @media(max-width:1360px){ #stage{grid-template-columns:300px minmax(0,1fr) 280px} }
+  @media(max-width:1120px){ #stage{grid-template-columns:280px minmax(0,1fr)} #relato{display:none} }
 
   #boardwrap{background:var(--panel);border:1px solid var(--line);padding:10px;
     box-shadow:var(--shadow);display:grid;place-items:center;min-height:0;min-width:0}
@@ -72,6 +73,26 @@
     background:#20242C;cursor:pointer}
 
   aside{display:flex;flex-direction:column;gap:10px;min-height:0}
+
+  /* ---------- el relato: lo que va haciendo el antagonista ---------- */
+  #relato{display:flex;flex-direction:column;min-height:0;background:var(--panel);
+    border:1px solid var(--line)}
+  #relato > h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);
+    font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--brass);flex:none}
+  #eventos{flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;
+    flex-direction:column;gap:7px;scroll-behavior:smooth}
+  .ev{font:400 14.5px/1.5 "Archivo",system-ui,sans-serif;color:var(--body);
+    padding:9px 11px;border-left:3px solid var(--hair);background:var(--panel2)}
+  .ev b{color:var(--ink);font-weight:700}
+  .ev.r{border-left-color:var(--alarm);color:var(--ink)}
+  .ev.g{border-left-color:var(--patina)}
+  .ev.y{border-left-color:var(--brass)}
+  .ev.ronda{background:none;border:none;padding:10px 2px 2px;
+    font:700 10px/1 "Archivo",sans-serif;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim)}
+  #eventos:empty::after{content:"Acá vas a ver lo que hace el antagonista.";
+    font:400 13px/1.6 "Archivo",sans-serif;color:var(--dim)}
 
   .card{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
   .card h3{margin:0 0 10px;font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;
@@ -268,7 +289,9 @@
     #app{height:auto;min-height:100%;display:block;padding:8px 8px 16px}
     header{margin-bottom:8px}
     #stage{display:block}
-    #boardwrap{width:100%;margin-bottom:8px}
+    #boardwrap{width:100%;margin-bottom:8px;order:-1}
+    #relato{display:flex;max-height:40vh;margin-top:8px}
+    .ev{font-size:14px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-left-width:5px}
@@ -341,8 +364,6 @@
   </header>
 
   <div id="stage">
-    <div id="boardwrap"><canvas id="c" width="544" height="544"></canvas></div>
-
     <aside>
       <div class="card">
         <div class="yo">
@@ -388,6 +409,13 @@
 
       <div class="hintbar" id="hint"></div>
     </aside>
+
+    <div id="boardwrap"><canvas id="c" width="544" height="544"></canvas></div>
+
+    <section id="relato">
+      <h3>Lo que va pasando</h3>
+      <div id="eventos"></div>
+    </section>
   </div>
 
   <div class="editbar" id="editbar">
@@ -752,6 +780,7 @@ function newGame(salaKey){
   if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
 
   fx.floats.length=0; fx.shake=0; fx.banner=null;
+  if(typeof limpiarRelato==="function") limpiarRelato();
   buildFloorLayer(); buildLegend();
   const cvEl=document.getElementById("c"); if(cvEl) cvEl.style.background=S.th.fondo;
   say(`<b>${sala.num===0?"Tutorial":"Nivel "+sala.num} · ${sala.name}</b>`,"y");
@@ -762,7 +791,8 @@ function newGame(salaKey){
 
 function say(t,cls){
   S.log.push(`<span class="${cls||""}">${t}</span>`);
-  if(typeof renderLog==="function") renderLog();   // el registro vive en la ayuda
+  if(typeof renderLog==="function") renderLog();     // el registro corto vive en la ayuda
+  if(typeof pushEvento==="function") pushEvento(t, cls);   // y el relato, en la columna
 }
 function float(x,y,txt,color){ fx.floats.push({x,y,txt,color:color||"#EAE8E2",t:0}); }
 
@@ -1982,6 +2012,33 @@ function buildLegend(){
     g.fillStyle=S.th.piso[0]; g.fillRect(0,0,48,48);
     items[+c.dataset.i][2](g);
   });
+}
+
+/* ---------- el relato de la derecha ----------
+   El cartel de abajo del tablero aparece y se va. Acá queda escrito todo lo
+   que hizo el antagonista, ronda por ronda, en letra grande. */
+let rondaEnRelato = -1;
+function limpiarRelato(){
+  const el=document.getElementById("eventos");
+  if(el) el.innerHTML="";
+  rondaEnRelato = -1;
+}
+function pushEvento(t, cls){
+  const el=document.getElementById("eventos");
+  if(!el || !el.appendChild || !S) return;
+  if(S.round !== rondaEnRelato && rondaEnRelato >= 0){
+    const sep=document.createElement("div");
+    sep.className="ev ronda";
+    sep.textContent="Ronda " + S.round;
+    el.appendChild(sep);
+  }
+  rondaEnRelato = S.round;
+  const d=document.createElement("div");
+  d.className="ev " + (cls || "");
+  d.innerHTML=t;
+  el.appendChild(d);
+  while(el.children && el.children.length > 140) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
 }
 
 /* ==========================================================================
