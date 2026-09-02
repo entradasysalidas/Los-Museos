@@ -784,7 +784,7 @@ const POWERS = {
   lamber:{n:"Agenda llena",     d:"Con E convencés a cualquier cómplice de aceptar cualquier pieza."},
   kzk   :{n:"Manos de técnico", d:"Con F reactivás una vitrina con alarma, una vez por partida."},
   chuna :{n:"Piernas",          d:"Una vez por partida movés 4 casilleros en lugar de 2."},
-  tomy  :{n:"Mate infinito",    d:"Podés repetir el mismo mate dentro del mismo turno."},
+  tomy  :{n:"Termo propio",     d:"Arrancás con un mate en la mochila, y los del tablero los podés repetir."},
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
   chupa :{n:"Bolsillos grandes",d:"Empezás con un objeto extra."},
   marian:{n:"Ojo de halcón",    d:"Ves la próxima acción del antagonista antes de moverte."},
@@ -1002,6 +1002,7 @@ function newGame(salaKey){
     if(v) takePiece(S.grid[v.y][v.x], true);
   }
   if(sala.hero==="chupa") S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
+  if(sala.hero==="tomy")  S.objects.push("mate1");   // el termo va con él
   if(sala.hero==="matxi") S.freeCatch = true;
   if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
 
@@ -1012,6 +1013,7 @@ function newGame(salaKey){
   say(`<b>${sala.num===0?"Tutorial":"Nivel "+sala.num} · ${sala.name}</b>`,"y");
   say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
   say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
+  if(CONSEJOS[salaKey]) say(`<span class="ico">💡</span><span>${CONSEJOS[salaKey]}</span>`, "carta y");
   syncUI();
 }
 
@@ -1122,6 +1124,22 @@ function rangoActual(){
   for(const [min, nom] of RANGOS) if(n >= min) r = nom;
   return r;
 }
+
+/* ---------- un consejo por sala ----------
+   Cada antagonista hace una trampa distinta y no siempre se deduce jugando.
+   El consejo aparece en el relato al empezar. */
+const CONSEJOS = {
+  tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
+  n1:"Tu poder también te esconde en la casilla de al lado de una planta. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
+  n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
+  n3:"El Director no tiene trucos, pero es constante. Con <b>E</b> cualquier cómplice te acepta cualquier pieza: no gastes pasos buscando al que la pide.",
+  n4:"No termines el turno en línea recta con La Seguridad si no hay pared en el medio, porque avanza un casillero extra. Guardá tu arreglo de vitrina para cuando te cierre el camino.",
+  n5:"Cada vitrina que abrís hace avanzar al Procurador al instante. Abrí primero la más lejana, y guardá tus cuatro pasos para la fuga final.",
+  n6:"Al Perro no lo engañan las plantas: te huele igual. Tu termo es tu ventaja, usalo para cruzar la sala de una sola vez.",
+  n7:"El Restaurador devuelve la pieza a la vitrina más cercana a él. Tu primera captura no te cuesta nada: usala como escudo y no la desperdicies temprano.",
+  n8:"El Inspector anota cada objeto que usás y le sube la alerta. Guardá los tres para la fuga final, cuando ya tengas las tres entregadas y la alerta no importe.",
+  n9:"Arranca en alerta 2 y se teletransporta a las vitrinas. Mirá su próxima carta antes de moverte y no te quedes junto a una vitrina todavía llena.",
+};
 
 /* ======================= FASE 1 · movimiento ======================= */
 function step(dx,dy){
