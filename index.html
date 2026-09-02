@@ -2285,13 +2285,17 @@ function temaDeSala(sala){
   const base = THEMES[sala.piso];
   const ac = sala.ac && sala.ac[0];
   if(!ac) return base;
+  /* Sobre el parquet oscuro alcanza con poco: parte de un casi negro y
+     cualquier tinte salta. La alfombra clara necesita mucho más para que se
+     note, sobre todo en el vacío de alrededor, que es puro fondo. */
   const oscuro = sala.piso === "madera";
   return Object.assign({}, base, {
-    piso  : [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)],
-    luz   : mezcla(base.luz, ac, 0.30),
-    pared : mezcla(base.pared, ac, 0.05),
-    void  : mezcla(base.void, ac, oscuro ? 0.16 : 0.10),
-    fondo : mezcla(base.fondo, ac, oscuro ? 0.16 : 0.10),
+    piso  : oscuro ? [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)]
+                   : [mezcla(base.piso[0], ac, 0.24), mezcla(base.piso[1], ac, 0.24)],
+    luz   : mezcla(base.luz, ac, oscuro ? 0.30 : 0.45),
+    pared : mezcla(base.pared, ac, oscuro ? 0.05 : 0.09),
+    void  : mezcla(base.void, ac, oscuro ? 0.16 : 0.34),
+    fondo : mezcla(base.fondo, ac, oscuro ? 0.16 : 0.34),
     junta : base.junta,
   });
 }
