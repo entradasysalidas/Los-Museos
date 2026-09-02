@@ -493,7 +493,7 @@ function allOf(role){
    todos los niveles, igual que los roles del marco. Las de adentro son de
    cada nivel.                                                              */
 const FRAME_WALLS = {
-  gris  : ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:4:1"],
+  gris  : ["v:2:0","v:3:0","h:5:1","v:3:7","h:4:1"],
   madera: ["v:2:0","v:3:0","h:5:1","v:3:7","h:3:1","h:2:1"],  // se cierra la bajada a la salida: se entra al pasillo por la puerta del jefe
 };
 function esParedDeMarco(k){
@@ -600,7 +600,7 @@ const SALAS = {
     e:L(`A....A
          .C.D.P
          .M.M..
-         T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:6:3","v:5:5","v:2:0","v:3:0","h:5:1","h:4:1","v:3:7"] },
+         T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:5:5"] },
   n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris", ac:["#B4531A","#E0A077","#FBEDE3"],
     hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`D.P.P.
