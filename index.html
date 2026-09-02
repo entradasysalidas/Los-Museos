@@ -281,6 +281,13 @@
   .modal{background:var(--panel);border:1px solid var(--line);padding:0;
     max-width:1280px;width:100%;max-height:calc(100vh - 36px);display:flex;
     flex-direction:column;box-shadow:0 30px 80px #000c}
+  .modal{position:relative}
+  .cerrar{position:absolute;top:14px;right:16px;width:38px;height:38px;padding:0;
+    background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;
+    font:400 24px/1 "Archivo",sans-serif;display:flex;align-items:center;
+    justify-content:center;transition:.12s}
+  .cerrar:hover{border-color:var(--brass);color:var(--brass)}
+  .cerrar.off{display:none}
   .modal h2{margin:0;font:400 clamp(26px,3.4vw,36px)/1 "Archivo Black","Archivo",sans-serif;
     color:var(--ink);text-transform:uppercase;letter-spacing:-.03em;
     padding:22px 26px 14px;border-bottom:1px solid var(--line);flex:none}
@@ -657,7 +664,9 @@
   </div>
 </div>
 
-<div id="overlay"><div class="modal"><h2 id="modaltit">Los Museos</h2>
+<div id="overlay" onclick="fondoCierra(event)"><div class="modal">
+  <h2 id="modaltit">Los Museos</h2>
+  <button class="cerrar" id="cerrarmodal" onclick="closeModal()" title="Cerrar (Esc)">×</button>
   <div class="modalbody" id="modal"></div></div></div>
 <script>
 /* ==========================================================================
@@ -1568,7 +1577,7 @@ function pantallaFinal(gano, titulo, bajada, salaKey){
         : "") +
       '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
       '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
-    '</div>');
+    '</div>', false);
 
   const lienzo = $("finlienzo");
   if(lienzo) dibujarPlanoFinal(lienzo, salaKey, S.ruta,
@@ -2591,7 +2600,11 @@ let editMode = false, hoverEdge = null, mouseCellEdit = null;
 addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
   if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(); } return; }
-  if(k==="Escape"){ if(editMode) return toggleEditor(); menu(); return; }
+  if(k==="Escape"){
+    if(editMode) return toggleEditor();
+    if(modalAbierto()) return closeModal();   // salir, no volver a abrir
+    menu(); return;
+  }
   if(!S || S.over || S.busy || walking || picking) return;
   if(editMode) return;
   if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
@@ -2876,18 +2889,36 @@ function askWhichPiece(){
   showModal("Te agarró con las manos llenas", `
     <p class="lead"><b>${S.foe.n}</b> te revisa la mochila y se lleva <b>una</b> pieza.
     Elegí cuál devolvés.</p>${opts}
-    <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`);
+    <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`, false);
 }
 function pickPiece(id){ picking=false; closeModal(); losePiece(id); }
 
 /* ---------- pantallas ---------- */
-function showModal(titulo, html){
+/* Se puede salir de casi todas las pantallas: con la cruz, con Escape o
+   tocando el fondo. De las que no se puede salir es a propósito: elegir qué
+   pieza entregás, y el final de la partida. */
+let modalCerrable = true;
+
+function showModal(titulo, html, cerrable){
+  modalCerrable = (cerrable !== false);
   $("modaltit").textContent = titulo;
   $("modal").innerHTML = html;
   $("modal").scrollTop = 0;
+  const x = $("cerrarmodal");
+  if(x && x.classList) x.classList.toggle("off", !modalCerrable);
   $("overlay").classList.remove("off");
 }
-function closeModal(){ $("overlay").classList.add("off"); }
+function modalAbierto(){
+  const o = $("overlay");
+  return !!(o && o.classList && !o.classList.contains("off"));
+}
+function closeModal(){
+  if(!modalCerrable) return;
+  $("overlay").classList.add("off");
+}
+function fondoCierra(e){
+  if(e && e.target && e.target.id === "overlay") closeModal();
+}
 function startSala(k){ newGame(k); closeModal(); }
 
 function menu(){
@@ -2930,7 +2961,7 @@ function menu(){
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
     '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
-    '<button class="btn alt" onclick="ficha()">Mi ficha</button>');
+    '<button class="btn alt" onclick="ficha()">Mi ficha</button>', !!S);
 
   const raiz = $("modal");
   if(raiz && raiz.querySelectorAll){
@@ -3141,7 +3172,7 @@ function ficha(){
     '<p class="lead" style="margin-top:14px">Sacale una captura y tirala al grupo. ' +
     'Las marcas se guardan en este dispositivo.</p>' +
     '<button class="btn" onclick="menu()">Todas las salas</button>' +
-    '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>');
+    '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>', !!S);
 }
 
 function olvidarLegajo(){
