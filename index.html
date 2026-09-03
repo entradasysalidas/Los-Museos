@@ -1048,7 +1048,7 @@ function banner(txt,color){
   if(typeof pintarCartel==="function") pintarCartel(txt, color);
 }
 
-const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana",
+const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara",
                  D:"complice", T:"complice", C:"complice"};
 const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 
@@ -1062,7 +1062,7 @@ function loadElems(k){
 function saveElems(k,rows){ try{ localStorage.setItem(elemsStoreKey(k), JSON.stringify(rows)); }catch(e){} }
 
 function buildBoard(sala, salaKey){
-  const grid=[], marks={vitrinas:[], comps:[], mates:[]};
+  const grid=[], marks={vitrinas:[], comps:[], mates:[], camaras:[]};
   const EL = loadElems(salaKey) || sala.e;
   for(let y=0;y<H;y++){
     grid.push([]);
@@ -1077,6 +1077,7 @@ function buildBoard(sala, salaKey){
       c.type=CH2TYPE[ch];
       if(c.type==="vitrina")  marks.vitrinas.push({x,y});
       if(c.type==="mate")     marks.mates.push({x,y});
+      if(c.type==="camara")   marks.camaras.push({x, y, giro: marks.camaras.length});
       if(c.type==="complice"){ c.want=CH2WANT[ch]; marks.comps.push({x,y,want:c.want}); }
     }
   }
@@ -1423,6 +1424,14 @@ function endMovement(){
   const hidden = S.foe.twist!=="olfato" && (c.type==="planta" ||
     (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
       const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="planta"; })));
+  if(typeof teVeLaCamara==="function" && teVeLaCamara() && S.alert < TUNE.alertMax){
+    S.alert++;
+    fx.shake = TUNE.shakeMs * .7;
+    float(S.player.x, S.player.y, "📹", "#E0685D");
+    banner("La cámara te agarró: alerta " + S.alert, "#E0685D");
+    say(`📹 Terminaste el turno bajo la cámara: <b>alerta ${S.alert}</b>.`,"r");
+    if(typeof latidoAlerta==="function") latidoAlerta("sube");
+  }
   if(hidden) say("🪴 Terminaste el turno escondido: no te persigue.","g");
   else if(S.foe.twist==="olfato" && c.type==="planta")
     say("🐕 El Perro te huele igual: la planta no te tapa.","r");
@@ -1449,6 +1458,45 @@ function chaseStep(f, destino){
 
 /* ¿el jugador quedó en la línea recta del antagonista, sin paredes en medio? */
 const ALCANCE_LINTERNA = 2;              // casilleros: más allá no te ilumina
+
+
+/* ---------- la cámara de seguridad ----------
+   Barre: gira un cuarto de vuelta por ronda, siempre en el mismo sentido. Ve
+   en línea recta hasta la primera pared, con un alcance corto. Terminar el
+   turno adentro de su campo le sube la alerta al de seguridad.
+   Es predecible a propósito: la gracia es cronometrar el cruce. */
+const ALCANCE_CAMARA = 3;
+const GIRO = [[1,0],[0,1],[-1,0],[0,-1]];   // derecha, abajo, izquierda, arriba
+
+function haciaDondeMira(cam){
+  return GIRO[(S.round + (cam.giro || 0)) % 4];
+}
+
+/* las casillas que ve una cámara en esta ronda */
+function loQueVe(cam){
+  const [dx,dy] = haciaDondeMira(cam);
+  const vistas = [];
+  let x = cam.x, y = cam.y;
+  for(let i = 0; i < ALCANCE_CAMARA; i++){
+    const nx = x+dx, ny = y+dy;
+    if(!canStep(x, y, nx, ny)) break;
+    vistas.push({x:nx, y:ny});
+    x = nx; y = ny;
+  }
+  return vistas;
+}
+
+/* todas las casillas vigiladas ahora mismo */
+function casillasVigiladas(){
+  const set = new Set();
+  for(const cam of (S.marks.camaras || []))
+    for(const c of loQueVe(cam)) set.add(key(c.x, c.y));
+  return set;
+}
+
+function teVeLaCamara(){
+  return casillasVigiladas().has(key(S.player.x, S.player.y));
+}
 
 function enLineaRecta(){
   const f=S.foes[0], p=S.player;
@@ -2224,6 +2272,23 @@ function drawCelular(g){
   g.restore();
 }
 
+/* la cámara colgada del techo, mirando hacia donde barre */
+function drawCamara(g, c, x, y){
+  const cam = (S.marks.camaras || []).find(k => k.x===x && k.y===y);
+  const dir = cam ? haciaDondeMira(cam) : [1,0];
+  const ang = Math.atan2(dir[1], dir[0]);
+  g.save();
+  g.translate(24, 20);
+  g.fillStyle="#00000028"; g.beginPath(); g.ellipse(0,17,10,3.4,0,0,7); g.fill();
+  g.rotate(ang);
+  g.fillStyle="#4A505C"; rr(g,-3,-11,6,7,1.5); g.fill();          // el soporte
+  g.fillStyle="#5D6470"; rr(g,-9,-4,17,9,3); g.fill();            // el cuerpo
+  g.fillStyle="#2A2E36"; g.beginPath(); g.arc(8,.5,3.6,0,7); g.fill();  // el lente
+  g.fillStyle="#8FD3E8"; g.beginPath(); g.arc(8.7,-.4,1.5,0,7); g.fill();
+  g.fillStyle="#E0685D"; g.beginPath(); g.arc(-6,-1.5,1.5,0,7); g.fill(); // la lucecita
+  g.restore();
+}
+
 function drawMojado(g){
   g.fillStyle="#7FA8C466"; rr(g,7,20,34,18,9); g.fill();
   g.strokeStyle="#A8CBE0AA"; g.lineWidth=1.4; rr(g,7,20,34,18,9); g.stroke();
@@ -2569,6 +2634,7 @@ function frame(now){
       case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
+      case "camara":   inCell(ctx,x,y,g=>drawCamara(g,c,x,y)); break;
       case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
       case "puesto":   inCell(ctx,x,y,g=>drawPuesto(g,true)); break;
       case "oficina":  inCell(ctx,x,y,g=>drawPuesto(g,false)); break;
@@ -2615,6 +2681,19 @@ function drawOverlays(now){
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const v=d[key(x,y)];
     if(v>0 && v<=foeSpeed()) ctx.fillRect(x*CS,y*CS,CS,CS);
+  }
+  if(S.marks.camaras && S.marks.camaras.length){
+    const vistas = casillasVigiladas();
+    ctx.fillStyle = "#E0685D22";
+    vistas.forEach(kk => {
+      const x = kk % W, y = (kk / W) | 0;
+      ctx.fillRect(x*CS, y*CS, CS, CS);
+    });
+    ctx.strokeStyle = "#E0685D55"; ctx.lineWidth = 1.5;
+    vistas.forEach(kk => {
+      const x = kk % W, y = (kk / W) | 0;
+      ctx.strokeRect(x*CS+1, y*CS+1, CS-2, CS-2);
+    });
   }
   if(S.mp>0 && !S.busy){
     const p=(Math.sin(now/420)+1)/2;
@@ -2811,6 +2890,7 @@ function buildLegend(){
     ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>",          g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
+    ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
     ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
@@ -2867,7 +2947,7 @@ function latidoAlerta(comoV){
    Diez botones de texto no dicen nada. El plano se reconoce de un vistazo y
    además es temático: es el mapita que te dan en la entrada del museo. */
 const PLANO_COLOR = {
-  vitrina:"acento", mate:"#8A6A4A", planta:"#4E8F52", banana:"#D8B740",
+  vitrina:"acento", mate:"#8A6A4A", planta:"#4E8F52", banana:"#D8B740", camara:"#B0525A",
   salida:"#3E9E62", puesto:"#7E8496", banio:"#7E8496", baniojefe:"#7E8496",
   oficina:"#B0525A",
 };
@@ -3097,6 +3177,7 @@ const TOOLS = [
   {id:"M",         n:"Mate",       zona:"centro", ic:"🧉"},
   {id:"A",         n:"Planta",     zona:"centro", ic:"🪴"},
   {id:"L",         n:"Banana",     zona:"centro", ic:"🍌"},
+  {id:"K",         n:"Cámara",     zona:"centro", ic:"📹"},
   {id:"D",         n:"Cómplice ◆", zona:"centro", ic:"◆"},
   {id:"T",         n:"Cómplice ▲", zona:"centro", ic:"▲"},
   {id:"C",         n:"Cómplice ●", zona:"centro", ic:"●"},
