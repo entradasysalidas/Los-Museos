@@ -1464,7 +1464,9 @@ function endMovement(){
   const c=S.grid[S.player.y][S.player.x];
   const hidden = S.foe.twist!=="olfato" && (c.type==="planta" ||
     (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
-      const n=cellAt(S.player.x+dx,S.player.y+dy); return n && n.type==="planta"; })));
+      const x=S.player.x+dx, y=S.player.y+dy, n=cellAt(x,y);
+      return n && n.type==="planta" && canStep(S.player.x,S.player.y,x,y);   // no a través de una pared
+    })));
   if(typeof teVeLaCamara==="function" && teVeLaCamara() && S.alert < TUNE.alertMax){
     S.alert++;
     fx.shake = TUNE.shakeMs * .7;
@@ -1473,7 +1475,8 @@ function endMovement(){
     say(`📹 Terminaste el turno bajo la cámara: <b>alerta ${S.alert}</b>.`,"r");
     if(typeof latidoAlerta==="function") latidoAlerta("sube");
   }
-  if(hidden) say("🪴 Terminaste el turno escondido: no te persigue.","g");
+  S.escondido = hidden;
+  if(hidden) say("🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
   else if(S.foe.twist==="olfato" && c.type==="planta")
     say("🐕 El Perro te huele igual: la planta no te tapa.","r");
   setTimeout(()=>chasePhase(hidden), 220);
@@ -1684,6 +1687,7 @@ function applyCard(card){
 }
 
 function rushSteps(n){
+  if(S.escondido) say("🪴 La planta no te salva de ésta: viene igual.","r");
   const señuelo = S.celular;
   if(señuelo) say("📱 El celular suena y lo llama: va para allá en vez de venir a vos.","g");
   let i=0;
@@ -2948,7 +2952,7 @@ function buildLegend(){
     ["Con alarma","Vacía: ya te llevaste la gema",                         g=>drawVitrina(g,{alarm:1,piece:null})],
     ["Cómplice",  "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,compCell)],
     ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
-    ["Planta",    "Terminá el turno acá y <b>no te persigue</b>",          g=>drawPlanta(g)],
+    ["Planta",    "Terminá el turno acá y <b>no te persigue</b>. Ojo: de la carta <b>¡Se acerca!</b> no te salva", g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
