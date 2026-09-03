@@ -819,8 +819,8 @@ Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); }
 const POWERS = {
   hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una planta."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
-  lamber:{n:"Agenda llena",     d:"Con E convencés a cualquier cómplice de aceptar cualquier pieza."},
-  kzk   :{n:"Manos de técnico", d:"Una vez por partida, con F traés la pieza más lejana a la vitrina vacía más cercana."},
+  lamber:{n:"Agenda llena",     d:"Con F convencés a cualquier cómplice de aceptar cualquier pieza."},
+  kzk   :{n:"Manos de técnico", d:"Con F, una vez por partida, traés la pieza más lejana a la vitrina vacía más cercana."},
   chuna :{n:"Piernas",          d:"Con F estirás las piernas: 4 casilleros en vez de 2, una vez por partida."},
   tomy  :{n:"Termo propio",     d:"Arrancás con un mate en la mochila, y los del tablero los podés repetir."},
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
@@ -1568,6 +1568,15 @@ function useObject(i){
     }
   }
   syncUI();
+}
+
+/* F es la tecla del poder, sea cual sea el personaje. Los demás son pasivos y
+   no hay nada que apretar. */
+function usarPoder(){
+  if(!S || S.over) return;
+  if(S.heroKey === "chuna")  return correr();
+  if(S.heroKey === "kzk")    return fixVitrina();
+  if(S.heroKey === "lamber") return offerDelivery();
 }
 
 /* Chuna estira las piernas: una vez por partida, dos pasos más en este turno. */
@@ -2531,7 +2540,7 @@ function syncUI(){
     if(porque) pistas.push("🧉 " + porque);
   }
   if(canOfferHere()) pistas.push(
-    "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\">Convencerlo de aceptar esta pieza</button>");
+    "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\"><b>F</b> · convencerlo de aceptar esta pieza</button>");
   if(typeof puedeCorrer==="function" && puedeCorrer())
     pistas.push(
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"correr()\">" +
@@ -2825,8 +2834,7 @@ addEventListener("keydown", e=>{
   if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
   if(k===" "){ e.preventDefault(); drinkMate(); return; }
   if(k==="Enter"){ e.preventDefault(); finishRound(); return; }
-  if(k==="f"){ if(S.heroKey==="chuna") correr(); else fixVitrina(); return; }
-  if(k==="e"){ offerDelivery(); return; }
+  if(k==="f" || k==="e"){ usarPoder(); return; }
   if(/^[123]$/.test(k)) useObject(+k-1);
 });
 
@@ -3295,6 +3303,7 @@ function ayuda(){
       '<div class="tecla"><kbd>Espacio</kbd> tomar mate</div>' +
       '<div class="tecla"><kbd>Enter</kbd> cerrar la ronda</div>' +
       '<div class="tecla"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> usar objeto</div>' +
+    '<div class="tecla"><kbd>F</kbd> tu poder, si es de los que se activan</div>' +
       '<div class="tecla"><kbd>R</kbd> reiniciar la sala</div>' +
       '<div class="tecla"><kbd>Esc</kbd> las salas</div>' +
     '</div>' +
