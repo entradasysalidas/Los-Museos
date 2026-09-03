@@ -766,7 +766,7 @@
     </button>
     <button class="tapa cerrada" id="tapa2" onclick="elegirJuego(2)" aria-pressed="false">
       <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
-      <span class="sello">En obra</span>
+      <span class="sello">4 salas</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
   </div>
@@ -1206,8 +1206,8 @@ function vecinasDe(x, y, dirs){
     const nx=x+dx, ny=y+dy;
     if(!canStep(x,y,nx,ny)) continue;
     const h = hermanaDe(nx, ny);                 // pisás la punta y salís por la otra
-    if(h && !(h.x===x && h.y===y)) out.push({x:h.x, y:h.y, escalera:true});
-    else out.push({x:nx, y:ny});
+    if(h && !(h.x===x && h.y===y)) out.push({x:h.x, y:h.y, d:[dx,dy], escalera:true});
+    else out.push({x:nx, y:ny, d:[dx,dy]});
   }
   return out;
 }
@@ -1299,7 +1299,9 @@ function anotarSala(salaKey, rondas, sinPerder){
   };
   guardarLegajo(LEGAJO);
 }
-function salasHechas(){ return Object.values(LEGAJO.salas).filter(s=>s && s.hecha).length; }
+function salasHechas(){
+  return Object.keys(SALAS).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
+}
 /* el rango sale de cuántas salas resolviste, con el chiste de la escalada */
 const RANGOS = [
   [0,  "Pasante"], [1, "Cadete"], [2, "Administrativo"], [3, "Empleado"],
@@ -1331,9 +1333,73 @@ let CONSEJOS = {
 /* ---------- los dos juegos ----------
    Cada uno trae sus salas, sus antagonistas, sus pisos y su marco. Los amigos,
    los poderes, las piezas, los objetos y el mazo son de los dos. */
+/* ---------- Los Museos 2 · Escape del shopping ----------
+   Mismo tablero y mismos amigos, otro lugar: porcelanato que refleja, luces de
+   color y vidrieras con tira de neón. Los cuatro elementos nuevos —cámara,
+   escalera, puerta con lector y vitrina con temporizador— se enseñan de a uno. */
+const THEMES_2 = {
+  dia   :{ piso:["#D8D5D0","#D2CFC9"], patron:"porcelanato", junta:"#00000012",
+           luz:"#FFFFFF", luzA:.30, pared:"#FFFFFF", void:"#C6C2BC", vineta:.08,
+           fondo:"#C6C2BC", neon:null },
+  noche :{ piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF10",
+           luz:"#CFE6FF", luzA:.20, pared:"#F0F3F8", void:"#14151C", vineta:.30,
+           fondo:"#14151C", neon:"#5FD8E8" },
+};
+
+const FOES_2 = {
+  vigilante:{n:"El Vigilante",   look:"guardia", d:"Camina y nada más. Es el local escuela."},
+  encargada:{n:"La Encargada",   look:"saco",
+             d:"Cada vidriera que abrís la hace avanzar un casillero al instante.", twist:"alarma"},
+  gerente  :{n:"El Gerente",     look:"traje",   d:"El perseguidor clásico. Sin trucos."},
+};
+
+const SALAS_2 = {
+  s0:{ num:0, name:"Planta baja", wing:"Local", piso:"dia", ac:["#E0559B","#8A2D5C","#FCE7F1"],
+    hero:"negro", foe:"vigilante", comps:["chupa","marian","tomy"],
+    e:L(`P..K..
+         .M....
+         ..T.C.
+         D..P.P`),
+    w:["h:5:1","h:4:1","v:2:3","h:4:3","v:4:4"] },
+
+  s1:{ num:1, name:"Patio de comidas", wing:"Local", piso:"dia", ac:["#F0A02C","#9A6415","#FDF0DC"],
+    hero:"hippie", foe:"vigilante", comps:["chupa","marian","tomy"],
+    e:L(`E....P
+         .AT.M.
+         .C...D
+         P..E.P`),
+    w:["h:5:1","h:4:1","v:1:2","h:3:3","v:4:2"] },
+
+  s2:{ num:2, name:"Electrónica", wing:"Franquicia", piso:"noche", ac:["#5FD8E8","#2C6B78","#0E2429"],
+    hero:"damian", foe:"encargada", comps:["lamber","chuna","kzk"],
+    e:L(`Q..M.P
+         ..C...
+         .T..A.
+         P...DK`),
+    w:["h:5:1","h:4:1","v:2:2","h:2:4","v:5:3"] },
+
+  s3:{ num:3, name:"Pasillo central", wing:"Franquicia", piso:"noche", ac:["#9B6BE0","#5A3A8C","#1B1428"],
+    hero:"lamber", foe:"gerente", comps:["matxi","hippie","damian"],
+    e:L(`P.K..P
+         .E....
+         ...E..
+         D.T.CP`),
+    w:["h:5:1","h:4:1","v:3:2","h:1:3"],
+    p:["v:3:4"] },
+};
+
+const CONSEJOS_2 = {
+  s0:"El Vigilante camina y nada más. La cámara del techo <b>barre un cuarto de vuelta por ronda</b>: fijate para dónde mira antes de cruzar, porque terminar el turno en su campo te sube la alerta.",
+  s1:"Las dos escaleras están hermanadas: pisás una y salís por la otra. <b>El Vigilante también las usa</b>, así que sirven para escapar pero también para que te alcance.",
+  s2:"La vidriera con reloj te da <b>cuatro rondas</b> para entregar esa pieza. Y La Encargada avanza cada vez que abrís una: robá primero la que tengas más lejos de ella.",
+  s3:"La puerta del pasillo <b>lee la mercadería</b>: se abre si llevás una pieza encima y para El Gerente está siempre cerrada. Guardala como refugio para la corrida final.",
+};
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
+  2: { n:"Los Museos 2", salas:SALAS_2, foes:FOES_2, themes:THEMES_2,
+       frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_2 },
 };
 
 function cargarJuego(n){
@@ -2196,6 +2262,20 @@ function buildFloorLayer(){
     gr.addColorStop(1, th.luz + "00");
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
+  // los charcos de color de la cartelería, sólo en el shopping
+  if(th.neon){
+    const ac = acentoSala();
+    for(let i=0;i<5;i++){
+      const cx = (CX0 + rnd(7,i,1)*CW) * CS;
+      const cy = (CY0 + rnd(3,i,5)*CH) * CS;
+      const R  = CS * (1.6 + rnd(1,i,9)*1.4);
+      const gr = g.createRadialGradient(cx,cy,2,cx,cy,R);
+      gr.addColorStop(0, hexA(i%2 ? ac : th.neon, .20));
+      gr.addColorStop(1, hexA(i%2 ? ac : th.neon, 0));
+      g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
+    }
+  }
+
   // borde del tablero: sombra hacia afuera
   g.strokeStyle = S.sala.piso==="gris" ? "#00000022" : "#00000055";
   g.lineWidth=3;
@@ -2222,6 +2302,25 @@ function drawPiso(g,x,y,th){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0e";
       g.fillRect(px, py+i*(CS/5)+rnd(x,y,i+9)*3, CS, 1.6);
     }
+  }else if(th.patron==="porcelanato"){
+    /* la veta del mármol, apenas */
+    for(let i=0;i<3;i++){
+      g.strokeStyle = rnd(x,y,i)>.5 ? "#00000012" : "#ffffff16";
+      g.lineWidth = 1.1;
+      g.beginPath();
+      const y0 = py + rnd(x,y,i+3)*CS;
+      g.moveTo(px, y0);
+      g.bezierCurveTo(px+CS*.3, y0 - 6 + rnd(x,y,i+7)*12,
+                      px+CS*.7, y0 + 6 - rnd(x,y,i+11)*12, px+CS, y0);
+      g.stroke();
+    }
+    /* el reflejo del techo: una diagonal que corre por la baldosa */
+    const gr = g.createLinearGradient(px, py, px+CS, py+CS);
+    gr.addColorStop(0,   "#ffffff00");
+    gr.addColorStop(.42, "#ffffff26");
+    gr.addColorStop(.52, "#ffffff10");
+    gr.addColorStop(1,   "#ffffff00");
+    g.fillStyle = gr; g.fillRect(px, py, CS, CS);
   }else{
     for(let i=0;i<12;i++){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000010" : "#ffffff10";
@@ -2252,6 +2351,21 @@ function drawParedes(){
     if(k==="v") ctx.fillRect((x+1)*CS - t/2, y*CS + 2, t, CS - 4);
     else        ctx.fillRect(x*CS + 2, (y+1)*CS - t/2, CS - 4, t);
   });
+
+  // 2b. la tira de neón de las vidrieras
+  if(S.th.neon){
+    const ac = acentoSala();
+    ctx.save();
+    ctx.shadowColor = ac; ctx.shadowBlur = 9;
+    ctx.fillStyle = hexA(ac, .85);
+    const f = Math.max(1.6, t*0.34);
+    S.walls.forEach(w=>{
+      const [k,a,b]=w.split(":"), x=+a, y=+b;
+      if(k==="v") ctx.fillRect((x+1)*CS - f/2, y*CS + 5, f, CS - 10);
+      else        ctx.fillRect(x*CS + 5, (y+1)*CS - f/2, CS - 10, f);
+    });
+    ctx.restore();
+  }
 
   // 3. las puertas con lector: cerradas son barrera, abiertas dejan el hueco
   if(S.puertas && S.puertas.size){
@@ -3442,10 +3556,10 @@ function pathTo(target,maxSteps){
   let frontier=[{x:S.player.x,y:S.player.y}];
   for(let depth=0; depth<maxSteps; depth++){
     const next=[];
-    for(const c of frontier) for(const [dx,dy] of dirs){
-      const nx=c.x+dx, ny=c.y+dy, kk=key(nx,ny);
-      if(!canStep(c.x,c.y,nx,ny) || seen.has(kk)) continue;
-      seen.add(kk); prev.set(kk,{from:c,d:[dx,dy]}); next.push({x:nx,y:ny});
+    for(const c of frontier) for(const n of vecinasDe(c.x, c.y, dirs)){
+      const kk=key(n.x,n.y);
+      if(seen.has(kk)) continue;
+      seen.add(kk); prev.set(kk,{from:c, d:n.d}); next.push({x:n.x,y:n.y});
     }
     frontier=next;
     if(seen.has(key(target.x,target.y))) break;
@@ -3778,19 +3892,9 @@ let JUEGO = 1;
 
 function elegirJuego(n){
   const t1 = document.getElementById("tapa1"), t2 = document.getElementById("tapa2");
-  const pie = document.getElementById("portalpie");
-  if(n === 2){
-    if(pie) pie.innerHTML =
-      "<b>Los Museos 2</b> está en obra: cámaras de seguridad, ascensores, puertas con " +
-      "tarjeta y diez salas nuevas. Todavía no se puede entrar.";
-    if(t2 && t2.animate) { try{ t2.animate(
-      [{transform:"translateX(0)"},{transform:"translateX(-5px)"},
-       {transform:"translateX(5px)"},{transform:"translateX(0)"}], {duration:260}); }catch(e){} }
-    return;
-  }
-  JUEGO = 1;
-  if(t1){ t1.classList.add("elegida"); t1.setAttribute("aria-pressed","true"); }
-  if(t2){ t2.classList.remove("elegida"); t2.setAttribute("aria-pressed","false"); }
+  JUEGO = (n === 2) ? 2 : 1;
+  if(t1){ t1.classList.toggle("elegida", JUEGO===1); t1.setAttribute("aria-pressed", JUEGO===1 ? "true" : "false"); }
+  if(t2){ t2.classList.toggle("elegida", JUEGO===2); t2.setAttribute("aria-pressed", JUEGO===2 ? "true" : "false"); }
   textoDelPie();
 }
 
@@ -3798,7 +3902,15 @@ function elegirJuego(n){
 function textoDelPie(){
   const pie = document.getElementById("portalpie");
   if(!pie) return;
-  const n = salasHechas();
+  const j = JUEGOS[JUEGO];
+  const total = Object.keys(j.salas).length;
+  const n = Object.keys(j.salas).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
+  if(JUEGO === 2){
+    pie.innerHTML = "<b>Escape del shopping</b> · " + total + " salas por ahora, con cámaras, " +
+      "escaleras mecánicas, puertas con lector y vidrieras con temporizador." +
+      (n ? " Llevás " + n + " de " + total + "." : "");
+    return;
+  }
   pie.innerHTML = LEGAJO.nombre
     ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
          : "Te estábamos esperando, <b>" + textoSeguro(LEGAJO.nombre) + "</b>")
@@ -3826,6 +3938,7 @@ function entrar(){
   }
   LEGAJO.nombre = nom;
   guardarLegajo(LEGAJO);
+  cargarJuego(JUEGO);
   yaEntre = true;
   const p = document.getElementById("portal");
   if(!p || !p.classList) return menu();
