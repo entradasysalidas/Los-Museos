@@ -1134,10 +1134,6 @@ function anotarSala(salaKey, rondas, sinPerder){
   guardarLegajo(LEGAJO);
 }
 function salasHechas(){ return Object.values(LEGAJO.salas).filter(s=>s && s.hecha).length; }
-function rondasTotales(){
-  return Object.values(LEGAJO.salas).reduce((a,s)=> a + ((s && s.rondas) || 0), 0);
-}
-
 /* el rango sale de cuántas salas resolviste, con el chiste de la escalada */
 const RANGOS = [
   [0,  "Pasante"], [1, "Cadete"], [2, "Administrativo"], [3, "Empleado"],
@@ -1578,8 +1574,6 @@ function aislados(){
 }
 
 /* ======================= fin ======================= */
-function salaLabel(s){ return s.num===0 ? "Tutorial" : "Nivel "+s.num; }
-
 /* ---------- las pantallas del final ----------
    Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
    marca que quedó y en qué anda tu legajo. */
@@ -1846,17 +1840,6 @@ function drawPlanta(g){
     g.beginPath(); g.ellipse(cx,cy,rx,ry,0,0,7); g.fill(); });
   g.fillStyle="#ffffff22";
   g.beginPath(); g.ellipse(21,8,3.5,2.2,0,0,7); g.fill();
-}
-
-function drawEstatua(g){
-  g.fillStyle="#00000035"; rr(g,12,37,24,6,3); g.fill();
-  g.fillStyle="#5A6069"; rr(g,14,32,20,9,1); g.fill();                  // pedestal
-  g.fillStyle="#6E757F"; g.fillRect(14,32,20,3);
-  g.fillStyle="#B9BEC6";                                                // torso
-  g.beginPath(); g.moveTo(19,32); g.lineTo(21,16); g.lineTo(27,16); g.lineTo(29,32); g.fill();
-  g.beginPath(); g.arc(24,12,5.5,0,7); g.fill();                        // cabeza
-  g.fillStyle="#9AA0A9";
-  g.beginPath(); g.moveTo(21,17); g.lineTo(15,26); g.lineTo(18,27); g.lineTo(23,19); g.fill();
 }
 
 function drawMojado(g){
