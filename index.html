@@ -1048,7 +1048,7 @@ function banner(txt,color){
   if(typeof pintarCartel==="function") pintarCartel(txt, color);
 }
 
-const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara", E:"escalera",
+const CH2TYPE = {P:"vitrina", Q:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara", E:"escalera",
                  D:"complice", T:"complice", C:"complice"};
 const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 
@@ -1075,7 +1075,7 @@ function buildBoard(sala, salaKey){
     const ch=(EL[cy]||"")[cx] || ".";
     if(CH2TYPE[ch]){
       c.type=CH2TYPE[ch];
-      if(c.type==="vitrina")  marks.vitrinas.push({x,y});
+      if(c.type==="vitrina"){ marks.vitrinas.push({x,y}); if(ch==="Q") c.reloj = true; }
       if(c.type==="mate")     marks.mates.push({x,y});
       if(c.type==="camara")   marks.camaras.push({x, y, giro: marks.camaras.length});
       if(c.type==="escalera") marks.puntas.push({x,y});
@@ -1128,7 +1128,7 @@ function newGame(salaKey){
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
-    ruta:[], celular:null, guantes:false, anotados:0, puertas,
+    ruta:[], celular:null, guantes:false, anotados:0, puertas, reloj:null,
     deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
@@ -1385,6 +1385,10 @@ function passThrough(x,y){
 }
 
 function deliver(c, id){
+  if(S.reloj && S.reloj.id === id){
+    say(`⏱️ Llegaste a tiempo: el temporizador se apaga con <b>${S.reloj.quedan} rondas</b> de sobra.`,"g");
+    S.reloj = null;
+  }
   S.hand.splice(S.hand.indexOf(id),1);
   S.delivered.push(c.want);
   const obj=S.under[id];
@@ -1394,9 +1398,16 @@ function deliver(c, id){
   if(S.delivered.length===3) say("Las tres piezas están afuera. <b>Corré a la salida.</b>","g");
 }
 
+const RONDAS_RELOJ = 4;     // lo que aguanta la vitrina antes de delatarte
+
 function takePiece(cell, silent){
   const id=cell.piece;
   if(!id) return null;
+  if(cell.reloj && !silent){
+    S.reloj = {id, quedan: RONDAS_RELOJ};
+    say(`⏱️ Esa vitrina tenía temporizador: te quedan <b>${RONDAS_RELOJ} rondas</b> para entregar ${PIE[id].name} ${PIE[id].sym} antes de que suene.`,"r");
+    banner("Temporizador: " + RONDAS_RELOJ + " rondas", "#E0685D");
+  }
   cell.piece=null; cell.alarm=1;
   const i=S.pile.indexOf(id); if(i>=0) S.pile.splice(i,1);
   S.hand.push(id);
@@ -1720,6 +1731,22 @@ function rushSteps(n){
 function nextRound(){
   if(S.over) return;
   S.round++;
+  if(S.reloj){
+    S.reloj.quedan--;
+    if(S.reloj.quedan <= 0){
+      const id = S.reloj.id;
+      S.reloj = null;
+      if(S.alert < TUNE.alertMax){
+        S.alert++;
+        if(typeof latidoAlerta==="function") latidoAlerta("sube");
+      }
+      fx.shake = TUNE.shakeMs;
+      banner("Se disparó el temporizador · alerta " + S.alert, "#E0685D");
+      say(`⏱️ <b>Sonó el temporizador</b> de ${PIE[id].name} ${PIE[id].sym}: <b>alerta ${S.alert}</b>.`,"r");
+    } else {
+      say(`⏱️ Quedan <b>${S.reloj.quedan} rondas</b> para entregar ${PIE[S.reloj.id].name}.`,"y");
+    }
+  }
   S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear();
   S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
   if(S.heroKey==="marian") S.peek=S.deck[S.deck.length-1];
@@ -1741,6 +1768,7 @@ function resolveCatch(){
 }
 
 function losePiece(id){
+  if(S.reloj && S.reloj.id === id) S.reloj = null;   // se la lleva él, el reloj deja de correr
   S.hand.splice(S.hand.indexOf(id),1);
   S.pile.push(id);
   S.taken++;
@@ -2405,6 +2433,20 @@ function drawPuertaChica(g){
   g.fillStyle="#5FB183"; g.beginPath(); g.arc(16.5,22.5,1.8,0,7); g.fill();
 }
 
+/* el temporizador pegado a la vitrina */
+function drawRelojito(g, c){
+  const corriendo = !!(S.reloj && !c.alarm === false);
+  g.save();
+  g.translate(37, 11);
+  g.fillStyle = "#23262E"; g.beginPath(); g.arc(0,0,7,0,7); g.fill();
+  g.strokeStyle = S.reloj ? "#E0685D" : "#C9A24E";
+  g.lineWidth = 1.8; g.beginPath(); g.arc(0,0,7,0,7); g.stroke();
+  g.strokeStyle = "#EFEADF"; g.lineWidth = 1.5; g.lineCap = "round";
+  g.beginPath(); g.moveTo(0,0); g.lineTo(0,-4); g.stroke();
+  g.beginPath(); g.moveTo(0,0); g.lineTo(3,1.5); g.stroke();
+  g.restore();
+}
+
 function drawMojado(g){
   g.fillStyle="#7FA8C466"; rr(g,7,20,34,18,9); g.fill();
   g.strokeStyle="#A8CBE0AA"; g.lineWidth=1.4; rr(g,7,20,34,18,9); g.stroke();
@@ -2746,7 +2788,7 @@ function frame(now){
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const c=S.grid[y][x];
     switch(c.type){
-      case "vitrina":  inCell(ctx,x,y,g=>drawVitrina(g,c)); break;
+      case "vitrina":  inCell(ctx,x,y,g=>{ drawVitrina(g,c); if(c.reloj) drawRelojito(g,c); }); break;
       case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
@@ -2938,6 +2980,10 @@ function syncUI(){
   const pistas=[];
   /* Si la ronda quedó esperando una decisión tuya, eso va primero y bien
      visible: sin verlo el juego parece colgado. */
+  if(S.reloj)
+    pistas.push("⏱️ <b>" + S.reloj.quedan + (S.reloj.quedan===1 ? " ronda" : " rondas") +
+      "</b> para entregarle " + PIE[S.reloj.id].sym + " <b>" + PIE[S.reloj.id].name +
+      "</b> a " + CREW[compOf(S.reloj.id)].n + " o suena la alarma");
   const esperando = S.awaitMate;
   if(esperando){
     pistas.push(canDrinkHere()
@@ -3009,6 +3055,7 @@ function buildLegend(){
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
+    ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }],
     ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g)],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
@@ -3295,6 +3342,7 @@ const TOOLS = [
   {id:"pared",     n:"Pared",      zona:"arista", ic:"▬"},
   {id:"puerta",    n:"Puerta",     zona:"arista", ic:"🚪"},
   {id:"P",         n:"Vitrina",    zona:"centro", ic:"▣"},
+  {id:"Q",         n:"Vitrina ⏱",  zona:"centro", ic:"⏱"},
   {id:"M",         n:"Mate",       zona:"centro", ic:"🧉"},
   {id:"A",         n:"Planta",     zona:"centro", ic:"🪴"},
   {id:"L",         n:"Banana",     zona:"centro", ic:"🍌"},
