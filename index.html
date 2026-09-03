@@ -1111,6 +1111,16 @@ function saveWalls(k, arr){
 /* ---------- el legajo: quién sos y qué resolviste ----------
    Sin cuentas ni servidor: el nombre y las marcas viven en este dispositivo.
    Para competir en el grupo está la ficha, que se saca por captura. */
+/* El nombre lo escribe el jugador y después va al HTML del menú y de la ficha.
+   Con un nombre como <img onerror=...> eso ejecutaría. Es su propio navegador,
+   pero no hay razón para dejarlo pasar. */
+function textoSeguro(t){
+  return String(t == null ? "" : t)
+    .split("&").join("&amp;")
+    .split("<").join("&lt;")
+    .split(">").join("&gt;")
+    .split('"').join("&quot;");
+}
 function legajoKey(){ return "museos.legajo.v1"; }
 function leerLegajo(){
   try{
@@ -3001,7 +3011,7 @@ function menu(){
 
   const hechas = salasHechas();
   const cabecera = LEGAJO.nombre
-    ? '<div class="menucab"><span><b>' + LEGAJO.nombre + '</b> · ' + rangoActual() + '</span>' +
+    ? '<div class="menucab"><span><b>' + textoSeguro(LEGAJO.nombre) + '</b> · ' + rangoActual() + '</span>' +
       '<span class="cuenta">' + hechas + '<small>/10 salas</small></span></div>'
     : "";
 
@@ -3165,7 +3175,7 @@ function prepararPortal(){
     const n = salasHechas();
     pie.innerHTML = LEGAJO.nombre
       ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
-           : "Te estábamos esperando, <b>" + LEGAJO.nombre + "</b>")
+           : "Te estábamos esperando, <b>" + textoSeguro(LEGAJO.nombre) + "</b>")
       : "Se guarda en este dispositivo, no hace falta cuenta.";
   }
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
