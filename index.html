@@ -1048,7 +1048,7 @@ function banner(txt,color){
   if(typeof pintarCartel==="function") pintarCartel(txt, color);
 }
 
-const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara",
+const CH2TYPE = {P:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara", E:"escalera",
                  D:"complice", T:"complice", C:"complice"};
 const CH2WANT = {D:"rombo", T:"triangulo", C:"circulo"};
 
@@ -1062,7 +1062,7 @@ function loadElems(k){
 function saveElems(k,rows){ try{ localStorage.setItem(elemsStoreKey(k), JSON.stringify(rows)); }catch(e){} }
 
 function buildBoard(sala, salaKey){
-  const grid=[], marks={vitrinas:[], comps:[], mates:[], camaras:[]};
+  const grid=[], marks={vitrinas:[], comps:[], mates:[], camaras:[], escaleras:[], puntas:[]};
   const EL = loadElems(salaKey) || sala.e;
   for(let y=0;y<H;y++){
     grid.push([]);
@@ -1078,6 +1078,7 @@ function buildBoard(sala, salaKey){
       if(c.type==="vitrina")  marks.vitrinas.push({x,y});
       if(c.type==="mate")     marks.mates.push({x,y});
       if(c.type==="camara")   marks.camaras.push({x, y, giro: marks.camaras.length});
+      if(c.type==="escalera") marks.puntas.push({x,y});
       if(c.type==="complice"){ c.want=CH2WANT[ch]; marks.comps.push({x,y,want:c.want}); }
     }
   }
@@ -1090,6 +1091,8 @@ function buildBoard(sala, salaKey){
     c.type = FRAME_MAP[k]==="vacio" ? null : FRAME_MAP[k];
     c.frame = true;
   }
+  for(let i=0; i+1 < marks.puntas.length; i+=2)
+    marks.escaleras.push({a: marks.puntas[i], b: marks.puntas[i+1]});
   return {grid, marks};
 }
 
@@ -1174,15 +1177,53 @@ function canStep(x,y,nx,ny){
   return !S.walls.has(edgeKey({x,y},{x:nx,y:ny}));
 }
 
+
+/* ---------- la escalera mecánica ----------
+   Dos casillas hermanadas. No teletransporta: son vecinas aunque estén lejos,
+   así que subir cuesta un paso como cualquier otro. Hecho así lo aprovechan
+   solos el jefe, el buscador de caminos y el resaltado de a dónde llegás:
+   corta el tablero de un modo que las paredes no pueden. */
+function hermanaDe(x, y){
+  for(const e of (S.marks.escaleras || [])){
+    if(e.a.x===x && e.a.y===y) return e.b;
+    if(e.b.x===x && e.b.y===y) return e.a;
+  }
+  return null;
+}
+
+/* las vecinas de una casilla, contando la escalera */
+function vecinasDe(x, y, dirs){
+  const out = [];
+  for(const [dx,dy] of dirs){
+    const nx=x+dx, ny=y+dy;
+    if(!canStep(x,y,nx,ny)) continue;
+    const h = hermanaDe(nx, ny);                 // pisás la punta y salís por la otra
+    if(h && !(h.x===x && h.y===y)) out.push({x:h.x, y:h.y, escalera:true});
+    else out.push({x:nx, y:ny});
+  }
+  return out;
+}
+
+/* si caíste en una punta, la escalera te lleva a la otra */
+function subirEscalera(quien, avisar){
+  const h = hermanaDe(quien.x, quien.y);
+  if(!h) return false;
+  quien.x = h.x; quien.y = h.y;
+  if(avisar){
+    float(h.x, h.y, "↑↓", acentoSala());
+    say("🛗 Tomaste la escalera y saliste del otro lado.","y");
+  }
+  return true;
+}
+
 function bfsFrom(from){
   const d=new Array(W*H).fill(-1); d[key(from.x,from.y)]=0;
   const q=[from];
   while(q.length){
     const c=q.shift();
-    for(const [dx,dy] of DIRS){
-      const nx=c.x+dx, ny=c.y+dy;
-      if(!canStep(c.x,c.y,nx,ny) || d[key(nx,ny)]!==-1) continue;
-      d[key(nx,ny)]=d[key(c.x,c.y)]+1; q.push({x:nx,y:ny});
+    for(const n of vecinasDe(c.x, c.y, DIRS)){
+      if(d[key(n.x,n.y)]!==-1) continue;
+      d[key(n.x,n.y)]=d[key(c.x,c.y)]+1; q.push({x:n.x,y:n.y});
     }
   }
   return d;
@@ -1195,10 +1236,9 @@ function reachableCells(steps){
   while(q.length){
     const c=q.shift(), dist=d[key(c.x,c.y)];
     if(dist>=steps) continue;
-    for(const [dx,dy] of dirs){
-      const nx=c.x+dx, ny=c.y+dy;
-      if(!canStep(c.x,c.y,nx,ny) || d[key(nx,ny)]!==-1) continue;
-      d[key(nx,ny)]=dist+1; out.set(key(nx,ny),dist+1); q.push({x:nx,y:ny});
+    for(const n of vecinasDe(c.x, c.y, dirs)){
+      if(d[key(n.x,n.y)]!==-1) continue;
+      d[key(n.x,n.y)]=dist+1; out.set(key(n.x,n.y),dist+1); q.push({x:n.x,y:n.y});
     }
   }
   return out;
@@ -1307,7 +1347,8 @@ function step(dx,dy){
   const nx=S.player.x+dx, ny=S.player.y+dy;
   if(!canStep(S.player.x,S.player.y,nx,ny)) return;
   S.player.x=nx; S.player.y=ny; S.mp--;
-  if(S.ruta) S.ruta.push({x:nx, y:ny});
+  if(subirEscalera(S.player, true) && S.ruta) S.ruta.push({x:S.player.x, y:S.player.y});
+  else if(S.ruta) S.ruta.push({x:S.player.x, y:S.player.y});
   if(foeOn(nx,ny)){ resolveCatch(); return; }
   passThrough(nx,ny);
   if(S.over) return;
@@ -1453,6 +1494,7 @@ function chaseStep(f, destino){
   }
   if(!best) return false;
   f.x=best.x; f.y=best.y;
+  subirEscalera(f, false);                       // el jefe también la toma
   return f.x===S.player.x && f.y===S.player.y;
 }
 
@@ -2289,6 +2331,23 @@ function drawCamara(g, c, x, y){
   g.restore();
 }
 
+/* la escalera mecánica: los escalones y la flecha del sentido */
+function drawEscalera(g){
+  g.save();
+  g.fillStyle="#00000022"; rr(g,6,8,36,32,3); g.fill();
+  g.fillStyle="#7E8695";
+  for(let i=0;i<5;i++) rr(g, 9 + i*1.6, 34 - i*5.6, 30 - i*3.2, 4, 1), g.fill();
+  g.fillStyle="#9AA3B2"; rr(g,9,34,30,4,1); g.fill();
+  /* las barandas */
+  g.strokeStyle="#5A6069"; g.lineWidth=2; g.lineCap="round";
+  g.beginPath(); g.moveTo(8,36); g.lineTo(38,10); g.stroke();
+  /* la flecha */
+  g.strokeStyle="#E0B84F"; g.lineWidth=2.4;
+  g.beginPath(); g.moveTo(24,32); g.lineTo(24,16); g.stroke();
+  g.beginPath(); g.moveTo(19,20); g.lineTo(24,15); g.lineTo(29,20); g.stroke();
+  g.restore();
+}
+
 function drawMojado(g){
   g.fillStyle="#7FA8C466"; rr(g,7,20,34,18,9); g.fill();
   g.strokeStyle="#A8CBE0AA"; g.lineWidth=1.4; rr(g,7,20,34,18,9); g.stroke();
@@ -2635,6 +2694,7 @@ function frame(now){
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
       case "camara":   inCell(ctx,x,y,g=>drawCamara(g,c,x,y)); break;
+      case "escalera": inCell(ctx,x,y,g=>drawEscalera(g)); break;
       case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
       case "puesto":   inCell(ctx,x,y,g=>drawPuesto(g,true)); break;
       case "oficina":  inCell(ctx,x,y,g=>drawPuesto(g,false)); break;
@@ -2891,6 +2951,7 @@ function buildLegend(){
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>",          g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
+    ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
     ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
@@ -2948,6 +3009,7 @@ function latidoAlerta(comoV){
    además es temático: es el mapita que te dan en la entrada del museo. */
 const PLANO_COLOR = {
   vitrina:"acento", mate:"#8A6A4A", planta:"#4E8F52", banana:"#D8B740", camara:"#B0525A",
+  escalera:"#7E8695",
   salida:"#3E9E62", puesto:"#7E8496", banio:"#7E8496", baniojefe:"#7E8496",
   oficina:"#B0525A",
 };
@@ -3178,6 +3240,7 @@ const TOOLS = [
   {id:"A",         n:"Planta",     zona:"centro", ic:"🪴"},
   {id:"L",         n:"Banana",     zona:"centro", ic:"🍌"},
   {id:"K",         n:"Cámara",     zona:"centro", ic:"📹"},
+  {id:"E",         n:"Escalera",   zona:"centro", ic:"🛗"},
   {id:"D",         n:"Cómplice ◆", zona:"centro", ic:"◆"},
   {id:"T",         n:"Cómplice ▲", zona:"centro", ic:"▲"},
   {id:"C",         n:"Cómplice ●", zona:"centro", ic:"●"},
