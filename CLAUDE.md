@@ -62,5 +62,13 @@ canvas en node y corre un bot que juega solo:
 - `revision.js` — invariantes sobre cientos de partidas simuladas.
 - `curva3.js` — la curva de dificultad, sala por sala.
 
+Para correrlos hay que sacar el JavaScript del html primero, porque el juego vive
+adentro de `index.html`:
+
+```
+node extraer.js index.html juego.js      # corta lo que hay entre <script> y </script>
+node drun.js juego.js nchecks.js         # el arnés carga los archivos que le pasés
+```
+
 Si el arnés no está, se rehace: son stubs de `document`, `canvas` y `localStorage`
 más un `eval` de los archivos que se le pasen.
