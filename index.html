@@ -808,7 +808,7 @@ const POWERS = {
   hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una planta."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
   lamber:{n:"Agenda llena",     d:"Con E convencés a cualquier cómplice de aceptar cualquier pieza."},
-  kzk   :{n:"Manos de técnico", d:"Con F reactivás una vitrina con alarma, una vez por partida."},
+  kzk   :{n:"Manos de técnico", d:"Una vez por partida, con F traés la pieza más lejana a la vitrina vacía más cercana."},
   chuna :{n:"Piernas",          d:"Una vez por partida movés 4 casilleros en lugar de 2."},
   tomy  :{n:"Termo propio",     d:"Arrancás con un mate en la mochila, y los del tablero los podés repetir."},
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
@@ -1250,7 +1250,17 @@ function canDrinkHere(){
   const c=S.grid[S.player.y][S.player.x];
   if(c.type!=="mate") return false;
   if(S.matesTurn>=TUNE.matesPerTurn) return false;
+  if(S.mp>=TUNE.steps) return false;          // no hay pasos que recuperar: seria tirarlo
   return !S.drunk.has(key(S.player.x,S.player.y)) || S.heroKey==="tomy";
+}
+
+/* por que no podes tomar el mate que tenes debajo */
+function porQueNoElMate(){
+  const c=S.grid[S.player.y][S.player.x];
+  if(c.type!=="mate" || canDrinkHere()) return null;
+  if(S.matesTurn>=TUNE.matesPerTurn) return "Ya tomaste tres mates en esta ronda.";
+  if(S.mp>=TUNE.steps) return "El mate te devuelve los pasos que <b>ya diste</b>. Movete primero y volvé.";
+  return "Este mate ya lo tomaste en esta ronda. Se renueva la ronda que viene.";
 }
 function drinkMate(){
   if(!S||S.over||S.busy||!canDrinkHere()) return;
@@ -1500,17 +1510,46 @@ function useObject(i){
   syncUI();
 }
 
+/* Chuna estira las piernas: una vez por partida, dos pasos más en este turno. */
+function puedeCorrer(){
+  return !!(S && S.heroKey==="chuna" && !S.powerUsed && !S.over && !S.busy && S.mp>0);
+}
+function correr(){
+  if(!puedeCorrer()) return;
+  S.powerUsed = true;
+  S.mp += TUNE.steps;
+  S.awaitMate = false;
+  float(S.player.x, S.player.y, "+2 PASOS", acentoSala());
+  say(`🦵 <b>Piernas</b>: dos casilleros más en este turno. Te quedan <b>${S.mp}</b>.`,"g");
+  syncUI();
+}
+
+/* Kzk recablea una vitrina vacía y se trae la pieza que le queda más lejos. */
+function puedeMudarPieza(){
+  if(!S || S.heroKey!=="kzk" || S.powerUsed) return null;
+  const d = bfsFrom({x:S.player.x, y:S.player.y});
+  const dist = v => { const n = d[key(v.x,v.y)]; return n<0 ? 1e9 : n; };
+  const vacias = S.marks.vitrinas.filter(v=> S.grid[v.y][v.x].alarm)
+                   .sort((a,b)=>dist(a)-dist(b));
+  const llenas = S.marks.vitrinas.filter(v=> S.grid[v.y][v.x].piece)
+                   .sort((a,b)=>dist(b)-dist(a));
+  if(!vacias.length || !llenas.length) return null;
+  const destino = vacias[0], origen = llenas[0];
+  if(dist(origen) <= dist(destino)) return null;   // no la acercaria
+  return {destino, origen, gana: dist(origen) - dist(destino)};
+}
 function fixVitrina(){
-  if(!S || S.heroKey!=="kzk" || S.powerUsed) return;
-  const rotas=S.marks.vitrinas.filter(v=>S.grid[v.y][v.x].alarm);
-  if(!rotas.length) return;
-  const d=bfsFrom({x:S.player.x,y:S.player.y});
-  rotas.sort((a,b)=>d[key(a.x,a.y)]-d[key(b.x,b.y)]);
-  const v=rotas[0];
-  S.grid[v.y][v.x].alarm=0;
-  if(S.pile.length) S.grid[v.y][v.x].piece = S.pile[S.pile.length-1];
-  S.powerUsed=true;
-  say("🔧 Manos de técnico: desactivaste una alarma.","g");
+  const plan = puedeMudarPieza();
+  if(!plan) return;
+  const {destino, origen, gana} = plan;
+  const id = S.grid[origen.y][origen.x].piece;
+  S.grid[origen.y][origen.x].piece = null;
+  S.grid[origen.y][origen.x].alarm = 1;
+  S.grid[destino.y][destino.x].piece = id;
+  S.grid[destino.y][destino.x].alarm = 0;
+  S.powerUsed = true;
+  float(destino.x, destino.y, PIE[id].sym, PIE[id].color);
+  say(`🔧 <b>Manos de técnico</b>: recableaste la vitrina y trajiste ${PIE[id].name} ${PIE[id].sym} acá cerca. Te ahorrás <b>${gana} casilleros</b>.`,"g");
   syncUI();
 }
 
@@ -2340,13 +2379,22 @@ function syncUI(){
       ? "Te toca decidir · <b>Espacio</b> tomás el mate y recuperás los pasos · <b>Enter</b> cerrás la ronda"
       : "Te toca decidir · <b>Enter</b> para cerrar la ronda");
   } else if(canDrinkHere()){
-    pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos");
+    pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos que diste");
+  } else {
+    const porque = porQueNoElMate();
+    if(porque) pistas.push("🧉 " + porque);
   }
   if(canOfferHere()) pistas.push(
     "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\">Convencerlo de aceptar esta pieza</button>");
-  if(S.heroKey==="kzk" && !S.powerUsed && S.marks.vitrinas.some(v=>S.grid[v.y][v.x].alarm))
+  if(typeof puedeCorrer==="function" && puedeCorrer())
     pistas.push(
-      "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"fixVitrina()\">Desactivar la alarma de una vitrina</button>");
+      "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"correr()\">" +
+      "<b>F</b> · estirar las piernas: +2 pasos, una vez por partida</button>");
+  const mudanza = (typeof puedeMudarPieza==="function") ? puedeMudarPieza() : null;
+  if(mudanza)
+    pistas.push(
+      "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"fixVitrina()\">" +
+      "<b>F</b> · traer " + PIE[S.grid[mudanza.origen.y][mudanza.origen.x].piece].name + " acá cerca (−" + mudanza.gana + " casilleros)</button>");
   if(cel.type==="vitrina" && cel.alarm) pistas.push("Esta vitrina ya está vacía");
   if(S.hand.length) pistas.push("Llevá " + S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
   $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
@@ -2627,7 +2675,7 @@ addEventListener("keydown", e=>{
   if(KEYS[k]){ e.preventDefault(); step(...KEYS[k]); return; }
   if(k===" "){ e.preventDefault(); drinkMate(); return; }
   if(k==="Enter"){ e.preventDefault(); finishRound(); return; }
-  if(k==="f"){ fixVitrina(); return; }
+  if(k==="f"){ if(S.heroKey==="chuna") correr(); else fixVitrina(); return; }
   if(k==="e"){ offerDelivery(); return; }
   if(/^[123]$/.test(k)) useObject(+k-1);
 });
