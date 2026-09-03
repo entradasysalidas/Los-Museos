@@ -849,7 +849,7 @@ const FOES = {
   encargado:{n:"El Encargado",   look:"overol", d:"Camina y nada más. Es la sala escuela."},
   curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas.", twist:"vitrinas"},
   director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos."},
-  seguridad:{n:"La Seguridad",   look:"guardia",d:"Si quedás en su línea recta sin pared, avanza un casillero extra.", twist:"linterna"},
+  seguridad:{n:"La Seguridad",   look:"guardia",d:"Si terminás a dos casilleros o menos en su línea recta, sin pared en el medio, te alumbra y avanza uno extra.", twist:"linterna"},
   procurad :{n:"El Procurador",  look:"procurador",
              d:"Está atento a las alarmas: cada vez que abrís una vitrina avanza un casillero al instante.", twist:"alarma"},
   perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las plantas: esconderse no sirve.", twist:"olfato"},
@@ -1317,9 +1317,12 @@ function chaseStep(f){
 }
 
 /* ¿el jugador quedó en la línea recta del antagonista, sin paredes en medio? */
+const ALCANCE_LINTERNA = 2;              // casilleros: más allá no te ilumina
+
 function enLineaRecta(){
   const f=S.foes[0], p=S.player;
   if(f.x!==p.x && f.y!==p.y) return false;
+  if(Math.abs(f.x-p.x) + Math.abs(f.y-p.y) > ALCANCE_LINTERNA) return false;
   const step1 = f.x===p.x ? [0, Math.sign(p.y-f.y)] : [Math.sign(p.x-f.x), 0];
   let x=f.x, y=f.y;
   while(x!==p.x || y!==p.y){
@@ -1362,12 +1365,16 @@ function chasePhase(hidden){
 }
 
 /* ======================= FASE 3 · acción ======================= */
+/* Cuanto más grande la empresa, menos se relaja con las tres piezas afuera. */
+const PISO_FUGA = {"Pasantía":0, "Mini Pyme":0, "S.R.L.":0, "S.A.":2, "Multinacional":2};
+function pisoFuga(){ return PISO_FUGA[S.sala.wing] || 0; }
+
 function pisoAlerta(){ return Math.max(1, S.foe.alert || 1); }
 
 /* se distrae y afloja un nivel, nunca por debajo de su piso */
 function calmar(){
   if(S.alert <= pisoAlerta()) return;
-  if(S.delivered.length >= 3 && S.alert <= 2){   // con todo entregado no baja de 2
+  if(S.delivered.length >= 3 && S.alert <= pisoFuga()){
     say("😤 Con las tres piezas afuera ya no se relaja del todo.","r");
     return;
   }
