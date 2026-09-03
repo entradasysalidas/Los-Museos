@@ -972,9 +972,9 @@ let FOES = {
 };
 
 let THEMES = {
-  gris  :{ piso:["#9A968C","#928E84"], patron:"alfombra", junta:"#00000018",
+  gris  :{ oscuro:false, piso:["#9A968C","#928E84"], patron:"alfombra", junta:"#00000018",
            luz:"#EAF2FF", luzA:.16, pared:"#F4F2EC", void:"#DAD8D1", vineta:.10, fondo:"#DAD8D1" },
-  madera:{ piso:["#B08A5C","#A78254"], patron:"parquet", junta:"#00000016",
+  madera:{ oscuro:true, piso:["#B08A5C","#A78254"], patron:"parquet", junta:"#00000016",
            luz:"#FFF3D8", luzA:.28, pared:"#F6F0E2", void:"#2B2823", vineta:.26, fondo:"#2B2823" },
 };
 
@@ -1344,12 +1344,12 @@ let CONSEJOS = {
    color y vidrieras con tira de neón. Los cuatro elementos nuevos —cámara,
    escalera, puerta con lector y vitrina con temporizador— se enseñan de a uno. */
 const THEMES_2 = {
-  dia   :{ piso:["#D8D5D0","#D2CFC9"], patron:"porcelanato", junta:"#00000012",
-           luz:"#FFFFFF", luzA:.30, pared:"#FFFFFF", void:"#C6C2BC", vineta:.08,
-           fondo:"#C6C2BC", neon:null },
-  noche :{ piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF10",
+  dia   :{ oscuro:false, piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#0000000E",
+           luz:"#FFFFFF", luzA:.42, pared:"#FFFFFF", void:"#DCD8D2", vineta:.06,
+           fondo:"#DCD8D2", luces:true, neon:null, cartel:.55 },
+  noche :{ oscuro:true, piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF10",
            luz:"#CFE6FF", luzA:.20, pared:"#F0F3F8", void:"#14151C", vineta:.30,
-           fondo:"#14151C", neon:"#5FD8E8" },
+           fondo:"#14151C", luces:true, neon:"#5FD8E8", cartel:1 },
 };
 
 const FOES_2 = {
@@ -2269,7 +2269,7 @@ function buildFloorLayer(){
     g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
   }
   // los charcos de color de la cartelería, sólo en el shopping
-  if(th.neon){
+  if(th.luces){
     const ac = acentoSala();
     for(let i=0;i<5;i++){
       const cx = (CX0 + rnd(7,i,1)*CW) * CS;
@@ -2359,11 +2359,12 @@ function drawParedes(){
   });
 
   // 2b. la tira de neón de las vidrieras
-  if(S.th.neon){
+  if(S.th.cartel){
     const ac = acentoSala();
+    const f0 = S.th.cartel;
     ctx.save();
-    ctx.shadowColor = ac; ctx.shadowBlur = 9;
-    ctx.fillStyle = hexA(ac, .85);
+    ctx.shadowColor = ac; ctx.shadowBlur = 9 * f0;
+    ctx.fillStyle = hexA(ac, .85 * f0);
     const f = Math.max(1.6, t*0.34);
     S.walls.forEach(w=>{
       const [k,a,b]=w.split(":"), x=+a, y=+b;
@@ -3339,7 +3340,7 @@ function temaDeSala(sala){
   /* Sobre el parquet oscuro alcanza con poco: parte de un casi negro y
      cualquier tinte salta. La alfombra clara necesita mucho más para que se
      note, sobre todo en el vacío de alrededor, que es puro fondo. */
-  const oscuro = sala.piso === "madera";
+  const oscuro = !!base.oscuro;
   return Object.assign({}, base, {
     piso  : oscuro ? [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)]
                    : [mezcla(base.piso[0], ac, 0.24), mezcla(base.piso[1], ac, 0.24)],
