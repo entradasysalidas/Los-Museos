@@ -1344,10 +1344,10 @@ let CONSEJOS = {
    color y vidrieras con tira de neón. Los cuatro elementos nuevos —cámara,
    escalera, puerta con lector y vitrina con temporizador— se enseñan de a uno. */
 const THEMES_2 = {
-  dia   :{ oscuro:false, piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#0000000E",
+  dia   :{ oscuro:false, piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#00000026",
            luz:"#FFFFFF", luzA:.42, pared:"#FFFFFF", void:"#DCD8D2", vineta:.06,
            fondo:"#DCD8D2", luces:true, neon:null, cartel:.55 },
-  noche :{ oscuro:true, piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF10",
+  noche :{ oscuro:true, piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF1A",
            luz:"#CFE6FF", luzA:.20, pared:"#F0F3F8", void:"#14151C", vineta:.30,
            fondo:"#14151C", luces:true, neon:"#5FD8E8", cartel:1 },
 };
@@ -2271,13 +2271,14 @@ function buildFloorLayer(){
   // los charcos de color de la cartelería, sólo en el shopping
   if(th.luces){
     const ac = acentoSala();
-    for(let i=0;i<5;i++){
+    for(let i=0;i<8;i++){
       const cx = (CX0 + rnd(7,i,1)*CW) * CS;
       const cy = (CY0 + rnd(3,i,5)*CH) * CS;
       const R  = CS * (1.6 + rnd(1,i,9)*1.4);
       const gr = g.createRadialGradient(cx,cy,2,cx,cy,R);
-      gr.addColorStop(0, hexA(i%2 ? ac : th.neon, .20));
-      gr.addColorStop(1, hexA(i%2 ? ac : th.neon, 0));
+      const tono = (i%2 || !th.neon) ? ac : th.neon;
+      gr.addColorStop(0, hexA(tono, th.oscuro ? .22 : .30));
+      gr.addColorStop(1, hexA(tono, 0));
       g.fillStyle=gr; g.fillRect(cx-R,cy-R,R*2,R*2);
     }
   }
@@ -2309,24 +2310,43 @@ function drawPiso(g,x,y,th){
       g.fillRect(px, py+i*(CS/5)+rnd(x,y,i+9)*3, CS, 1.6);
     }
   }else if(th.patron==="porcelanato"){
-    /* la veta del mármol, apenas */
-    for(let i=0;i<3;i++){
-      g.strokeStyle = rnd(x,y,i)>.5 ? "#00000012" : "#ffffff16";
-      g.lineWidth = 1.1;
+    const claro = !th.oscuro;
+    const tinta = claro ? "#00000020" : "#ffffff1c";   // la marca, según el piso
+    const brillo = claro ? "#ffffff70" : "#ffffff20";
+
+    /* la veta del mármol, ahora sí visible */
+    for(let i=0;i<4;i++){
+      g.strokeStyle = i%2 ? tinta : (claro ? "#0000000E" : "#ffffff10");
+      g.lineWidth = i%2 ? 1.5 : 2.6;
       g.beginPath();
       const y0 = py + rnd(x,y,i+3)*CS;
       g.moveTo(px, y0);
-      g.bezierCurveTo(px+CS*.3, y0 - 6 + rnd(x,y,i+7)*12,
-                      px+CS*.7, y0 + 6 - rnd(x,y,i+11)*12, px+CS, y0);
+      g.bezierCurveTo(px+CS*.3, y0 - 9 + rnd(x,y,i+7)*18,
+                      px+CS*.7, y0 + 9 - rnd(x,y,i+11)*18, px+CS, y0);
       g.stroke();
     }
-    /* el reflejo del techo: una diagonal que corre por la baldosa */
+
+    /* la baldosa grande partida en cuatro, con su junta */
+    g.strokeStyle = claro ? "#00000018" : "#ffffff12";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(px + CS/2, py); g.lineTo(px + CS/2, py + CS);
+    g.moveTo(px, py + CS/2); g.lineTo(px + CS, py + CS/2);
+    g.stroke();
+
+    /* el reflejo del techo, en diagonal */
     const gr = g.createLinearGradient(px, py, px+CS, py+CS);
     gr.addColorStop(0,   "#ffffff00");
-    gr.addColorStop(.42, "#ffffff26");
-    gr.addColorStop(.52, "#ffffff10");
+    gr.addColorStop(.38, brillo);
+    gr.addColorStop(.50, claro ? "#ffffff28" : "#ffffff0c");
     gr.addColorStop(1,   "#ffffff00");
     g.fillStyle = gr; g.fillRect(px, py, CS, CS);
+
+    /* y el borde biselado de la baldosa */
+    g.strokeStyle = claro ? "#ffffff90" : "#ffffff14";
+    g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(px+1, py+CS-1); g.lineTo(px+1, py+1); g.lineTo(px+CS-1, py+1);
+    g.stroke();
   }else{
     for(let i=0;i<12;i++){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000010" : "#ffffff10";
