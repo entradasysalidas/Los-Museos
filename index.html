@@ -849,11 +849,18 @@ const PIECES = [
 const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
 
 const OBJECTS = {
-  mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
-  mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás todos los pasos de este turno."},
-  fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal."},
+  mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en este turno.",
+           aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
+  mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en este turno.",
+           aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
+  fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal.",
+           aviso:"si después tomás un mate, se te va el efecto."},
   empa  :{ic:"🥟", n:"Empanada", d:"Te teletransporta a tu baño."},
   altavoz:{ic:"📢",n:"Altavoz",  d:"Llamado falso: el antagonista vuelve a su oficina."},
+  celu   :{ic:"📱",n:"Celular",  d:"Lo dejás sonando como señuelo: cuando saque «¡Se acerca!» va al celular y no a vos."},
+  agenda :{ic:"📓",n:"Agenda",   d:"Mirás su próxima acción y podés descartarla."},
+  sopapa :{ic:"🪠",n:"Sopapa",   d:"Parado en un baño, salís por el otro."},
+  guantes:{ic:"🧤",n:"Guantes",  d:"La próxima vitrina que abras no hace sonar la alarma."},
 };
 
 const DECK = [
@@ -1040,7 +1047,8 @@ function newGame(salaKey){
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
-    ruta:[], deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
+    ruta:[], celular:null, guantes:false, anotados:0,
+    deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
     over:null, busy:false, phase:"vos", cardPending:false, log:[],
@@ -1252,8 +1260,12 @@ function takePiece(cell, silent){
     float(S.player.x,S.player.y,"PIEZA "+PIE[id].sym,PIE[id].color);
     banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
     say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b>: <b>ahí</b> te dan el objeto.`,"y");
+    if(S.guantes){
+      S.guantes = false;
+      say("🧤 Con los guantes puestos la vitrina no hizo ni un ruido.","g");
+    }
     // El Procurador escucha la alarma y se acerca en el acto
-    if(S.foe.twist==="alarma"){
+    else if(S.foe.twist==="alarma"){
       say("🚨 La alarma lo llamó: avanza un casillero al instante.","r");
       fx.shake = TUNE.shakeMs*.6;
       for(const f of S.foes) if(chaseStep(f)){ resolveCatch(); return id; }
@@ -1326,8 +1338,9 @@ function endMovement(){
 /* ======================= FASE 2 · persecución ======================= */
 function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
 
-function chaseStep(f){
-  const d=bfsFrom({x:S.player.x,y:S.player.y});
+function chaseStep(f, destino){
+  const meta = destino || {x:S.player.x, y:S.player.y};
+  const d=bfsFrom(meta);
   let best=null, bd=d[key(f.x,f.y)];
   for(const [dx,dy] of DIRS){                    // DIRS está en el orden de prioridad del manual
     const nx=f.x+dx, ny=f.y+dy;
@@ -1412,6 +1425,10 @@ function calmar(){
 function refillDeck(){
   S.deck = shuffle(DECK.slice());
   S.played = [];
+  if(S.celular && S.alert < TUNE.alertMax){
+    S.celular = null;
+    say("📱 Con la alerta arriba ya no le importa el celular.","r");
+  }
   if(S.alert < TUNE.alertMax){
     S.alert++;
     fx.shake=TUNE.shakeMs;
@@ -1483,11 +1500,20 @@ function applyCard(card){
 }
 
 function rushSteps(n){
+  const señuelo = S.celular;
+  if(señuelo) say("📱 El celular suena y lo llama: va para allá en vez de venir a vos.","g");
   let i=0;
   (function paso(){
     if(S.over) return;
     if(i++ >= n){ syncUI(); return setTimeout(nextRound, 620); }
-    for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+    for(const f of S.foes){
+      if(chaseStep(f, señuelo)) return resolveCatch();       // te pisa igual si estabas ahí
+      if(S.celular && f.x===S.celular.x && f.y===S.celular.y){
+        S.celular = null;
+        float(f.x, f.y, "📱", "#E0685D");
+        say("📱 Levantó el celular. Se acabó el señuelo.","r");
+      }
+    }
     syncUI();
     setTimeout(paso, TUNE.foeStepMs);
   })();
@@ -1546,10 +1572,52 @@ function resetPositions(){
 }
 
 /* ======================= objetos ======================= */
+/* por qué este objeto no se puede usar ahora */
+function porQueNoEsteObjeto(id){
+  if(id==="sopapa"){
+    const c = S.grid[S.player.y][S.player.x];
+    if(c.type!=="banio" && c.type!=="baniojefe")
+      return "La sopapa sólo sirve parado en un baño: el tuyo o el suyo.";
+  }
+  if(id==="celu" && S.celular)   return "Ya dejaste el celular en el tablero.";
+  if(id==="guantes" && S.guantes) return "Ya tenés los guantes puestos.";
+  return null;
+}
+
+/* La agenda del jefe: mirás la carta de arriba del mazo y decidís si la
+   descartás o la dejás donde estaba. Como en el manual, versión solitario. */
+function mirarAgenda(){
+  if(!S.deck.length) refillDeck();
+  const c = S.deck[S.deck.length - 1];
+  showModal("La agenda del jefe",
+    '<p class="lead">Su próxima acción es ésta. Podés <b>descartarla</b> —y entonces sacará ' +
+    'la que sigue, que no sabés cuál es— o <b>dejarla</b> tal como estaba.</p>' +
+    '<div class="premios"><div class="premio" style="border-left-color:' +
+      (c.k==="rush" ? "var(--alarm)" : "var(--brass)") + '">' +
+      '<span class="ic">' + c.ic + '</span><div><b>' + c.n + '</b><p>' + c.d + '</p></div>' +
+    '</div></div>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="descartarCarta()">Descartarla</button>' +
+      '<button class="btn alt" onclick="dejarCarta()">Dejarla</button>' +
+    '</div>', false);
+}
+function descartarCarta(){
+  const c = S.deck.pop();
+  S.played.push(c);
+  say(`📓 Le arrancaste la hoja: <b>${c.n}</b> va al descarte.`,"g");
+  closeModal(true); syncUI();
+}
+function dejarCarta(){
+  say("📓 Miraste la agenda y la dejaste como estaba.","y");
+  closeModal(true); syncUI();
+}
+
 function useObject(i){
   if(!S||S.over||S.busy) return;
   if(i>=S.objects.length || S.objUsed.includes(i)) return;
   const id=S.objects[i];
+  const noSePuede = porQueNoEsteObjeto(id);
+  if(noSePuede){ banner(noSePuede,"#E0685D"); say("🚫 "+noSePuede,"r"); return; }
   S.objUsed.push(i);
   if(id==="mate1"||id==="mate2"){
     S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
@@ -1566,6 +1634,22 @@ function useObject(i){
   if(id==="empa"){ S.player.x=S.bath.x; S.player.y=S.bath.y; say("🥟 Esa empanada estaba dudosa. Al baño.","y"); }
   if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
                       say("📢 Llamado falso: volvió a su oficina.","g"); }
+  if(id==="celu"){
+    S.celular = {x:S.player.x, y:S.player.y};
+    say("📱 Dejaste el celular sonando acá. Cuando le salga <b>¡Se acerca!</b> va a venir al celular, no a vos. Dura hasta que lo levante o hasta que le suba la alerta.","g");
+  }
+  if(id==="guantes"){
+    S.guantes = true;
+    say("🧤 Guantes puestos: la próxima vitrina que abras no va a hacer sonar la alarma.","g");
+  }
+  if(id==="sopapa"){
+    const enElTuyo = (S.player.x===S.bath.x && S.player.y===S.bath.y);
+    const destino = enElTuyo ? S.foeBath : S.bath;
+    S.player.x = destino.x; S.player.y = destino.y;
+    say(enElTuyo ? "🪠 Saliste por el baño del jefe. Mejor no preguntar cómo."
+                 : "🪠 Volviste por tu propio baño.","y");
+  }
+  if(id==="agenda"){ return mirarAgenda(); }
   float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
   const ruidoso = (id !== "mate1" && id !== "mate2");
   if(S.foe.twist==="anota" && ruidoso){
@@ -2024,6 +2108,28 @@ function drawPlanta(g){
   g.beginPath(); g.ellipse(21,8,3.5,2.2,0,0,7); g.fill();
 }
 
+/* el celular tirado en el piso, sonando */
+function drawCelular(g){
+  const t = (performance.now() % 900) / 900;
+  const tiembla = Math.sin(t * Math.PI * 6) * 0.9;
+  g.save();
+  g.translate(24 + tiembla, 26);
+  g.fillStyle = "#00000030";
+  g.beginPath(); g.ellipse(0, 9, 9, 3.2, 0, 0, 7); g.fill();
+  g.fillStyle = "#23262E"; rr(g, -6, -10, 12, 19, 2.5); g.fill();
+  g.fillStyle = "#6FC7E8"; rr(g, -4.6, -8.4, 9.2, 14, 1.4); g.fill();
+  g.fillStyle = "#23262E"; g.fillRect(-2, 7.4, 4, 1.2);
+  /* las onditas del timbre */
+  g.strokeStyle = "#E0B84F"; g.lineWidth = 1.4; g.lineCap = "round";
+  const a = 0.35 + 0.4 * Math.abs(Math.sin(t * Math.PI * 2));
+  g.globalAlpha = a;
+  for(const r of [10, 14]){
+    g.beginPath(); g.arc(0, -2, r, -2.5, -0.7); g.stroke();
+    g.beginPath(); g.arc(0, -2, r, Math.PI + 0.7, Math.PI + 2.5); g.stroke();
+  }
+  g.restore();
+}
+
 function drawMojado(g){
   g.fillStyle="#7FA8C466"; rr(g,7,20,34,18,9); g.fill();
   g.strokeStyle="#A8CBE0AA"; g.lineWidth=1.4; rr(g,7,20,34,18,9); g.stroke();
@@ -2379,6 +2485,8 @@ function frame(now){
   }
 
   drawParedes();
+
+  if(S.celular) inCell(ctx, S.celular.x, S.celular.y, g=>drawCelular(g));
 
   const actors = [
     {py:S.player.py, f:()=>atPos(ctx,S.player.px,S.player.py,g=>drawPerson(g,S.hero,S.player.bob))},
@@ -3214,6 +3322,19 @@ function menu(){
 /* El mazo del antagonista, armado desde DECK: agrupa las repetidas y marca
    cuáles le bajan la alerta y cuál es la única que lo trae hacia vos. Así la
    ayuda no se queda vieja cuando cambian las cartas. */
+/* Los objetos recompensa, armados desde OBJECTS: sin repetidos y con su aviso.
+   Escrita a mano se quedaba vieja cada vez que sumabamos uno. */
+function objetosRecompensa(){
+  const vistos = [];
+  return Object.values(OBJECTS).filter(o => {
+    if(vistos.includes(o.n)) return false;
+    vistos.push(o.n); return true;
+  }).map(o =>
+    '<div class="premio"><span class="ic">' + o.ic + '</span><div><b>' + o.n + '</b>' +
+    '<p>' + o.d + (o.aviso ? ' <em>Cuidado:</em> ' + o.aviso : '') + '</p></div></div>'
+  ).join("");
+}
+
 function cartasDelMazo(){
   const grupos = [];
   for(const c of DECK){
@@ -3256,57 +3377,7 @@ function ayuda(){
     '<p>Su mazo entero. Da vuelta una por ronda. Las de <b>baño</b> y <b>oficina</b> además ' +
     'le <b>bajan</b> la alerta; las dos de <b>¡Se acerca!</b> son las únicas que lo traen ' +
     'derecho hacia vos.</p>' +
-    '<div class="premios">' + cartasDelMazo() + '</div>' +
-    '<h4>El circuito</h4>' +
-    '<p>La <b>vitrina</b> te da una <b>pieza</b>. El <b>objeto</b> te lo da el <b>cómplice</b> ' +
-    'cuando le llevás la pieza de su color. Con las tres entregadas se abre la <b>salida</b>.<br>' +
-    'No hay que apretar nada: <b>todo se activa al pasar por encima</b>. La única excepción es ' +
-    'la <b>planta</b>, donde hay que <b>terminar</b> el turno para esconderse.</p>' +
-    '<h4>Las piezas son tu escudo</h4>' +
-    '<p>Si te alcanza y <b>no llevás ninguna pieza</b>, perdiste. Si llevás alguna, solo te ' +
-    'saca una y los dos vuelven a sus puestos. A la tercera que te recupera, se termina.<br>' +
-    'Por eso conviene <b>juntar las tres antes de repartir ninguna</b>: lo bravo es la corrida ' +
-    'final a la salida, ya con las manos vacías.</p>' +
-    '<h4>La alerta</h4>' +
-    '<p>Cuando se le acaba el mazo de <b>' + DECK.length + ' acciones</b>, se baraja y la alerta ' +
-    '<b>sube un nivel</b>: ' +
-    'avanza un casillero más por ronda. El panel te muestra cuántas cartas le quedan.</p>' +
-    '<p>Al revés, si una carta lo manda <b>al baño o a su oficina</b> se distrae y la alerta ' +
-    '<b>baja un nivel</b>. Ojo que cada antagonista tiene su piso: el Director General ' +
-    'nunca afloja por debajo de 2.</p>' +
-    '<p>Y una vez que <b>entregaste las tres piezas</b> ya no se relaja del todo: la alerta ' +
-    'no le baja de 2. La corrida final a la salida es a propósito la parte más brava.</p>' +
-    '<h4>El mate</h4>' +
-    '<p>Te devuelve los pasos que <b>ya diste</b> en el turno, así que encadenando mates un ' +
-    'turno puede ser larguísimo. Si todavía no diste ninguno no te sirve de nada: primero ' +
-    'movete y después tomalo.</p>' +
-    '<p><b>Cada mate se toma una vez por ronda</b> y se renueva en la siguiente. Tres en la ' +
-    'misma ronda y terminás en tu baño.</p>' +
-    '<h4>El modo maratón</h4>' +
-    '<p>Aparte de elegir sala, podés correr <b>las diez seguidas</b> con <b>tres vidas</b>. ' +
-    'Si te agarran perdés una y repetís esa misma sala; con las tres perdidas se termina la ' +
-    'corrida. Se guarda hasta dónde llegaste y en cuántas rondas, y es lo que conviene ' +
-    'comparar en el grupo. Elegir una sala a mano corta la corrida.</p>' +
-    '<h4>Los objetos recompensa</h4>' +
-    '<p>Te los dan los cómplices cuando les entregás la pieza que piden. Podés usarlos ' +
-    '<b>sólo en tu fase de movimiento</b>, antes, durante o después de moverte, y una vez ' +
-    'usados se descartan. En el panel de la izquierda se prenden cuando los tenés listos, ' +
-    'y se disparan con las teclas <b>1</b>, <b>2</b> y <b>3</b>.</p>' +
-    '<div class="premios">' +
-      '<div class="premio"><span class="ic">🧉</span><div><b>Mate</b>' +
-        '<p>Te devuelve todos los pasos del turno, igual que los del tablero. ' +
-        '<em>Cuidado:</em> si tomás tres en la misma fase de movimiento, contando los del ' +
-        'tablero, terminás el turno en tu baño.</p></div></div>' +
-      '<div class="premio"><span class="ic">🥃</span><div><b>Fernet</b>' +
-        '<p>Durante ese turno podés moverte en diagonal. ' +
-        '<em>Cuidado:</em> si después tomás un mate, se te va el efecto.</p></div></div>' +
-      '<div class="premio"><span class="ic">🥟</span><div><b>Empanada</b>' +
-        '<p>Te manda derecho a tu baño. Sirve para salvarte cuando el antagonista ' +
-        'te tiene arrinconado.</p></div></div>' +
-      '<div class="premio"><span class="ic">📢</span><div><b>Altavoz</b>' +
-        '<p>Un llamado falso a la oficina: el antagonista vuelve a su escritorio, ' +
-        'esté donde esté.</p></div></div>' +
-    '</div>' +
+    '<div class="premios">' + objetosRecompensa() + '</div>' +
     '<h4>Qué es cada cosa</h4>' +
     '<div class="leyenda" id="legend"></div>' +
     '<h4>Controles</h4>' +
