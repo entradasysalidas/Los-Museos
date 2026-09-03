@@ -1104,6 +1104,8 @@ function newGame(salaKey){
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || [];
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
+  const puertas = new Set(sala.p || []);
+  for(const k of puertas) walls.delete(k);        // una puerta no es también pared
 
   const pile = shuffle(PIECES.map(o=>o.id));
   b.marks.vitrinas.forEach((v,i)=>{ b.grid[v.y][v.x].piece = pile[i]; });
@@ -1126,7 +1128,7 @@ function newGame(salaKey){
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
-    ruta:[], celular:null, guantes:false, anotados:0,
+    ruta:[], celular:null, guantes:false, anotados:0, puertas,
     deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
@@ -1167,6 +1169,10 @@ const playable = (x,y) => inside(x,y) && S.grid[y][x].play;
 const foeOn = (x,y) => S.foes.some(f=>f.x===x && f.y===y);
 
 /* ¿se puede ir de (x,y) al vecino (nx,ny)? Ortogonal, sin pared en la arista */
+/* quién está calculando el paso: la puerta le contesta distinto a cada uno */
+let COMO = "vos";
+function puertaAbierta(){ return COMO === "vos" && S.hand.length > 0; }
+
 function canStep(x,y,nx,ny){
   if(!playable(nx,ny)) return false;
   if(Math.abs(nx-x)+Math.abs(ny-y)!==1){          // diagonal (fernet): sin paredes en ninguno de los dos lados
@@ -1174,7 +1180,9 @@ function canStep(x,y,nx,ny){
     return (canStep(x,y,nx,y) && canStep(nx,y,nx,ny)) ||
            (canStep(x,y,x,ny) && canStep(x,ny,nx,ny));
   }
-  return !S.walls.has(edgeKey({x,y},{x:nx,y:ny}));
+  const k = edgeKey({x,y},{x:nx,y:ny});
+  if(S.puertas && S.puertas.has(k)) return puertaAbierta();
+  return !S.walls.has(k);
 }
 
 
@@ -1487,14 +1495,16 @@ function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
 
 function chaseStep(f, destino){
   const meta = destino || {x:S.player.x, y:S.player.y};
+  COMO = "jefe";                                  // para él la puerta está cerrada
   const d=bfsFrom(meta);
   let best=null, bd=d[key(f.x,f.y)];
   for(const [dx,dy] of DIRS){                    // DIRS está en el orden de prioridad del manual
     const nx=f.x+dx, ny=f.y+dy;
-    if(!canStep(f.x,f.y,nx,ny)) continue;
+    if(!canStep(f.x,f.y,nx,ny)) continue;   // COMO sigue en "jefe": no cruza la puerta
     const v=d[key(nx,ny)];
     if(v>=0 && (bd<0 || v<bd)){ bd=v; best={x:nx,y:ny}; }
   }
+  COMO = "vos";
   if(!best) return false;
   f.x=best.x; f.y=best.y;
   subirEscalera(f, false);                       // el jefe también la toma
@@ -2214,6 +2224,38 @@ function drawParedes(){
     if(k==="v") ctx.fillRect((x+1)*CS - t/2, y*CS + 2, t, CS - 4);
     else        ctx.fillRect(x*CS + 2, (y+1)*CS - t/2, CS - 4, t);
   });
+
+  // 3. las puertas con lector: cerradas son barrera, abiertas dejan el hueco
+  if(S.puertas && S.puertas.size){
+    const abierta = S.hand.length > 0;
+    const luz = abierta ? "#5FB183" : "#E0685D";
+    S.puertas.forEach(w=>{
+      const [k,a,b]=w.split(":"), x=+a, y=+b;
+      const vert = (k==="v");
+      const cx = vert ? (x+1)*CS : x*CS + CS/2;
+      const cy = vert ? y*CS + CS/2 : (y+1)*CS;
+      ctx.save();
+      ctx.translate(cx, cy);
+      if(!vert) ctx.rotate(Math.PI/2);
+      // los dos montantes, siempre
+      ctx.fillStyle = th.pared;
+      ctx.fillRect(-t/2, -CS/2 + 2, t, CS*0.22);
+      ctx.fillRect(-t/2,  CS/2 - 2 - CS*0.22, t, CS*0.22);
+      // la hoja, sólo si está cerrada
+      if(!abierta){
+        ctx.fillStyle = hexA(luz, .30);
+        ctx.fillRect(-t/2, -CS*0.28, t, CS*0.56);
+        ctx.strokeStyle = luz; ctx.lineWidth = 1.4;
+        ctx.setLineDash([4,3]);
+        ctx.beginPath(); ctx.moveTo(0, -CS*0.28); ctx.lineTo(0, CS*0.28); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // el lector, con su lucecita
+      ctx.fillStyle = "#3A3F49"; rr(ctx, -t/2 - 3.5, -5, 7, 10, 1.5); ctx.fill();
+      ctx.fillStyle = luz; ctx.beginPath(); ctx.arc(-t/2, -1.5, 1.7, 0, 7); ctx.fill();
+      ctx.restore();
+    });
+  }
   ctx.restore();
 }
 
@@ -2350,6 +2392,17 @@ function drawEscalera(g){
   g.beginPath(); g.moveTo(24,32); g.lineTo(24,16); g.stroke();
   g.beginPath(); g.moveTo(19,20); g.lineTo(24,15); g.lineTo(29,20); g.stroke();
   g.restore();
+}
+
+/* la puerta con lector, para la leyenda */
+function drawPuertaChica(g){
+  g.fillStyle="#00000018"; g.fillRect(4,6,40,36);
+  g.fillStyle="#EFEADF"; g.fillRect(21,6,6,10); g.fillRect(21,32,6,10);
+  g.fillStyle="#5FB18355"; g.fillRect(21,16,6,16);
+  g.strokeStyle="#5FB183"; g.lineWidth=1.4; g.setLineDash([4,3]);
+  g.beginPath(); g.moveTo(24,16); g.lineTo(24,32); g.stroke(); g.setLineDash([]);
+  g.fillStyle="#3A3F49"; rr(g,13,19,7,10,1.5); g.fill();
+  g.fillStyle="#5FB183"; g.beginPath(); g.arc(16.5,22.5,1.8,0,7); g.fill();
 }
 
 function drawMojado(g){
@@ -2956,6 +3009,7 @@ function buildLegend(){
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
+    ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g)],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
     ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
@@ -3239,6 +3293,7 @@ cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; mouseCel
    ========================================================================== */
 const TOOLS = [
   {id:"pared",     n:"Pared",      zona:"arista", ic:"▬"},
+  {id:"puerta",    n:"Puerta",     zona:"arista", ic:"🚪"},
   {id:"P",         n:"Vitrina",    zona:"centro", ic:"▣"},
   {id:"M",         n:"Mate",       zona:"centro", ic:"🧉"},
   {id:"A",         n:"Planta",     zona:"centro", ic:"🪴"},
