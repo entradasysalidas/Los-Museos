@@ -1367,8 +1367,8 @@ const FOES_2 = {
              d:"Una vez por partida deshace una entrega y la mercadería vuelve a la vidriera.", twist:"reponeCerca"},
   auditor  :{n:"El Auditor",    look:"gabardina",
              d:"Anota cada objeto ruidoso que usás; al segundo, le sube la alerta. El mate no cuenta.", twist:"anota"},
-  dueno    :{n:"El Dueño",      look:"gala", alert:2,
-             d:"Arranca en alerta 2, persigue y se teletransporta a las vidrieras.", twist:"vitrinas"},
+  dueno    :{n:"El Dueño",      look:"gala", alert:2, piso:1,
+             d:"Arranca en alerta 2 y aparece en la vidriera más cercana a vos. Se lo puede ablandar, pero no perdona.", twist:"vitrinaCerca"},
 };
 
 const SALAS_2 = {
@@ -1622,13 +1622,11 @@ function endMovement(){
       const x=S.player.x+dx, y=S.player.y+dy, n=cellAt(x,y);
       return n && n.type==="planta" && canStep(S.player.x,S.player.y,x,y);   // no a través de una pared
     })));
-  if(typeof teVeLaCamara==="function" && teVeLaCamara() && S.alert < TUNE.alertMax){
-    S.alert++;
-    fx.shake = TUNE.shakeMs * .7;
+  S.vistoPorCamara = (typeof teVeLaCamara==="function") && teVeLaCamara();
+  if(S.vistoPorCamara){
+    fx.shake = TUNE.shakeMs * .5;
     float(S.player.x, S.player.y, "📹", "#E0685D");
-    banner("La cámara te agarró: alerta " + S.alert, "#E0685D");
-    say(`📹 Terminaste el turno bajo la cámara: <b>alerta ${S.alert}</b>.`,"r");
-    if(typeof latidoAlerta==="function") latidoAlerta("sube");
+    say("📹 Te agarró la cámara: esta ronda avanza <b>un casillero más</b>.","r");
   }
   S.escondido = hidden;
   if(hidden) say("🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
@@ -1730,6 +1728,20 @@ function chasePhase(hidden){
   (function paso(){
     if(S.over) return;
     if(i++ >= n) return setTimeout(()=>{
+      if(S.vistoPorCamara){
+        S.vistoPorCamara = false;
+        banner("La cámara lo avisó: un casillero más","#E0685D");
+        for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+        syncUI();
+        return setTimeout(()=>{
+          if(S.foe.twist==="linterna" && enLineaRecta()){
+            banner("Te alumbró con la linterna: un casillero más","#E0685D");
+            say("🔦 Quedaste en su línea recta: avanza un casillero extra.","r");
+            for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
+          }
+          syncUI(); actionPhase();
+        }, 700);
+      }
       if(S.foe.twist==="linterna" && enLineaRecta()){
         banner("Te alumbró con la linterna: un casillero más","#E0685D");
         say("🔦 Quedaste en su línea recta: avanza un casillero extra.","r");
@@ -1751,7 +1763,9 @@ const PISO_FUGA = {"Pasantía":0, "Mini Pyme":0, "S.R.L.":0, "S.A.":2, "Multinac
                    "Local":0, "Franquicia":0, "Cadena":0, "Corporación":2, "Grupo inversor":2};
 function pisoFuga(){ return PISO_FUGA[S.sala.wing] || 0; }
 
-function pisoAlerta(){ return Math.max(1, S.foe.alert || 1); }
+function pisoAlerta(){
+  return Math.max(1, S.foe.piso !== undefined ? S.foe.piso : (S.foe.alert || 1));
+}
 
 /* se distrae y afloja un nivel, nunca por debajo de su piso */
 function calmar(){
@@ -1825,10 +1839,18 @@ function applyCard(card){
   const put=p=>{ if(p){ f.x=p.x; f.y=p.y; } };
   switch(card.k){
     case "desk":
-      if(S.foe.twist==="vitrinas"){
+      if(S.foe.twist==="vitrinas" || S.foe.twist==="vitrinaCerca"){
         const live=S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
-        put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
-        say(`<span class="ico">🖼</span><span>Pero <b>${S.foe.n}</b> no va al escritorio: sus acciones lo llevan siempre a una <b>vitrina</b>.</span>`,"carta r");
+        const lista = live.length ? live : S.marks.vitrinas.slice();
+        if(S.foe.twist==="vitrinaCerca"){
+          const d = bfsFrom({x:S.player.x, y:S.player.y});
+          const dist = v => { const n = d[key(v.x,v.y)]; return n<0 ? 1e9 : n; };
+          put(lista.slice().sort((a,b)=>dist(a)-dist(b))[0]);
+          say(`<span class="ico">🖼</span><span><b>${S.foe.n}</b> aparece en la vidriera <b>más cercana a vos</b>.</span>`,"carta r");
+        } else {
+          put(shuffle(lista)[0]);
+          say(`<span class="ico">🖼</span><span>Pero <b>${S.foe.n}</b> no va al escritorio: sus acciones lo llevan siempre a una <b>vitrina</b>.</span>`,"carta r");
+        }
       }else put(S.marks.comps.find(c=>c.want===card.t));
       if(S.foe.twist==="reponeCerca") restaurarUna();
       break;
@@ -3368,7 +3390,7 @@ function buildLegend(){
     ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>. Ojo: de la carta <b>¡Se acerca!</b> no te salva", g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
-    ["Cámara",    "Barre un cuarto de vuelta por ronda. Terminar el turno en lo que mira te <b>sube la alerta</b>", g=>drawCamara(g,null,-1,-1)],
+    ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1)],
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
     ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }],
     ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g)],
