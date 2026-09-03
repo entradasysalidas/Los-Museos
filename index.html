@@ -262,15 +262,51 @@
 
   /* ---------- ayuda ---------- */
   /* la tapa, grande, antes de entrar al museo */
-  #portal{position:fixed;inset:0;z-index:60;background:var(--bg);
+  #portal{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:22px;padding:22px;animation:portalEntra .55s ease}
+    gap:24px;padding:24px 20px;animation:portalEntra .55s ease}
   #portal.off{display:none}
-  #portal img{max-width:min(88vw,390px);max-height:56vh;width:auto;height:auto;
-    display:block;box-shadow:0 26px 60px #00000070}
   #portal.sale{animation:portalSale .4s ease forwards;pointer-events:none}
   @keyframes portalEntra{from{opacity:0}to{opacity:1}}
   @keyframes portalSale{to{opacity:0}}
+
+  /* las dos cajas, para elegir a cuál entrar */
+  .tapas{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .tapa{background:none;border:0;padding:0;cursor:pointer;color:inherit;
+    display:flex;flex-direction:column;gap:11px;align-items:center;
+    width:min(38vw,270px);transition:.16s ease}
+  .tapa img,.tapa .cajadibujada{display:block;width:100%;aspect-ratio:1;
+    box-shadow:0 20px 44px #00000060;transition:.16s ease}
+  .tapa:hover{transform:translateY(-4px)}
+  .tapa:hover img,.tapa:hover .cajadibujada{box-shadow:0 26px 56px #00000075}
+  .tapa .rotulo{text-align:center}
+  .tapa .rotulo b{display:block;font:400 15px/1.15 "Archivo Black","Archivo",sans-serif;
+    color:var(--dim);text-transform:uppercase;letter-spacing:-.01em;transition:.16s}
+  .tapa .rotulo small{display:block;margin-top:5px;font:500 9px/1 "IBM Plex Mono",monospace;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--hair)}
+  .tapa.elegida .rotulo b{color:var(--ink)}
+  .tapa.elegida img,.tapa.elegida .cajadibujada{outline:3px solid var(--brass);
+    outline-offset:4px}
+  .tapa:not(.elegida) img,.tapa:not(.elegida) .cajadibujada{opacity:.55;filter:saturate(.6)}
+  .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:.8;filter:none}
+
+  /* la caja del 2, dibujada mientras no exista la ilustración */
+  .cajadibujada{position:relative;background:#1A1D24;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:flex-end;padding:16% 12%}
+  .cajadibujada::before{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(135deg,#ffffff08 0 12px,transparent 12px 24px)}
+  .cajadibujada .ct{position:absolute;top:11%;left:12%;right:12%;
+    font:400 clamp(20px,4.4vw,34px)/.88 "Archivo Black","Archivo",sans-serif;
+    color:#F2EFE8;text-transform:uppercase;letter-spacing:-.035em;text-align:left}
+  .cajadibujada .cn{position:absolute;right:11%;top:8%;
+    font:400 clamp(48px,11vw,86px)/.8 "Archivo Black","Archivo",sans-serif;
+    color:var(--brass);letter-spacing:-.06em}
+  .cajadibujada .cl{position:relative;font:600 clamp(8px,1.5vw,11px)/1.4 "Archivo",sans-serif;
+    color:#A9A296;text-transform:uppercase;letter-spacing:.1em}
+  .cajadibujada .sello{position:absolute;left:0;right:0;top:52%;
+    background:var(--brass);color:#14120E;text-align:center;
+    font:700 clamp(9px,1.7vw,12px)/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
+    text-transform:uppercase;padding:8px 0;transform:rotate(-4deg)}
 
   .quiensos{display:flex;flex-direction:column;align-items:center;gap:9px;width:min(92vw,380px)}
   .quiensos label{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
@@ -589,6 +625,10 @@
     .menucab .cuenta{font-size:19px}
     .hintbar{padding:9px 11px;font-size:13.5px}
 
+    .tapas{gap:12px}
+    .tapa{width:min(43vw,190px);gap:8px}
+    .tapa .rotulo b{font-size:12.5px}
+    .tapa .rotulo small{font-size:8px}
     .modal{max-height:calc(100vh - 20px)}
     .modal h2{padding:16px 18px 12px;font-size:24px}
     .modalbody{padding:16px 18px 20px}
@@ -712,7 +752,21 @@
 </div>
 
 <div id="portal">
-  <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
+  <div class="tapas">
+    <button class="tapa elegida" id="tapa1" onclick="elegirJuego(1)" aria-pressed="true">
+      <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
+      <span class="rotulo"><b>Los Museos</b><small>10 salas · listo para jugar</small></span>
+    </button>
+    <button class="tapa cerrada" id="tapa2" onclick="elegirJuego(2)" aria-pressed="false">
+      <span class="cajadibujada" aria-hidden="true">
+        <span class="ct">Los<br>Museos</span>
+        <span class="cn">2</span>
+        <span class="cl">Nuevas salas. Nuevos jefes.</span>
+        <span class="sello">En construcción</span>
+      </span>
+      <span class="rotulo"><b>Los Museos 2</b><small>en obra</small></span>
+    </button>
+  </div>
   <div class="quiensos">
     <label for="nombre">¿Quién entra al museo?</label>
     <div class="fila">
@@ -3445,18 +3499,45 @@ requestAnimationFrame(frame);
    dispositivo: sin cuentas ni servidor. Para competir está la ficha. */
 let yaEntre = false;
 
+/* Cuál de los dos juegos se abre. Por ahora el 2 está en obra: se puede mirar
+   la caja pero todavía no hay salas adentro. */
+let JUEGO = 1;
+
+function elegirJuego(n){
+  const t1 = document.getElementById("tapa1"), t2 = document.getElementById("tapa2");
+  const pie = document.getElementById("portalpie");
+  if(n === 2){
+    if(pie) pie.innerHTML =
+      "<b>Los Museos 2</b> está en obra: cámaras de seguridad, ascensores, puertas con " +
+      "tarjeta y diez salas nuevas. Todavía no se puede entrar.";
+    if(t2 && t2.animate) { try{ t2.animate(
+      [{transform:"translateX(0)"},{transform:"translateX(-5px)"},
+       {transform:"translateX(5px)"},{transform:"translateX(0)"}], {duration:260}); }catch(e){} }
+    return;
+  }
+  JUEGO = 1;
+  if(t1){ t1.classList.add("elegida"); t1.setAttribute("aria-pressed","true"); }
+  if(t2){ t2.classList.remove("elegida"); t2.setAttribute("aria-pressed","false"); }
+  textoDelPie();
+}
+
+/* el saludo del pie, según si ya jugaste antes */
+function textoDelPie(){
+  const pie = document.getElementById("portalpie");
+  if(!pie) return;
+  const n = salasHechas();
+  pie.innerHTML = LEGAJO.nombre
+    ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
+         : "Te estábamos esperando, <b>" + textoSeguro(LEGAJO.nombre) + "</b>")
+    : "Se guarda en este dispositivo, no hace falta cuenta.";
+}
+
 function prepararPortal(){
   LEGAJO = leerLegajo();
   const inp = document.getElementById("nombre");
   const pie = document.getElementById("portalpie");
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
-  if(pie){
-    const n = salasHechas();
-    pie.innerHTML = LEGAJO.nombre
-      ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
-           : "Te estábamos esperando, <b>" + textoSeguro(LEGAJO.nombre) + "</b>")
-      : "Se guarda en este dispositivo, no hace falta cuenta.";
-  }
+  textoDelPie();
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 
