@@ -290,6 +290,13 @@
   .tapa:not(.elegida) img,.tapa:not(.elegida) .cajadibujada{opacity:.55;filter:saturate(.6)}
   .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:.8;filter:none}
 
+  .tapa{position:relative}
+  .tapa .sello{position:absolute;left:0;right:0;top:44%;
+    background:var(--brass);color:#14120E;text-align:center;
+    font:700 clamp(9px,1.7vw,12px)/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
+    text-transform:uppercase;padding:8px 0;transform:rotate(-4deg);
+    box-shadow:0 6px 18px #00000055;pointer-events:none}
+
   /* la caja del 2, dibujada mientras no exista la ilustración */
   .cajadibujada{position:relative;background:#1A1D24;overflow:hidden;
     display:flex;flex-direction:column;justify-content:flex-end;padding:16% 12%}
@@ -758,13 +765,9 @@
       <span class="rotulo"><b>Los Museos</b><small>10 salas · listo para jugar</small></span>
     </button>
     <button class="tapa cerrada" id="tapa2" onclick="elegirJuego(2)" aria-pressed="false">
-      <span class="cajadibujada" aria-hidden="true">
-        <span class="ct">Los<br>Museos</span>
-        <span class="cn">2</span>
-        <span class="cl">Nuevas salas. Nuevos jefes.</span>
-        <span class="sello">En construcción</span>
-      </span>
-      <span class="rotulo"><b>Los Museos 2</b><small>en obra</small></span>
+      <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
+      <span class="sello">En obra</span>
+      <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
   </div>
   <div class="quiensos">
@@ -817,7 +820,7 @@ const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1
 /* --- el marco: roles por casilla, editables ---
    Arriba van la oficina del jefe, la salida y su baño, más casillas vacías.
    Abajo, tu puesto y tu baño. El editor permite reacomodarlos.            */
-const FRAME_DEF = {
+let FRAME_DEF = {
   "2,0":"salida",
   "3,0":"baniojefe",
   "4,0":"vacio",
@@ -864,7 +867,7 @@ function allOf(role){
    Las del marco (las que tocan una casilla de afuera del 6x4) son fijas para
    todos los niveles, igual que los roles del marco. Las de adentro son de
    cada nivel.                                                              */
-const FRAME_WALLS = {
+let FRAME_WALLS = {
   gris  : ["v:2:0","v:3:0","v:3:7"],
   madera: ["v:2:0","v:3:0","v:3:7"],
 };
@@ -948,7 +951,7 @@ const DECK = [
   {n:"¡Se acerca!",                    d:"Avanza hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
 ];
 
-const FOES = {
+let FOES = {
   encargado:{n:"El Encargado",   look:"overol", d:"Camina y nada más. Es la sala escuela."},
   curador  :{n:"El Curador",     look:"saco",   d:"Sus acciones lo llevan a las vitrinas.", twist:"vitrinas"},
   director :{n:"El Director",    look:"traje",  d:"El perseguidor clásico. Sin trucos."},
@@ -962,7 +965,7 @@ const FOES = {
              d:"Arranca en alerta 2, persigue y se teletransporta a las vitrinas.", twist:"vitrinas"},
 };
 
-const THEMES = {
+let THEMES = {
   gris  :{ piso:["#9A968C","#928E84"], patron:"alfombra", junta:"#00000018",
            luz:"#EAF2FF", luzA:.16, pared:"#F4F2EC", void:"#DAD8D1", vineta:.10, fondo:"#DAD8D1" },
   madera:{ piso:["#B08A5C","#A78254"], patron:"parquet", junta:"#00000016",
@@ -974,7 +977,7 @@ const THEMES = {
       P impresora · D rombo · T triángulo · C círculo · M mate · L banana · A planta
    w: paredes, en aristas. Se dibujan con el editor y se guardan acá.        --- */
 const L = (s)=>s.trim().split("\n").map(r=>r.trim());
-const SALAS = {
+let SALAS = {
   tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris", ac:["#4B44B8","#9A95E2","#EAE8FB"],
     hero:"negro", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`A....A
@@ -1264,7 +1267,7 @@ function rangoActual(){
 /* ---------- un consejo por sala ----------
    Cada antagonista hace una trampa distinta y no siempre se deduce jugando.
    El consejo aparece en el relato al empezar. */
-const CONSEJOS = {
+let CONSEJOS = {
   tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
   n1:"Tu poder también te esconde en la casilla de al lado de una planta. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
   n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
@@ -1276,6 +1279,25 @@ const CONSEJOS = {
   n8:"El Inspector anota cada objeto que usás y le sube la alerta. Guardá los tres para la fuga final, cuando ya tengas las tres entregadas y la alerta no importe.",
   n9:"Arranca en alerta 2 y se teletransporta a las vitrinas. Mirá su próxima carta antes de moverte y no te quedes junto a una vitrina todavía llena.",
 };
+/* ---------- los dos juegos ----------
+   Cada uno trae sus salas, sus antagonistas, sus pisos y su marco. Los amigos,
+   los poderes, las piezas, los objetos y el mazo son de los dos. */
+const JUEGOS = {
+  1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES,
+       frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
+};
+
+function cargarJuego(n){
+  const j = JUEGOS[n];
+  if(!j) return false;
+  SALAS = j.salas; FOES = j.foes; THEMES = j.themes;
+  FRAME_DEF = j.frameDef; FRAME_WALLS = j.frameWalls; CONSEJOS = j.consejos;
+  FRAME_MAP = null;            // se rearma con el marco del juego nuevo
+  JUEGO = n;
+  return true;
+}
+
+
 
 /* ======================= FASE 1 · movimiento ======================= */
 function step(dx,dy){
