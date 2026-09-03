@@ -551,7 +551,24 @@
     .modal h2{padding:16px 18px 12px;font-size:24px}
     .modalbody{padding:16px 18px 20px}
     .lvls{grid-template-columns:1fr}
-    .editbar.on{position:fixed;inset:8px;width:auto}
+
+    /* editor en el celular: antes el panel (position:fixed + inset:8px)
+       tapaba toda la pantalla y no dejaba ver el tablero para tocarlo.
+       Ahora, mientras se edita, la página deja de scrollear sola y #app
+       pasa a ser una columna: el tablero arriba a su tamaño normal, y el
+       panel de herramientas abajo ocupando el resto de la altura con su
+       propio scroll. Así entran los dos juntos, sea cual sea el celular
+       (no depende de adivinar un alto fijo en vh). */
+    body.editing{overflow:hidden}
+    body.editing #app{height:100vh;display:flex;flex-direction:column}
+    body.editing header,body.editing #stage{flex:none}
+    body.editing aside,body.editing #relato{display:none}
+    .editbar.on{position:static;flex:1 1 auto;min-height:0;width:auto;
+      overflow-y:auto;border-radius:10px 10px 0 0}
+    .editbar.on .ebtn{flex-basis:calc(50% - 5px)}
+    .editbar.on .palette{flex-direction:row;flex-wrap:wrap}
+    .editbar.on .palette .grupo{flex-basis:100%;margin:8px 0 2px}
+    .editbar.on .tool{width:auto;flex:1 1 calc(50% - 5px)}
   }
 
   /* apaisado: el panel se acomoda en dos columnas al lado del tablero */
