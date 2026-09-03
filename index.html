@@ -3036,6 +3036,33 @@ function menu(){
   }
 }
 
+/* El mazo del antagonista, armado desde DECK: agrupa las repetidas y marca
+   cuáles le bajan la alerta y cuál es la única que lo trae hacia vos. Así la
+   ayuda no se queda vieja cuando cambian las cartas. */
+function cartasDelMazo(){
+  const grupos = [];
+  for(const c of DECK){
+    const ya = grupos.find(g => g.n === c.n);
+    if(ya) ya.veces++; else grupos.push({n:c.n, d:c.d, k:c.k, ic:c.ic, veces:1});
+  }
+  return grupos.map(g => {
+    const afloja = (g.k === "bath" || g.k === "home");
+    const viene  = (g.k === "rush");
+    const borde  = viene ? "var(--alarm)" : afloja ? "var(--patina)" : "var(--brass)";
+    const veces  = g.veces > 1
+      ? ' <span style="color:var(--brass);font-weight:700">×' + g.veces + '</span>'
+      : "";
+    const nota = afloja
+      ? ' <em style="color:var(--patina)">Además se distrae: le baja la alerta.</em>'
+      : viene
+        ? ' <em>De las diez, las únicas que lo traen derecho hacia vos.</em>'
+        : "";
+    return '<div class="premio" style="border-left-color:' + borde + '">' +
+           '<span class="ic">' + g.ic + '</span>' +
+           '<div><b>' + g.n + '</b>' + veces + '<p>' + g.d + nota + '</p></div></div>';
+  }).join("");
+}
+
 function ayuda(){
   showModal("Cómo se juega",
    '<div class="reglas">' +
@@ -3050,6 +3077,11 @@ function ayuda(){
       '<div class="fase"><span class="n">3</span><p><b>Actúa.</b> Da vuelta una de sus ' + DECK.length + ' ' +
         'cartas de acción. La mayoría lo manda lejos; solo dos lo traen derecho hacia vos.</p></div>' +
     '</div>' +
+    '<h4>Las ' + DECK.length + ' cartas del jefe</h4>' +
+    '<p>Su mazo entero. Da vuelta una por ronda. Las de <b>baño</b> y <b>oficina</b> además ' +
+    'le <b>bajan</b> la alerta; las dos de <b>¡Se acerca!</b> son las únicas que lo traen ' +
+    'derecho hacia vos.</p>' +
+    '<div class="premios">' + cartasDelMazo() + '</div>' +
     '<h4>El circuito</h4>' +
     '<p>La <b>vitrina</b> te da una <b>pieza</b>. El <b>objeto</b> te lo da el <b>cómplice</b> ' +
     'cuando le llevás la pieza de su color. Con las tres entregadas se abre la <b>salida</b>.<br>' +
@@ -3068,8 +3100,11 @@ function ayuda(){
     '<b>baja un nivel</b>. Ojo que cada antagonista tiene su piso: el Director General ' +
     'nunca afloja por debajo de 2.</p>' +
     '<h4>El mate</h4>' +
-    '<p>Te devuelve <b>todos los pasos</b> que ya diste en el turno, así que encadenando mates ' +
-    'un turno puede ser larguísimo. Tres en la misma ronda y terminás en tu baño.</p>' +
+    '<p>Te devuelve los pasos que <b>ya diste</b> en el turno, así que encadenando mates un ' +
+    'turno puede ser larguísimo. Si todavía no diste ninguno no te sirve de nada: primero ' +
+    'movete y después tomalo.</p>' +
+    '<p><b>Cada mate se toma una vez por ronda</b> y se renueva en la siguiente. Tres en la ' +
+    'misma ronda y terminás en tu baño.</p>' +
     '<h4>Los objetos recompensa</h4>' +
     '<p>Te los dan los cómplices cuando les entregás la pieza que piden. Podés usarlos ' +
     '<b>sólo en tu fase de movimiento</b>, antes, durante o después de moverte, y una vez ' +
