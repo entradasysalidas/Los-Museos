@@ -1344,10 +1344,10 @@ let CONSEJOS = {
    color y vidrieras con tira de neón. Los cuatro elementos nuevos —cámara,
    escalera, puerta con lector y vitrina con temporizador— se enseñan de a uno. */
 const THEMES_2 = {
-  dia   :{ oscuro:false, afuera:"estacionamiento", piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#00000026",
+  dia   :{ oscuro:false, piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#00000026",
            luz:"#FFFFFF", luzA:.42, pared:"#FFFFFF", void:"#DCD8D2", vineta:.06,
            fondo:"#DCD8D2", luces:true, neon:null, cartel:.55 },
-  noche :{ oscuro:true, afuera:"estacionamiento", piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF1A",
+  noche :{ oscuro:true, piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF1A",
            luz:"#CFE6FF", luzA:.20, pared:"#F0F3F8", void:"#14151C", vineta:.30,
            fondo:"#14151C", luces:true, neon:"#5FD8E8", cartel:1 },
 };
@@ -1372,7 +1372,8 @@ const FOES_2 = {
 };
 
 const SALAS_2 = {
-  s0:{ num:0, name:"Planta baja", wing:"Local", piso:"dia", ac:["#E0559B","#8A2D5C","#FCE7F1"],
+  s0:{ num:0, name:"Planta baja", wing:"Local", piso:"dia", afuera:"estacionamiento",
+       ac:["#E0559B","#8A2D5C","#FCE7F1"],
     hero:"negro", foe:"vigilante", comps:["chupa","marian","tomy"],
     e:L(`P..K..
          .M....
@@ -1380,7 +1381,8 @@ const SALAS_2 = {
          D..P.P`),
     w:["h:5:1","h:4:1","v:2:3","h:4:3","v:4:4"] },
 
-  s1:{ num:1, name:"Patio de comidas", wing:"Local", piso:"dia", ac:["#F0A02C","#9A6415","#FDF0DC"],
+  s1:{ num:1, name:"Patio de comidas", wing:"Local", piso:"dia", afuera:"mesas",
+       ac:["#F0A02C","#9A6415","#FDF0DC"],
     hero:"hippie", foe:"vigilante", comps:["chupa","marian","tomy"],
     e:L(`E....P
          .AT.M.
@@ -2322,6 +2324,12 @@ const AUTOS = ["#C0483E","#3E6FB0","#D8B33E","#E8E4DC","#3C8A5E","#8A5AB8","#2E3
 function drawAfuera(g, th){
   g.fillStyle = th.fondo;
   g.fillRect(0, 0, W*CS, H*CS);
+  if(th.afuera === "mesas"){
+    g.fillStyle = th.oscuro ? "#00000030" : "#0000001A";
+    g.fillRect(0, 0, W*CS, H*CS);
+    drawMesas(g, th);
+    return;
+  }
   if(th.afuera !== "estacionamiento") return;
 
   /* el asfalto: gris propio, sin el tinte de la sala */
@@ -2358,6 +2366,40 @@ function drawAfuera(g, th){
       drawAuto(g, cx, cy, AUTOS[(i*2 + nf) % AUTOS.length], th, paso);
     }
   });
+}
+
+/* el patio de comidas visto desde arriba: mesas redondas con sus sillas */
+function drawMesas(g, th){
+  const paso = CS * 1.05;
+  const franjas = [{cx: CS*0.52}, {cx: W*CS - CS*0.52}];
+  franjas.forEach((f, nf) => {
+    for(let i = 0; i*paso < H*CS; i++){
+      const cy = paso*0.55 + i*paso;
+      if(rnd(i, nf+5, 3) < .18) continue;
+      dibujarMesa(g, f.cx, cy, th, rnd(i, nf, 8));
+    }
+  });
+}
+function dibujarMesa(g, cx, cy, th, semilla){
+  const R = CS*0.26;
+  g.save(); g.translate(cx, cy);
+  /* las sillas, alrededor */
+  g.fillStyle = th.oscuro ? "#3A3F49" : "#6E7480";
+  for(let i=0;i<4;i++){
+    const a = i*Math.PI/2 + semilla*0.6;
+    g.beginPath(); g.arc(Math.cos(a)*R*1.5, Math.sin(a)*R*1.5, R*0.42, 0, 7); g.fill();
+  }
+  /* la mesa */
+  g.fillStyle = "#00000038"; g.beginPath(); g.arc(1.5, 2.5, R, 0, 7); g.fill();
+  g.fillStyle = th.oscuro ? "#8A8F98" : "#E8E4DC";
+  g.beginPath(); g.arc(0, 0, R, 0, 7); g.fill();
+  g.fillStyle = "#FFFFFF30"; g.beginPath(); g.arc(-R*0.3, -R*0.3, R*0.42, 0, 7); g.fill();
+  /* algo encima */
+  if(semilla > .45){
+    g.fillStyle = semilla > .72 ? "#C0483E" : "#D8B33E";
+    rr(g, -R*0.28, -R*0.28, R*0.56, R*0.56, 2); g.fill();
+  }
+  g.restore();
 }
 
 /* un auto visto desde arriba, del alto de su cochera */
@@ -3494,6 +3536,7 @@ function temaDeSala(sala){
      note, sobre todo en el vacío de alrededor, que es puro fondo. */
   const oscuro = !!base.oscuro;
   return Object.assign({}, base, {
+    afuera: sala.afuera || null,
     piso  : oscuro ? [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)]
                    : [mezcla(base.piso[0], ac, 0.24), mezcla(base.piso[1], ac, 0.24)],
     luz   : mezcla(base.luz, ac, oscuro ? 0.30 : 0.45),
