@@ -207,31 +207,43 @@
     margin-top:6px;letter-spacing:-.02em}
   .goal.listo{border-color:var(--patina)} .goal.listo .val{color:var(--patina)}
 
-  .slots{display:flex;gap:7px;margin-top:9px}
-  .slot{flex:1;min-height:58px;padding:6px 4px;text-align:center;border:1px dashed var(--hair);
-    background:var(--panel2);display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:3px}
-  .slot .ic{font-size:18px;line-height:1}
-  .slot .nm{font:700 10.5px/1.2 "Archivo",sans-serif}
-  .slot .st{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;
+  .slots{display:flex;gap:8px;margin-top:10px}
+  .slot{flex:1;min-width:0;min-height:92px;padding:11px 5px 9px;text-align:center;
+    border:2px dashed var(--hair);background:var(--panel2);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    transition:.14s ease}
+  .slot .ic{font-size:30px;line-height:1;opacity:.28;filter:grayscale(1)}
+  .slot .nm{font:700 11px/1.2 "Archivo",sans-serif;color:var(--dim)}
+  .slot .st{font:600 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim)}
-  .slot.hand{border-style:solid;border-width:2px}
-  .slot.done{border:1px solid var(--patina);background:var(--panel)}
+
+  /* la tenés encima: a todo color, con fondo y borde de su propio tono */
+  .slot.hand{border:2px solid currentColor;border-style:solid;
+    background:color-mix(in srgb, currentColor 13%, var(--panel2));
+    box-shadow:0 0 0 3px color-mix(in srgb, currentColor 15%, transparent)}
+  .slot.hand .ic{opacity:1;filter:none;font-size:36px}
+  .slot.hand .nm{color:currentColor;font-size:11.5px}
+  .slot.hand .st{color:currentColor;opacity:.9}
+
+  /* ya entregada: cumplida y fuera del camino */
+  .slot.done{border:2px solid var(--patina);background:var(--panel);box-shadow:none}
+  .slot.done .ic{opacity:.9;filter:none;font-size:26px;color:var(--patina)}
   .slot.done .nm{color:var(--patina)}
+  .slot.done .st{color:var(--patina)}
   /* un objeto listo para usar tiene que gritar que esta ahi */
   .slot.obj{border:2px solid var(--brass);background:var(--brass-soft);cursor:pointer;
     box-shadow:0 0 0 3px color-mix(in srgb, var(--brass) 18%, transparent);
     animation:objLatido 2.4s ease-in-out infinite}
   .slot.obj:hover{transform:translateY(-3px);animation:none;
     box-shadow:0 0 0 4px color-mix(in srgb, var(--brass) 30%, transparent)}
-  .slot.obj .ic{font-size:26px}
+  .slot.obj .ic{font-size:34px;opacity:1;filter:none}
   .slot.obj .nm{color:var(--brass);font-weight:700}
   .slot.obj .st{color:var(--brass);font-weight:700;opacity:.85}
   @keyframes objLatido{
     0%,100%{box-shadow:0 0 0 3px color-mix(in srgb, var(--brass) 16%, transparent)}
     50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--brass) 6%, transparent)} }
   .slot.used{opacity:.4;cursor:default}
-  .slot.vacio .ic{opacity:.3}
+  .slot.vacio .ic{opacity:.22}
 
   .mps{display:flex;gap:6px;align-items:center}
   .mp{width:16px;height:16px;border-radius:50%;background:var(--panel2);
@@ -611,6 +623,13 @@
         </div>
       </div>
 
+      <div class="card">
+        <h3>Piezas · salen de las vitrinas</h3>
+        <div class="slots" id="pieceslots"></div>
+        <h3 style="margin-top:14px">Objetos · te los dan los cómplices</h3>
+        <div class="slots" id="objslots"></div>
+      </div>
+
       <div class="card" id="foecard">
         <h3>Te persigue</h3>
         <div class="foename" id="foename">—</div>
@@ -629,13 +648,6 @@
         <div class="deckwrap" id="deckwrap"></div>
         <div class="deckfoot"><span>Le quedan <b id="quedan">9</b> de <b id="mazototal">10</b></span>
           <span id="mazoaviso"></span></div>
-      </div>
-
-      <div class="card">
-        <h3>Piezas · salen de las vitrinas</h3>
-        <div class="slots" id="pieceslots"></div>
-        <h3 style="margin-top:14px">Objetos · te los dan los cómplices</h3>
-        <div class="slots" id="objslots"></div>
       </div>
 
     </aside>
@@ -2386,12 +2398,12 @@ function syncUI(){
       return '<div class="slot done"><div class="ic">✓</div><div class="nm">'+p.name+
              '</div><div class="st">entregada</div></div>';
     if(S.hand.includes(p.id))
-      return '<div class="slot hand" style="border-color:'+p.color+'">'+
-             '<div class="ic" style="color:'+p.color+'">'+p.sym+'</div>'+
-             '<div class="nm" style="color:'+p.color+'">'+p.name+'</div>'+
-             '<div class="st">en mano</div></div>';
-    return '<div class="slot vacio"><div class="ic" style="color:'+p.color+'">'+p.sym+
-           '</div><div class="nm">'+p.name+'</div><div class="st">en vitrina</div></div>';
+      return '<div class="slot hand" style="color:'+p.color+'">'+
+             '<div class="ic">'+p.sym+'</div>'+
+             '<div class="nm">'+p.name+'</div>'+
+             '<div class="st">la llevás</div></div>';
+    return '<div class="slot vacio" style="color:'+p.color+'"><div class="ic">'+p.sym+
+           '</div><div class="nm">'+p.name+'</div><div class="st">en la vitrina</div></div>';
   }).join("");
 
   $("objslots").innerHTML = Array.from({length:Math.max(3,S.objects.length)},(_,i)=>{
