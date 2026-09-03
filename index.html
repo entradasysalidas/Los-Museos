@@ -1344,10 +1344,10 @@ let CONSEJOS = {
    color y vidrieras con tira de neón. Los cuatro elementos nuevos —cámara,
    escalera, puerta con lector y vitrina con temporizador— se enseñan de a uno. */
 const THEMES_2 = {
-  dia   :{ oscuro:false, piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#00000026",
+  dia   :{ oscuro:false, afuera:"estacionamiento", piso:["#EFEDEA","#E8E5E1"], patron:"porcelanato", junta:"#00000026",
            luz:"#FFFFFF", luzA:.42, pared:"#FFFFFF", void:"#DCD8D2", vineta:.06,
            fondo:"#DCD8D2", luces:true, neon:null, cartel:.55 },
-  noche :{ oscuro:true, piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF1A",
+  noche :{ oscuro:true, afuera:"estacionamiento", piso:["#2A2C36","#25272F"], patron:"porcelanato", junta:"#FFFFFF1A",
            luz:"#CFE6FF", luzA:.20, pared:"#F0F3F8", void:"#14151C", vineta:.30,
            fondo:"#14151C", luces:true, neon:"#5FD8E8", cartel:1 },
 };
@@ -2248,13 +2248,73 @@ function inCell(g,x,y,fn){ g.save(); g.translate(x*CS,y*CS); g.scale(U,U); fn(g)
 function atPos(g,fx_,fy_,fn){ g.save(); g.translate(fx_*CS+CS/2, fy_*CS+CS/2+7*U); g.scale(U,U); fn(g); g.restore(); }
 
 /* ---------- piso, vacío exterior y paredes ---------- */
+
+/* ---------- lo que se ve alrededor del tablero ----------
+   En el museo es un vacío liso. En el shopping es el estacionamiento: asfalto,
+   las rayas de las cocheras y algún auto. Se dibuja sobre todo el lienzo y el
+   piso del local le pasa por encima, así que sólo asoma en los bordes. */
+const AUTOS = ["#C0483E","#3E6FB0","#D8B33E","#E8E4DC","#3C8A5E","#8A5AB8","#2E3138"];
+
+function drawAfuera(g, th){
+  g.fillStyle = th.fondo;
+  g.fillRect(0, 0, W*CS, H*CS);
+  if(th.afuera !== "estacionamiento") return;
+
+  /* el asfalto, un poco más oscuro que el fondo */
+  g.fillStyle = th.oscuro ? "#00000040" : "#00000026";
+  g.fillRect(0, 0, W*CS, H*CS);
+
+  /* las rayas de las cocheras, a lo largo de los cuatro bordes */
+  const raya = th.oscuro ? "#FFFFFF30" : "#FFFFFF88";
+  g.strokeStyle = raya; g.lineWidth = 2.5;
+  const paso = CS * 0.62;
+  for(let i = 0; i * paso < H*CS; i++){
+    const y = i * paso + 6;
+    g.beginPath(); g.moveTo(2, y); g.lineTo(CS*1.55, y); g.stroke();
+    g.beginPath(); g.moveTo(W*CS - 2, y); g.lineTo(W*CS - CS*1.55, y); g.stroke();
+  }
+  g.beginPath(); g.moveTo(CS*1.55, 4); g.lineTo(CS*1.55, H*CS - 4); g.stroke();
+  g.beginPath(); g.moveTo(W*CS - CS*1.55, 4); g.lineTo(W*CS - CS*1.55, H*CS - 4); g.stroke();
+
+  /* unos autos estacionados, sólo donde no llega el tablero */
+  const cocheras = [
+    {x: CS*0.78, y: CS*0.55}, {x: CS*0.78, y: CS*1.20},
+    {x: CS*0.78, y: H*CS - CS*1.25}, {x: CS*0.78, y: H*CS - CS*0.60},
+    {x: W*CS - CS*0.78, y: CS*0.55}, {x: W*CS - CS*0.78, y: CS*1.20},
+    {x: W*CS - CS*0.78, y: H*CS - CS*1.25}, {x: W*CS - CS*0.78, y: H*CS - CS*0.60},
+  ];
+  cocheras.forEach((c, i) => {
+    if(rnd(i, 3, 7) < .25) return;                 // alguna cochera vacía
+    drawAuto(g, c.x, c.y, AUTOS[i % AUTOS.length], th);
+  });
+}
+
+/* un auto visto desde arriba */
+function drawAuto(g, cx, cy, color, th){
+  const L = CS*0.52, A = CS*0.30;
+  g.save();
+  g.translate(cx, cy);
+  g.fillStyle = "#00000035";
+  rr(g, -A/2 + 2, -L/2 + 3, A, L, 5); g.fill();
+  g.fillStyle = color;
+  rr(g, -A/2, -L/2, A, L, 5); g.fill();
+  /* el parabrisas y la luneta */
+  g.fillStyle = th.oscuro ? "#20242C" : "#2A3038";
+  rr(g, -A/2 + 2.5, -L/2 + 4, A - 5, L*0.22, 2); g.fill();
+  rr(g, -A/2 + 2.5, L/2 - 4 - L*0.20, A - 5, L*0.20, 2); g.fill();
+  /* el techo, con su brillo */
+  g.fillStyle = "#FFFFFF22";
+  rr(g, -A/2 + 3, -L*0.10, A - 6, L*0.24, 2); g.fill();
+  g.restore();
+}
+
 function buildFloorLayer(){
   floorLayer=document.createElement("canvas");
   floorLayer.width=W*CS; floorLayer.height=H*CS;
   const g=floorLayer.getContext("2d");
   const th=S.th;
 
-  g.fillStyle=th.void; g.fillRect(0,0,W*CS,H*CS);       // lo que está fuera del tablero
+  drawAfuera(g, th);                                    // lo que está fuera del tablero
 
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     if(!S.grid[y][x].play) continue;
