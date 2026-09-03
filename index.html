@@ -854,7 +854,7 @@ const FOES = {
              d:"Está atento a las alarmas: cada vez que abrís una vitrina avanza un casillero al instante.", twist:"alarma"},
   perro    :{n:"El Perro guardián", look:"perro", d:"Ignora las plantas: esconderse no sirve.", twist:"olfato"},
   restaura :{n:"El Restaurador", look:"guardapolvo", d:"Devuelve la pieza a la vitrina más cercana a él.", twist:"reponeCerca"},
-  inspector:{n:"El Inspector",   look:"gabardina", d:"Cada objeto que usás le sube la alerta.", twist:"anota"},
+  inspector:{n:"El Inspector",   look:"gabardina", d:"Anota cada objeto ruidoso que usás; al segundo, le sube la alerta. El mate no cuenta.", twist:"anota"},
   general  :{n:"El Director General", look:"gala", alert:2,
              d:"Arranca en alerta 2, persigue y se teletransporta a las vitrinas.", twist:"vitrinas"},
 };
@@ -1367,6 +1367,10 @@ function pisoAlerta(){ return Math.max(1, S.foe.alert || 1); }
 /* se distrae y afloja un nivel, nunca por debajo de su piso */
 function calmar(){
   if(S.alert <= pisoAlerta()) return;
+  if(S.delivered.length >= 3 && S.alert <= 2){   // con todo entregado no baja de 2
+    say("😤 Con las tres piezas afuera ya no se relaja del todo.","r");
+    return;
+  }
   S.alert--;
   float(S.foes[0].x, S.foes[0].y, "ALERTA " + S.alert, "#7BC08A");
   banner(`Se distrajo · alerta ${S.alert}, avanza ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#7BC08A");
@@ -1399,6 +1403,28 @@ function actionPhase(){
   setTimeout(()=>applyCard(card), TUNE.cardMs);
 }
 
+/* El Restaurador deshace una entrega: la pieza vuelve a su vitrina y hay que
+   robarla y llevarla de nuevo. Una sola vez por partida. */
+function restaurarUna(){
+  if(S.repuso) return;
+  if(!S.delivered.length || S.delivered.length >= 3) return;
+  const id = S.delivered[S.delivered.length - 1];
+  const vacias = S.marks.vitrinas.filter(v => !S.grid[v.y][v.x].piece);
+  if(!vacias.length) return;
+  const d = bfsFrom({x:S.foes[0].x, y:S.foes[0].y});
+  vacias.sort((a,b) => (d[key(a.x,a.y)] < 0 ? 1e9 : d[key(a.x,a.y)]) -
+                       (d[key(b.x,b.y)] < 0 ? 1e9 : d[key(b.x,b.y)]));
+  const v = vacias[0];
+  S.delivered.splice(S.delivered.indexOf(id), 1);
+  S.pile.push(id);
+  S.grid[v.y][v.x].piece = id;
+  S.grid[v.y][v.x].alarm = 0;
+  S.repuso = true;
+  fx.shake = TUNE.shakeMs;
+  float(v.x, v.y, PIE[id].sym, PIE[id].color);
+  say(`🧰 <b>El Restaurador</b> deshizo tu entrega: <b>${PIE[id].name}</b> ${PIE[id].sym} volvió a la vitrina. Hay que robarla otra vez.`,"r");
+}
+
 function applyCard(card){
   if(S.over) return;
   S.cardPending=false;
@@ -1411,6 +1437,7 @@ function applyCard(card){
         put((live.length?shuffle(live):shuffle(S.marks.vitrinas.slice()))[0]);
         say(`<span class="ico">🖼</span><span>Pero <b>${S.foe.n}</b> no va al escritorio: sus acciones lo llevan siempre a una <b>vitrina</b>.</span>`,"carta r");
       }else put(S.marks.comps.find(c=>c.want===card.t));
+      if(S.foe.twist==="reponeCerca") restaurarUna();
       break;
     case "mydesk": put(S.home); break;
     case "bath": put(S.foeBath); calmar(); break;
@@ -1463,8 +1490,9 @@ function losePiece(id){
   S.pile.push(id);
   S.taken++;
   float(S.player.x,S.player.y,"−"+PIE[id].sym,"#E0685D");
+  /* la pieza vuelve lejos tuyo: perderla cuesta camino */
   const cerca = S.foe.twist==="reponeCerca";
-  const d = bfsFrom(cerca ? {x:S.foes[0].x,y:S.foes[0].y} : S.home);
+  const d = bfsFrom(cerca ? {x:S.foes[0].x,y:S.foes[0].y} : {x:S.player.x,y:S.player.y});
   let pick=null, best=cerca ? 1e9 : -1;
   for(const v of S.marks.vitrinas){
     const dd=d[key(v.x,v.y)];
@@ -1508,10 +1536,17 @@ function useObject(i){
   if(id==="altavoz"){ S.foes.forEach(f=>{f.x=S.foeHome.x; f.y=S.foeHome.y;});
                       say("📢 Llamado falso: volvió a su oficina.","g"); }
   float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
-  if(S.foe.twist==="anota" && S.alert<TUNE.alertMax){
-    S.alert++;
-    say(`📋 El Inspector te vio usarlo: <b>alerta ${S.alert}</b>.`,"r");
-    fx.shake=TUNE.shakeMs;
+  const ruidoso = (id !== "mate1" && id !== "mate2");
+  if(S.foe.twist==="anota" && ruidoso){
+    S.anotados = (S.anotados || 0) + 1;
+    if(S.anotados % 2 === 0 && S.alert < TUNE.alertMax){     // uno de cada dos
+      S.alert++;
+      say(`📋 El Inspector lleva la cuenta: dos objetos, <b>alerta ${S.alert}</b>.`,"r");
+      fx.shake=TUNE.shakeMs;
+      if(typeof latidoAlerta==="function") latidoAlerta("sube");
+    } else {
+      say("📋 El Inspector lo anotó. Al segundo objeto le sube la alerta.","r");
+    }
   }
   syncUI();
 }
@@ -3092,6 +3127,8 @@ function ayuda(){
     '<p>Al revés, si una carta lo manda <b>al baño o a su oficina</b> se distrae y la alerta ' +
     '<b>baja un nivel</b>. Ojo que cada antagonista tiene su piso: el Director General ' +
     'nunca afloja por debajo de 2.</p>' +
+    '<p>Y una vez que <b>entregaste las tres piezas</b> ya no se relaja del todo: la alerta ' +
+    'no le baja de 2. La corrida final a la salida es a propósito la parte más brava.</p>' +
     '<h4>El mate</h4>' +
     '<p>Te devuelve los pasos que <b>ya diste</b> en el turno, así que encadenando mates un ' +
     'turno puede ser larguísimo. Si todavía no diste ninguno no te sirve de nada: primero ' +
