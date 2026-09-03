@@ -319,6 +319,7 @@
   .quiensos label{font:500 10px/1 "IBM Plex Mono",monospace;letter-spacing:.22em;
     text-transform:uppercase;color:var(--dim)}
   .quiensos .fila{display:flex;gap:8px;width:100%}
+  .quiensos .fila.off{display:none}
   .quiensos input{flex:1;min-width:0;background:var(--panel);color:var(--ink);
     border:1px solid var(--hair);padding:13px 14px;
     font:600 16px/1 "Archivo",system-ui,sans-serif;outline:none}
@@ -766,7 +767,7 @@
     </button>
     <button class="tapa cerrada" id="tapa2" onclick="elegirJuego(2)" aria-pressed="false">
       <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
-      <span class="sello">4 salas</span>
+      <span class="sello" id="sello2">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
   </div>
@@ -774,7 +775,12 @@
     <label for="nombre">¿Quién entra al museo?</label>
     <div class="fila">
       <input id="nombre" type="text" maxlength="16" placeholder="Tu nombre" autocomplete="off" spellcheck="false">
-      <button class="btn" onclick="entrar()">Entrar</button>
+    </div>
+    <div class="fila off" id="filaclave">
+      <input id="clave" type="text" maxlength="20" placeholder="Palabra clave" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="fila">
+      <button class="btn" onclick="entrar()" style="flex:1">Entrar</button>
     </div>
     <div class="pie" id="portalpie"></div>
   </div>
@@ -3895,6 +3901,10 @@ function elegirJuego(n){
   JUEGO = (n === 2) ? 2 : 1;
   if(t1){ t1.classList.toggle("elegida", JUEGO===1); t1.setAttribute("aria-pressed", JUEGO===1 ? "true" : "false"); }
   if(t2){ t2.classList.toggle("elegida", JUEGO===2); t2.setAttribute("aria-pressed", JUEGO===2 ? "true" : "false"); }
+  const sel = document.getElementById("sello2");
+  if(sel) sel.textContent = elDosEstaAbierto() ? "4 salas" : "🔒 Cerrado";
+  const fila = document.getElementById("filaclave");
+  if(fila && fila.classList) fila.classList.toggle("off", !(JUEGO===2 && !elDosEstaAbierto()));
   textoDelPie();
 }
 
@@ -3906,9 +3916,10 @@ function textoDelPie(){
   const total = Object.keys(j.salas).length;
   const n = Object.keys(j.salas).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
   if(JUEGO === 2){
-    pie.innerHTML = "<b>Escape del shopping</b> · " + total + " salas por ahora, con cámaras, " +
-      "escaleras mecánicas, puertas con lector y vidrieras con temporizador." +
-      (n ? " Llevás " + n + " de " + total + "." : "");
+    pie.innerHTML = elDosEstaAbierto()
+      ? "<b>Escape del shopping</b> · " + total + " salas, con cámaras, escaleras mecánicas, " +
+        "puertas con lector y vidrieras con temporizador." + (n ? " Llevás " + n + " de " + total + "." : "")
+      : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.";
     return;
   }
   pie.innerHTML = LEGAJO.nombre
@@ -3926,15 +3937,47 @@ function prepararPortal(){
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 
+/* La palabra que hay que decir en la puerta. Ojo: esto es un portero, no una
+   cerradura. La página es pública y la palabra viaja en el código, así que
+   cualquiera que mire el fuente la encuentra. Sirve para que no entre el que
+   pasa de casualidad, no para guardar un secreto. */
+const PALABRA = "candombe";
+
+/* El shopping se lo gana el que termino Los Museos. La palabra clave es para
+   el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
+function elDosEstaAbierto(){
+  if(LEGAJO.clave2) return true;
+  const delUno = Object.keys(JUEGOS[1].salas);
+  return delUno.every(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha);
+}
+
 function entrar(){
   if(yaEntre) return;
   const inp = document.getElementById("nombre");
+  const cla = document.getElementById("clave");
+  const pie = document.getElementById("portalpie");
   const nom = (inp && inp.value ? inp.value : "").trim().slice(0,16);
   if(!nom){
-    const pie = document.getElementById("portalpie");
     if(pie) pie.innerHTML = "Poné un nombre, aunque sea un apodo.";
     if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
     return;
+  }
+  if(JUEGO === 2 && !elDosEstaAbierto()){
+    const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
+    if(dicha === PALABRA){
+      LEGAJO.clave2 = true;                       // ya no hace falta pedirla de nuevo
+    } else {
+      if(pie) pie.innerHTML = dicha
+        ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
+        : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.";
+      if(cla){
+        if(cla.focus) { try{ cla.focus(); }catch(e){} }
+        if(cla.animate){ try{ cla.animate(
+          [{transform:"translateX(0)"},{transform:"translateX(-6px)"},
+           {transform:"translateX(6px)"},{transform:"translateX(0)"}], {duration:240}); }catch(e){} }
+      }
+      return;
+    }
   }
   LEGAJO.nombre = nom;
   guardarLegajo(LEGAJO);
