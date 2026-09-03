@@ -1699,11 +1699,101 @@ function pantallaFinal(gano, titulo, bajada, salaKey){
     gano ? "#7BC08A" : "#E0685D");
 }
 
+/* ---------- modo maratón ----------
+   Las diez salas seguidas, un solo intento. Si te agarran, la corrida termina.
+   Vive fuera de S porque S se rehace en cada sala. */
+let MARATON = null;
+
+function enMaraton(){ return !!(MARATON && MARATON.viva); }
+function salasEnOrden(){ return Object.keys(SALAS); }
+
+function empezarMaraton(){
+  MARATON = {i:0, rondas:0, vidas:3, viva:true};
+  startSala(salasEnOrden()[0], true);
+}
+function cortarMaraton(){ MARATON = null; }
+
+/* la mejor corrida queda en el legajo, al lado de las marcas por sala */
+function anotarMaraton(salas, rondas, completa){
+  const m = LEGAJO.maraton || {salas:0, rondas:0, completa:false};
+  const mejor = salas > m.salas || (salas === m.salas && rondas < (m.rondas || 1e9));
+  if(mejor) LEGAJO.maraton = {salas, rondas, completa: completa || m.completa};
+  else if(completa && !m.completa) LEGAJO.maraton = Object.assign({}, m, {completa:true});
+  guardarLegajo(LEGAJO);
+  return mejor;
+}
+
+function pantallaMaraton(gano, salas, rondas){
+  const record = anotarMaraton(salas, rondas, gano);
+  const m = LEGAJO.maraton;
+  MARATON = null;
+
+  const dato = (l,v,f) => '<div class="dato' + (f ? " fuerte" : "") + '">' +
+    '<span class="l">' + l + '</span><span class="v">' + v + '</span></div>';
+
+  showModal(gano ? "Salieron del museo" : "Se cortó la corrida",
+    '<p class="lead">' + (gano
+      ? "Las <b>diez salas</b> de una sola corrida. Eso no lo hace cualquiera."
+      : "Llegaste hasta <b>" + SALAS[salasEnOrden()[MARATON_ULTIMA]].name +
+        "</b> y ahí te agarraron. El maratón se juega de cero.") + '</p>' +
+    '<div class="datos" style="grid-template-columns:repeat(3,minmax(0,1fr))">' +
+      dato("Salas", salas + "<small>/10</small>", true) +
+      dato("Rondas", rondas, false) +
+      dato("Tu récord", (m.salas || 0) + "<small>/10</small>", false) +
+    '</div>' +
+    (record ? '<p class="marca nueva">Récord nuevo.</p>'
+            : '<p class="marca">Tu mejor corrida sigue siendo <b>' + m.salas +
+              ' salas en ' + m.rondas + ' rondas</b>.</p>') +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="empezarMaraton()">Otra corrida</button>' +
+      '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
+      '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
+    '</div>', false);
+}
+
+/* te agarraron pero te queda vida: la misma sala otra vez, desde cero */
+function reintentarMaraton(reason){
+  const k = salasEnOrden()[MARATON.i];
+  const sala = SALAS[k];
+  const v = MARATON.vidas;
+  showModal("Te queda" + (v>1 ? "n " + v + " vidas" : " una vida"),
+    '<p class="lead">' + reason + ' La corrida sigue: <b>' + sala.name +
+    '</b> otra vez, desde el principio.</p>' +
+    '<div class="datos" style="grid-template-columns:repeat(3,minmax(0,1fr))">' +
+      '<div class="dato fuerte"><span class="l">Vidas</span><span class="v">' + v + '<small>/3</small></span></div>' +
+      '<div class="dato"><span class="l">Salas hechas</span><span class="v">' + MARATON.i + '<small>/10</small></span></div>' +
+      '<div class="dato"><span class="l">Rondas</span><span class="v">' + MARATON.rondas + '</span></div>' +
+    '</div>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="startSala(&quot;' + k + '&quot;, true)">Otra vez</button>' +
+      '<button class="btn alt" onclick="cortarMaraton();menu()">Dejar acá</button>' +
+    '</div>', false);
+}
+
+/* al ganar una sala dentro del maratón: se suma y sigue la que viene */
+function siguienteDelMaraton(){
+  MARATON_ULTIMA = MARATON.i;
+  MARATON.rondas += S.round;
+  MARATON.i++;
+  if(MARATON.i >= salasEnOrden().length)
+    return pantallaMaraton(true, MARATON.i, MARATON.rondas);
+  const prox = SALAS[salasEnOrden()[MARATON.i]];
+  showModal("Sala " + MARATON.i + " de 10",
+    '<p class="lead">Adentro. Llevás <b>' + MARATON.rondas + ' rondas</b> y te espera ' +
+    '<b>' + prox.name + '</b>, con ' + CREW[prox.hero].n + ' contra ' + FOES[prox.foe].n + '.</p>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="startSala(&quot;' + salasEnOrden()[MARATON.i] + '&quot;, true)">Seguir</button>' +
+      '<button class="btn alt" onclick="cortarMaraton();menu()">Dejar acá</button>' +
+    '</div>', false);
+}
+let MARATON_ULTIMA = 0;
+
 function gameWin(){
   S.over = "win";
   float(S.exit.x, S.exit.y, "¡AFUERA!", "#79AE9E");
   const primeraVez = !(LEGAJO.salas[S.salaKey] && LEGAJO.salas[S.salaKey].hecha);
   anotarSala(S.salaKey, S.round, S.taken === 0);
+  if(enMaraton()) return siguienteDelMaraton();
   const hechas = salasHechas();
   pantallaFinal(true, "Se escapó " + S.hero.n,
     "Tres piezas entregadas y la puerta de emergencia atrás. <b>" + S.foe.n +
@@ -1716,6 +1806,13 @@ function gameLose(reason){
   S.over = "lose";
   fx.shake = TUNE.shakeMs * 1.7;
   say("💼 <b>" + reason + "</b>", "r");
+  if(enMaraton()){
+    MARATON_ULTIMA = MARATON.i;
+    MARATON.rondas += S.round;
+    MARATON.vidas--;
+    if(MARATON.vidas > 0) return reintentarMaraton(reason);
+    return pantallaMaraton(false, MARATON.i, MARATON.rondas);
+  }
   pantallaFinal(false, "Te agarraron", reason, S.salaKey);
 }
 
@@ -2358,7 +2455,9 @@ function syncUI(){
   }
 
   $("numnivel").textContent = S.sala.num===0 ? "0" : String(S.sala.num);
-  $("kicker").textContent = (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing;
+  $("kicker").textContent = enMaraton()
+    ? "Maratón · sala " + (MARATON.i+1) + " de 10 · " + "♥".repeat(MARATON.vidas) + " · " + (MARATON.rondas + S.round) + " rondas"
+    : (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing;
   $("salatitulo").textContent = S.sala.name;
 
   drawRetrato();
@@ -2711,7 +2810,11 @@ let editMode = false, hoverEdge = null, mouseCellEdit = null;
 
 addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
-  if(k==="r"){ if(S){ newGame(S.salaKey); closeModal(true); } return; }
+  if(k==="r"){
+    if(enMaraton()){ banner("En el maratón no hay revancha","#E0685D"); return; }
+    if(S){ newGame(S.salaKey); closeModal(true); }
+    return;
+  }
   if(k==="Escape"){
     if(editMode) return toggleEditor();
     if(modalAbierto()) return closeModal();   // salir, no volver a abrir
@@ -3032,7 +3135,11 @@ function closeModal(forzar){
 function fondoCierra(e){
   if(e && e.target && e.target.id === "overlay") closeModal();
 }
-function startSala(k){ newGame(k); closeModal(true); }
+function startSala(k, deMaraton){
+  if(!deMaraton) cortarMaraton();      // elegir a mano corta la corrida
+  newGame(k);
+  closeModal(true);
+}
 
 function menu(){
   /* Las diez de una, sin scroll. Arriba el plano con el nombre al lado, y
@@ -3073,6 +3180,7 @@ function menu(){
     cabecera +
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
+    '<button class="btn" onclick="empezarMaraton()">Modo maratón · las diez seguidas</button>' +
     '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
     '<button class="btn alt" onclick="ficha()">Mi ficha</button>', !!S);
 
@@ -3154,6 +3262,11 @@ function ayuda(){
     'movete y después tomalo.</p>' +
     '<p><b>Cada mate se toma una vez por ronda</b> y se renueva en la siguiente. Tres en la ' +
     'misma ronda y terminás en tu baño.</p>' +
+    '<h4>El modo maratón</h4>' +
+    '<p>Aparte de elegir sala, podés correr <b>las diez seguidas</b> con <b>tres vidas</b>. ' +
+    'Si te agarran perdés una y repetís esa misma sala; con las tres perdidas se termina la ' +
+    'corrida. Se guarda hasta dónde llegaste y en cuántas rondas, y es lo que conviene ' +
+    'comparar en el grupo. Elegir una sala a mano corta la corrida.</p>' +
     '<h4>Los objetos recompensa</h4>' +
     '<p>Te los dan los cómplices cuando les entregás la pieza que piden. Podés usarlos ' +
     '<b>sólo en tu fase de movimiento</b>, antes, durante o después de moverte, y una vez ' +
@@ -3318,6 +3431,13 @@ function ficha(){
       '<div class="fprog"><span class="l">Salas resueltas</span><b>' + hechas + '<small>/10</small></b>' +
         '<div class="fbarra"><i style="width:' + (hechas*10) + '%"></i></div></div>' +
     '</div>' +
+    (LEGAJO.maraton
+      ? '<div class="fichacab" style="margin-top:14px"><div class="frango" style="flex:1">' +
+        '<span class="l">Mejor maratón</span><b>' + LEGAJO.maraton.salas +
+        '<small>/10 salas</small></b></div>' +
+        '<div class="fprog"><span class="l">En</span><b>' + LEGAJO.maraton.rondas +
+        '<small> rondas</small></b></div></div>'
+      : '') +
     '<div class="fsalas">' + filas + '</div>' +
     '<p class="lead" style="margin-top:14px">Sacale una captura y tirala al grupo. ' +
     'Las marcas se guardan en este dispositivo.</p>' +
