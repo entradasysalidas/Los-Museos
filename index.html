@@ -403,36 +403,48 @@
   .marca b{color:var(--ink)}
   .finbotones{display:flex;flex-wrap:wrap;gap:0}
 
-  .fichacab{display:flex;gap:12px;margin-bottom:14px}
-  .frango,.fprog{flex:1;background:var(--panel2);border-left:3px solid var(--brass);
-    padding:11px 13px}
-  .frango .l,.fprog .l{display:block;font:500 8.5px/1 "IBM Plex Mono",monospace;
-    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-  .frango b,.fprog b{font:400 22px/.9 "Archivo Black","Archivo",sans-serif;color:var(--brass);
-    letter-spacing:-.02em}
-  .fprog b small{font-size:13px;color:var(--dim)}
-  .fbarra{margin-top:9px;height:5px;background:var(--sunk)}
+  /* ---------- la ficha: es lo que se comparte, va prolija ---------- */
+  .fichacab{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+    margin-bottom:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  @media(min-width:720px){ .fichacab{grid-template-columns:2fr 1fr 1fr} }
+  .fdato{background:var(--panel2);padding:13px 15px;min-width:0}
+  .fdato .l{display:block;font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+  .fdato b{font:400 24px/.9 "Archivo Black","Archivo",sans-serif;color:var(--brass);
+    letter-spacing:-.03em;font-variant-numeric:tabular-nums;display:block}
+  .fdato b small{font-size:13px;color:var(--dim);letter-spacing:0}
+  .fdato b.pend{color:var(--hair)}
+  .fdato .rango{font-size:clamp(20px,3.2vw,29px);line-height:1;text-transform:uppercase}
+  .fdato .pie{display:block;margin-top:7px;font:500 10px/1.3 "IBM Plex Mono",monospace;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .fbarra{margin-top:10px;height:5px;background:var(--sunk)}
   .fbarra i{display:block;height:100%;background:var(--brass)}
 
-  .fsalas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-  .fsala{display:flex;gap:10px;align-items:center;background:var(--panel2);
-    border-left:3px solid var(--line);padding:8px 11px;opacity:.5}
-  .fsala.ok{opacity:1;border-left-color:var(--ac)}
-  .fsala .fn{font:400 18px/.8 "Archivo Black","Archivo",sans-serif;color:var(--dim);
-    flex:none;width:20px}
+  .fsalas{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+  @media(min-width:720px){ .fsalas{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .fsala{display:grid;grid-template-columns:26px minmax(0,1fr) 54px 16px;gap:11px;
+    align-items:center;background:var(--panel2);padding:10px 13px}
+  .fsala .fn{font:400 19px/.85 "Archivo Black","Archivo",sans-serif;color:var(--hair);
+    letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:center}
   .fsala.ok .fn{color:var(--ac)}
-  .fsala .fnom{flex:1;min-width:0}
-  .fsala .fnom b{display:block;font:400 11px/1.15 "Archivo Black","Archivo",sans-serif;
-    color:var(--ink);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;
-    white-space:nowrap}
-  .fsala .fnom small{display:block;font-size:10px;color:var(--dim);margin-top:2px;
+  .fsala .fnom{min-width:0}
+  .fsala .fnom b{display:block;font:400 11.5px/1.2 "Archivo Black","Archivo",sans-serif;
+    color:var(--dim);text-transform:uppercase;letter-spacing:-.01em;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .fsala .fmarca{flex:none;text-align:right}
-  .fsala .fmarca b{display:block;font:400 16px/.9 "Archivo Black","Archivo",sans-serif;
-    color:var(--ink)}
-  .fsala .fmarca small{display:block;font-size:8px;color:var(--dim);margin-top:3px;
-    text-transform:uppercase;letter-spacing:.1em}
-  .fsala .pend{color:var(--hair);font-size:18px}
+  .fsala.ok .fnom b{color:var(--ink)}
+  .fsala .fnom small{display:block;margin-top:3px;font-size:10.5px;color:var(--hair);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fsala.ok .fnom small{color:var(--dim)}
+  .fsala .fnom i{font-style:normal;opacity:.7}
+  .fsala .fmarca{text-align:right}
+  .fsala .fmarca b{display:block;font:400 17px/.9 "Archivo Black","Archivo",sans-serif;
+    color:var(--ink);font-variant-numeric:tabular-nums}
+  .fsala .fmarca b.pend{color:var(--hair)}
+  .fsala .fmarca small{display:block;margin-top:3px;font:500 7.5px/1 "IBM Plex Mono",monospace;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+  .fsala:not(.ok) .fmarca small{color:transparent}
+  .fsala .flimpia{font-size:13px;color:var(--patina);text-align:center;font-weight:700}
+  .fnota{margin:14px 0 0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 
   @media(max-width:760px){
     .final{flex-direction:column;align-items:stretch}
@@ -3419,39 +3431,50 @@ function copiarTodo(){
 /* ---------- la ficha: para sacarle captura y tirarla al grupo ---------- */
 function ficha(){
   const hechas = salasHechas();
+  const total  = Object.keys(SALAS).length;
+  const m = LEGAJO.maraton;
+
+  /* Una fila por sala, siempre con las mismas tres columnas: número, nombre y
+     marca. Las que faltan se apagan en vez de cambiar de forma, así la columna
+     de la derecha queda alineada y el progreso se lee de un vistazo. */
   const filas = Object.entries(SALAS).map(([k,v])=>{
-    const m = LEGAJO.salas[k];
+    const s = LEGAJO.salas[k];
+    const hecha = !!(s && s.hecha);
     const ac = v.ac ? v.ac[0] : "#D9A94F";
-    return '<div class="fsala' + (m && m.hecha ? " ok" : "") + '" style="--ac:' + ac + '">' +
-      '<span class="fn">' + (v.num===0 ? "·" : v.num) + '</span>' +
+    return '<div class="fsala' + (hecha ? " ok" : "") + '" style="--ac:' + ac + '">' +
+      '<span class="fn">' + (v.num===0 ? "0" : v.num) + '</span>' +
       '<span class="fnom"><b>' + v.name + '</b>' +
-        '<small>' + CREW[v.hero].n + ' vs ' + FOES[v.foe].n + '</small></span>' +
+        '<small>' + CREW[v.hero].n + ' <i>vs</i> ' + FOES[v.foe].n + '</small></span>' +
       '<span class="fmarca">' +
-        (m && m.hecha
-          ? '<b>' + m.rondas + '</b><small>rondas' + (m.limpia ? " · limpia" : "") + '</small>'
-          : '<span class="pend">—</span>') +
+        (hecha ? '<b>' + s.rondas + '</b><small>rondas</small>'
+               : '<b class="pend">—</b><small>&nbsp;</small>') +
       '</span>' +
+      '<span class="flimpia">' + (hecha && s.limpia ? "✓" : "") + '</span>' +
     '</div>';
   }).join("");
 
   showModal("Ficha de " + (LEGAJO.nombre || "ladrón"),
     '<div class="fichacab">' +
-      '<div class="frango"><span class="l">Rango</span><b>' + rangoActual() + '</b></div>' +
-      '<div class="fprog"><span class="l">Salas resueltas</span><b>' + hechas + '<small>/10</small></b>' +
-        '<div class="fbarra"><i style="width:' + (hechas*10) + '%"></i></div></div>' +
+      '<div class="fdato ancho"><span class="l">Rango</span>' +
+        '<b class="rango">' + rangoActual() + '</b></div>' +
+      '<div class="fdato"><span class="l">Salas resueltas</span>' +
+        '<b>' + hechas + '<small>/' + total + '</small></b>' +
+        '<div class="fbarra"><i style="width:' + (hechas/total*100) + '%"></i></div></div>' +
+      '<div class="fdato"><span class="l">Mejor maratón</span>' +
+        (m ? '<b>' + m.salas + '<small>/' + total + '</small></b>' +
+             '<span class="pie">' + m.rondas + ' rondas' + (m.completa ? ' · completo' : '') + '</span>'
+           : '<b class="pend">—</b><span class="pie">sin correr</span>') +
+      '</div>' +
     '</div>' +
-    (LEGAJO.maraton
-      ? '<div class="fichacab" style="margin-top:14px"><div class="frango" style="flex:1">' +
-        '<span class="l">Mejor maratón</span><b>' + LEGAJO.maraton.salas +
-        '<small>/10 salas</small></b></div>' +
-        '<div class="fprog"><span class="l">En</span><b>' + LEGAJO.maraton.rondas +
-        '<small> rondas</small></b></div></div>'
-      : '') +
+
     '<div class="fsalas">' + filas + '</div>' +
-    '<p class="lead" style="margin-top:14px">Sacale una captura y tirala al grupo. ' +
-    'Las marcas se guardan en este dispositivo.</p>' +
-    '<button class="btn" onclick="menu()">Todas las salas</button>' +
-    '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>', !!S);
+    '<p class="fnota">El ✓ es una sala hecha sin que te sacaran ninguna pieza. ' +
+    'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="menu()">Todas las salas</button>' +
+      '<button class="btn alt" onclick="empezarMaraton()">Correr el maratón</button>' +
+      '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>' +
+    '</div>', !!S);
 }
 
 function olvidarLegajo(){
