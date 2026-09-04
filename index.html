@@ -1422,10 +1422,12 @@ const FOES_2 = {
   encargada:{n:"La Encargada",   look:"saco",
              d:"Cada vidriera que abrís la hace avanzar un casillero al instante.", twist:"alarma"},
   gerente  :{n:"El Gerente",     look:"traje",   d:"El perseguidor clásico. Sin trucos."},
+  becario  :{n:"El Becario",     look:"overol",
+             d:"No te persigue: deambula. No podés anticiparlo, así que no hay ruta segura.", twist:"azar"},
   seguridad2:{n:"El de Seguridad", look:"guardia",
              d:"Si terminás a dos casilleros o menos en su línea recta, sin pared en el medio, te alumbra y avanza uno extra.", twist:"linterna"},
   promotora:{n:"La Promotora",  look:"saco",
-             d:"Sus acciones la llevan a las vidrieras, no a los puestos.", twist:"vitrinas"},
+             d:"Cada vez que va a un local acomoda la vidriera: dos piezas cambian de lugar.", twist:"cambia"},
   limpieza :{n:"El de Limpieza", look:"overol",
              d:"Está limpiando las macetas: esconderse detrás de una planta no sirve.", twist:"olfato"},
   repositor:{n:"El Repositor",  look:"guardapolvo",
@@ -1449,7 +1451,7 @@ const SALAS_2 = {
 
   s1:{ num:1, name:"Patio de comidas", wing:"Local", piso:"dia", afuera:"mesas",
        ac:["#F0A02C","#9A6415","#FDF0DC"],
-    hero:"hippie", foe:"vigilante", comps:["chupa","marian","tomy"],
+    hero:"hippie", foe:"becario", comps:["chupa","marian","tomy"],
     e:L(`E....P
          .AT.M.
          .C...D
@@ -1534,10 +1536,16 @@ const SALAS_2 = {
 };
 
 const CONSEJOS_2 = {
-  s0:"El Vigilante camina y nada más. La cámara del techo <b>barre un cuarto de vuelta por ronda</b>: fijate para dónde mira antes de cruzar, porque terminar el turno en su campo te sube la alerta.",
-  s1:"Las dos escaleras están hermanadas: pisás una y salís por la otra. <b>El Vigilante también las usa</b>, así que sirven para escapar pero también para que te alcance.",
+  s0:"El Vigilante camina y nada más. La cámara del techo <b>barre un cuarto de vuelta por ronda</b>: fijate para dónde mira antes de cruzar, porque terminar el turno en su campo lo hace avanzar un casillero extra.",
+  s1:"El Becario no te persigue: <b>deambula</b>. Suena fácil y es lo contrario, porque no podés anticiparlo. Y las dos escaleras están hermanadas: pisás una y salís por la otra, pero él también las usa.",
   s2:"La vidriera con reloj te da <b>cuatro rondas</b> para entregar esa pieza. Y La Encargada avanza cada vez que abrís una: robá primero la que tengas más lejos de ella.",
   s3:"La puerta del pasillo <b>lee la mercadería</b>: se abre si llevás una pieza encima y para El Gerente está siempre cerrada. Guardala como refugio para la corrida final.",
+  s4:"El de Seguridad te alumbra si terminás a <b>dos casilleros o menos en su línea recta</b>. Ojo con el vidrio: te corta el paso pero no te esconde, así que una vidriera no te salva de la linterna.",
+  s5:"La Promotora acomoda las vidrieras: cada vez que va a un local, <b>dos piezas cambian de lugar</b>. No armes la ruta entera de entrada, porque te la desarma.",
+  s6:"Al de Limpieza no lo engañan las plantas: está justamente limpiándolas. Y hay vidriera con reloj, así que acá <b>no conviene esconderse, conviene apurarse</b>.",
+  s7:"El Repositor deshace una entrega, una vez por partida, y la mercadería vuelve a la vidriera. Entregá primero la que tengas más cerca de su vidriera, que es la que menos duele rehacer.",
+  s8:"El Auditor anota cada objeto ruidoso; al segundo le sube la alerta. El mate no cuenta. <b>Guardá los objetos para la fuga final</b>, cuando la alerta ya no importe.",
+  s9:"El Dueño arranca en alerta 2 y <b>aparece en la vidriera más cercana a vos</b>, así que no te quedes al lado de una llena. Están los cuatro elementos: la puerta es tu único refugio y sólo se abre si llevás algo.",
 };
 
 /* El mazo del shopping: mismas diez acciones, otro vocabulario. En un shopping
@@ -1730,6 +1738,12 @@ function endMovement(){
 function foeSpeed(){ return Math.min(S.alert, TUNE.alertMax); }
 
 function chaseStep(f, destino){
+  if(S.foe.twist === "azar" && !destino){
+    COMO = "jefe";                              // para él la puerta también está cerrada
+    const pisó = pasoAlAzar(f);
+    COMO = "vos";
+    return pisó;
+  }
   const meta = destino || {x:S.player.x, y:S.player.y};
   COMO = "jefe";                                  // para él la puerta está cerrada
   const d=bfsFrom(meta);
@@ -1931,6 +1945,19 @@ function restaurarUna(){
   say(`🧰 <b>El Restaurador</b> deshizo tu entrega: <b>${PIE[id].name}</b> ${PIE[id].sym} volvió a la vitrina. Hay que robarla otra vez.`,"r");
 }
 
+/* La Promotora acomoda la vidriera: dos piezas cambian de lugar entre sí, así
+   la ruta que venías armando deja de servir. */
+function reordenarVidriera(){
+  const llenas = S.marks.vitrinas.filter(v => S.grid[v.y][v.x].piece);
+  if(llenas.length < 2) return;
+  const [a, b] = shuffle(llenas.slice()).slice(0, 2);
+  const ca = S.grid[a.y][a.x], cb = S.grid[b.y][b.x];
+  const guarda = ca.piece; ca.piece = cb.piece; cb.piece = guarda;
+  float(a.x, a.y, PIE[ca.piece].sym, PIE[ca.piece].color);
+  float(b.x, b.y, PIE[cb.piece].sym, PIE[cb.piece].color);
+  say(`<span class="ico">🔁</span><span><b>${S.foe.n}</b> acomodó la vidriera: <b>${PIE[ca.piece].name}</b> y <b>${PIE[cb.piece].name}</b> cambiaron de lugar.</span>`,"carta r");
+}
+
 function applyCard(card){
   if(S.over) return;
   S.cardPending=false;
@@ -1938,7 +1965,11 @@ function applyCard(card){
   const put=p=>{ if(p){ f.x=p.x; f.y=p.y; } };
   switch(card.k){
     case "desk":
-      if(S.foe.twist==="vitrinas" || S.foe.twist==="vitrinaCerca"){
+      if(S.foe.twist==="cambia"){
+        put(S.marks.comps.find(c=>c.want===card.t));
+        reordenarVidriera();
+      }
+      else if(S.foe.twist==="vitrinas" || S.foe.twist==="vitrinaCerca"){
         const live=S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
         const lista = live.length ? live : S.marks.vitrinas.slice();
         if(S.foe.twist==="vitrinaCerca"){
@@ -2157,6 +2188,23 @@ function usarPoder(){
   if(S.heroKey === "chuna")  return correr();
   if(S.heroKey === "kzk")    return fixVitrina();
   if(S.heroKey === "lamber") return offerDelivery();
+}
+
+/* El que deambula: elige entre las salidas de su casilla, pero prefiere no
+   volver por donde vino, así no queda temblando en el lugar. */
+function pasoAlAzar(f){
+  const salidas = [];
+  for(const [dx,dy] of DIRS){
+    const nx=f.x+dx, ny=f.y+dy;
+    if(canStep(f.x,f.y,nx,ny)) salidas.push({x:nx, y:ny});
+  }
+  if(!salidas.length) return false;
+  const noVolver = salidas.filter(c => !(f.ultimo && c.x===f.ultimo.x && c.y===f.ultimo.y));
+  const donde = shuffle(noVolver.length ? noVolver : salidas)[0];
+  f.ultimo = {x:f.x, y:f.y};
+  f.x = donde.x; f.y = donde.y;
+  subirEscalera(f, false);
+  return f.x===S.player.x && f.y===S.player.y;
 }
 
 /* Chuna estira las piernas: una vez por partida, dos pasos más en este turno. */
