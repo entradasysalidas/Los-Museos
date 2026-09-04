@@ -1344,8 +1344,17 @@ function leerLegajo(){
   try{
     const r = localStorage.getItem(legajoKey());
     const l = r ? JSON.parse(r) : null;
-    return (l && typeof l === "object") ? {nombre: l.nombre || "", salas: l.salas || {}} : {nombre:"", salas:{}};
-  }catch(e){ return {nombre:"", salas:{}}; }
+    if(!l || typeof l !== "object") return {nombre:"", salas:{}, maratones:{}};
+    const legajo = {
+      nombre    : l.nombre || "",
+      salas     : l.salas || {},
+      maratones : l.maratones || {},
+      clave2    : !!l.clave2,
+    };
+    /* los récords viejos eran uno solo: eran del museo */
+    if(l.maraton && !legajo.maratones[1]) legajo.maratones[1] = l.maraton;
+    return legajo;
+  }catch(e){ return {nombre:"", salas:{}, maratones:{}}; }
 }
 function guardarLegajo(l){ try{ localStorage.setItem(legajoKey(), JSON.stringify(l)); }catch(e){} }
 
@@ -2294,18 +2303,24 @@ function empezarMaraton(){
 function cortarMaraton(){ MARATON = null; }
 
 /* la mejor corrida queda en el legajo, al lado de las marcas por sala */
+/* la mejor corrida de este juego: el museo y el shopping llevan la suya */
+function recordMaraton(){
+  if(!LEGAJO.maratones) LEGAJO.maratones = {};
+  return LEGAJO.maratones[JUEGO] || null;
+}
 function anotarMaraton(salas, rondas, completa){
-  const m = LEGAJO.maraton || {salas:0, rondas:0, completa:false};
+  if(!LEGAJO.maratones) LEGAJO.maratones = {};
+  const m = LEGAJO.maratones[JUEGO] || {salas:0, rondas:0, completa:false};
   const mejor = salas > m.salas || (salas === m.salas && rondas < (m.rondas || 1e9));
-  if(mejor) LEGAJO.maraton = {salas, rondas, completa: completa || m.completa};
-  else if(completa && !m.completa) LEGAJO.maraton = Object.assign({}, m, {completa:true});
+  if(mejor) LEGAJO.maratones[JUEGO] = {salas, rondas, completa: completa || m.completa};
+  else if(completa && !m.completa) LEGAJO.maratones[JUEGO] = Object.assign({}, m, {completa:true});
   guardarLegajo(LEGAJO);
   return mejor;
 }
 
 function pantallaMaraton(gano, salas, rondas){
   const record = anotarMaraton(salas, rondas, gano);
-  const m = LEGAJO.maraton;
+  const m = recordMaraton() || {salas:0, rondas:0};
   MARATON = null;
 
   const dato = (l,v,f) => '<div class="dato' + (f ? " fuerte" : "") + '">' +
@@ -4390,7 +4405,7 @@ function copiarTodo(){
 function ficha(){
   const hechas = salasHechas();
   const total  = Object.keys(SALAS).length;
-  const m = LEGAJO.maraton;
+  const m = recordMaraton();
 
   /* Una fila por sala, siempre con las mismas tres columnas: número, nombre y
      marca. Las que faltan se apagan en vez de cambiar de forma, así la columna
@@ -4436,7 +4451,7 @@ function ficha(){
 }
 
 function olvidarLegajo(){
-  LEGAJO = {nombre:"", salas:{}};
+  LEGAJO = {nombre:"", salas:{}, maratones:{}};
   guardarLegajo(LEGAJO);
   closeModal(true);
   const p = document.getElementById("portal");
