@@ -2677,10 +2677,11 @@ function drawParedes(){
       const an = vert ? t : CS - 4;
       const al = vert ? CS - 4 : t;
 
-      /* el paño: primero se tapa el piso, después va el celeste */
-      ctx.fillStyle = S.th.oscuro ? "#0B1418" : "#EAF7FC";
+      /* el paño: un velo neutro que apaga el color del piso, y encima el
+         celeste. Queda translúcido, pero el tinte lo gana el vidrio. */
+      ctx.fillStyle = S.th.oscuro ? "rgba(10,20,26,.45)" : "rgba(246,252,255,.55)";
       ctx.fillRect(px, py, an, al);
-      ctx.fillStyle = hexA(celeste, .78);
+      ctx.fillStyle = hexA(celeste, .45);
       ctx.fillRect(px, py, an, al);
       /* los montantes, del blanco de las paredes */
       ctx.fillStyle = S.th.pared;
