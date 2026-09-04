@@ -109,6 +109,15 @@
   #relato > h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);
     font:700 11px/1 "Archivo",sans-serif;letter-spacing:.16em;text-transform:uppercase;
     color:var(--brass);flex:none}
+  /* El registro se sigue scrolleando, pero sin barra a la vista: la del
+     navegador partía la columna en dos con una franja gris. En su lugar, el
+     contenido se desvanece al pasar bajo el título, que dice lo mismo —hay más
+     arriba— sin ocupar ancho. La máscara no depende del color de fondo, así que
+     sirve igual en el museo y en el shopping. */
+  #eventos{scrollbar-width:none;-ms-overflow-style:none;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 14px)}
+  #eventos::-webkit-scrollbar{width:0;height:0}
   #eventos{flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;
     flex-direction:column;gap:7px;scroll-behavior:smooth}
   .ev{font:400 14.5px/1.5 "Archivo",system-ui,sans-serif;color:var(--body);
