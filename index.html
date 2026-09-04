@@ -666,6 +666,59 @@
     .card{flex:1 1 calc(50% - 4px)}
   }
 
+  /* ---------- la piel del shopping ----------
+     El museo es institucional: esquinas vivas, todo recto, tipografía seria.
+     Un shopping es lo contrario, así que el 2 redondea, agranda y le pone
+     etiqueta de precio al número de la sala. */
+  body.juego2 header{border-radius:0 0 18px 18px;border-top-width:5px}
+  body.juego2 .card,
+  body.juego2 #boardwrap,
+  body.juego2 #relato,
+  body.juego2 .modal{border-radius:16px}
+  body.juego2 .slot,
+  body.juego2 .deckcard,
+  body.juego2 .deckback,
+  body.juego2 .goal,
+  body.juego2 .stat,
+  body.juego2 .lv,
+  body.juego2 .ev{border-radius:11px}
+  body.juego2 .btn,
+  body.juego2 .hbtn{border-radius:999px}
+  body.juego2 .hintbar,
+  body.juego2 #cartel{border-radius:999px}
+
+  /* el número de la sala, como una etiqueta de precio colgada */
+  body.juego2 .numnivel{
+    border-radius:0 0 14px 14px;position:relative;
+    box-shadow:0 5px 0 -2px color-mix(in srgb, var(--brass) 45%, transparent);
+  }
+  body.juego2 .numnivel::after{
+    content:"";position:absolute;left:50%;top:6px;width:7px;height:7px;
+    transform:translateX(-50%);border-radius:50%;
+    background:var(--bg);opacity:.55;
+  }
+
+  /* el relato, como el ticket de la caja */
+  body.juego2 #relato{
+    background:linear-gradient(var(--panel),var(--panel)) padding-box;
+    border-style:dashed;
+  }
+  body.juego2 #relato > h3{
+    border-bottom-style:dashed;text-align:center;letter-spacing:.3em;
+  }
+  body.juego2 .ev.ronda{justify-content:center}
+  body.juego2 .ev.ronda::after{display:none}
+  body.juego2 .ev.ronda::before{
+    content:"— — — — — — — — — —";letter-spacing:-.05em;opacity:.5;
+  }
+
+  /* y las salas del menú, con la vidriera iluminada */
+  body.juego2 .lv .plano canvas{border-radius:9px}
+  body.juego2 .lv::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:3px;
+    background:var(--ac);opacity:.9;
+  }
+
   @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
@@ -944,7 +997,7 @@ const OBJECTS = {
   guantes:{ic:"🧤",n:"Guantes",  d:"La próxima vitrina que abras no hace sonar la alarma."},
 };
 
-const DECK = [
+let DECK = [
   {n:"Va al escritorio del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo",     ic:"◆"},
   {n:"Va al escritorio del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo", ic:"▲"},
   {n:"Va al escritorio del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo",   ic:"●"},
@@ -1478,17 +1531,32 @@ const CONSEJOS_2 = {
   s3:"La puerta del pasillo <b>lee la mercadería</b>: se abre si llevás una pieza encima y para El Gerente está siempre cerrada. Guardala como refugio para la corrida final.",
 };
 
+/* El mazo del shopping: mismas diez acciones, otro vocabulario. En un shopping
+   nadie va a un escritorio, va al local. */
+const DECK_2 = [
+  {n:"Pasa por el local del rombo",     d:"Aparece en el puesto del cómplice ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Pasa por el local del triángulo", d:"Aparece en el puesto del cómplice ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Pasa por el local del círculo",   d:"Aparece en el puesto del cómplice ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Va al baño",                      d:"Se mete en el baño y te deja respirar.", k:"bath", ic:"🚽"},
+  {n:"Sale a fumar",                    d:"Se va a la puerta a fumar.",             k:"exit", ic:"🚬"},
+  {n:"Sale a fumar",                    d:"Se va a la puerta a fumar.",             k:"exit", ic:"🚬"},
+  {n:"Te espera en tu mesa",            d:"Se planta donde dejaste las bolsas.",    k:"mydesk", ic:"🛍️"},
+  {n:"Vuelve a la gerencia",            d:"Se acuerda de que tenía trabajo.",       k:"home", ic:"💼"},
+  {n:"¡Te vio!",                        d:"Va derecho hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
+  {n:"¡Te vio!",                        d:"Va derecho hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
+];
+
 const JUEGOS = {
-  1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES,
+  1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
-  2: { n:"Los Museos 2", salas:SALAS_2, foes:FOES_2, themes:THEMES_2,
+  2: { n:"Los Museos 2", salas:SALAS_2, foes:FOES_2, themes:THEMES_2, deck:DECK_2,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_2 },
 };
 
 function cargarJuego(n){
   const j = JUEGOS[n];
   if(!j) return false;
-  SALAS = j.salas; FOES = j.foes; THEMES = j.themes;
+  SALAS = j.salas; FOES = j.foes; THEMES = j.themes; DECK = j.deck;
   FRAME_DEF = j.frameDef; FRAME_WALLS = j.frameWalls; CONSEJOS = j.consejos;
   FRAME_MAP = null;            // se rearma con el marco del juego nuevo
   JUEGO = n;
@@ -1827,7 +1895,7 @@ function actionPhase(){
   S.played.push(card);
   S.lastCard=card; S.phase="accion"; S.cardPending=true;
   banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
-  say(`<span class="ico">${card.ic}</span><span><b>${card.n}</b> — ${card.d}</span>`, "carta");
+  say(`<span class="ico">${iconoDeCarta(card)}</span><span><b>${card.n}</b> — ${card.d}</span>`, "carta");
   syncUI();
   setTimeout(()=>applyCard(card), TUNE.cardMs);
 }
@@ -2609,8 +2677,10 @@ function drawParedes(){
       const an = vert ? t : CS - 4;
       const al = vert ? CS - 4 : t;
 
-      /* el paño */
-      ctx.fillStyle = hexA(celeste, .34);
+      /* el paño: primero se tapa el piso, después va el celeste */
+      ctx.fillStyle = S.th.oscuro ? "#0B1418" : "#EAF7FC";
+      ctx.fillRect(px, py, an, al);
+      ctx.fillStyle = hexA(celeste, .78);
       ctx.fillRect(px, py, an, al);
       /* los montantes, del blanco de las paredes */
       ctx.fillStyle = S.th.pared;
@@ -2622,9 +2692,9 @@ function drawParedes(){
       if(vert){ ctx.moveTo(px+an*.35, py+10); ctx.lineTo(px+an*.35, py+al-10); }
       else    { ctx.moveTo(px+10, py+al*.35); ctx.lineTo(px+an-10, py+al*.35); }
       ctx.stroke();
-      /* y su resplandor, del color de la sala */
-      ctx.shadowColor = acentoSala(); ctx.shadowBlur = 10 * (S.th.cartel || .5);
-      ctx.fillStyle = hexA(acentoSala(), .55);
+      /* y su resplandor, celeste como el vidrio */
+      ctx.shadowColor = celeste; ctx.shadowBlur = 11 * (S.th.cartel || .5);
+      ctx.fillStyle = hexA("#D6F4FF", .75);
       const f = Math.max(1.4, t*0.26);
       if(vert) ctx.fillRect(px + an/2 - f/2, py + 8, f, al - 16);
       else     ctx.fillRect(px + 8, py + al/2 - f/2, an - 16, f);
@@ -3300,7 +3370,8 @@ const $ = id=>document.getElementById(id);
 function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
-  document.body.classList.toggle("claro", S.sala.piso==="gris");
+  document.body.classList.toggle("claro", !S.th.oscuro);
+  document.body.classList.toggle("juego2", JUEGO === 2);
   // y cada sala pinta su propio acento, según su temática
   /* El acento va en el body, no en :root. La paleta clara define sus colores
      en body.claro, que es hijo de :root: escribiendolo arriba, el body lo
@@ -3342,7 +3413,7 @@ function syncUI(){
   $("deckwrap").innerHTML =
     Array.from({length:atras},()=>'<div class="deckback"></div>').join("") +
     (c ? '<div class="deckcard '+(c.k==="rush"?"rush":"")+'">'+
-           '<div class="ic">'+c.ic+'</div>'+
+           '<div class="ic">'+iconoDeCarta(c)+'</div>'+
            '<div><div class="tt">'+c.n+'</div><div class="dd">'+c.d+'</div></div>'+
          '</div>'
        : '<div class="deckcard vacia"><div class="ic">·</div>'+
@@ -4081,6 +4152,12 @@ function objetosRecompensa(){
   ).join("");
 }
 
+/* el ícono de una carta, con el color de su pieza si es de escritorio */
+function iconoDeCarta(c){
+  const col = (c.k === "desk" && PIE[c.t]) ? PIE[c.t].color : null;
+  return col ? '<span style="color:' + col + '">' + c.ic + '</span>' : c.ic;
+}
+
 function cartasDelMazo(){
   const grupos = [];
   for(const c of DECK){
@@ -4100,7 +4177,7 @@ function cartasDelMazo(){
         ? ' <em>De las diez, las únicas que lo traen derecho hacia vos.</em>'
         : "";
     return '<div class="premio" style="border-left-color:' + borde + '">' +
-           '<span class="ic">' + g.ic + '</span>' +
+           '<span class="ic">' + iconoDeCarta(g) + '</span>' +
            '<div><b>' + g.n + '</b>' + veces + '<p>' + g.d + nota + '</p></div></div>';
   }).join("");
 }
