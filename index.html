@@ -488,6 +488,13 @@
     letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
   .fsala:not(.ok) .fmarca small{color:transparent}
   .fsala .flimpia{font-size:13px;color:var(--patina);text-align:center;font-weight:700}
+  /* el otro juego, en una línea: dónde vas allá sin salir de esta ficha */
+  .fotro{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 16px;
+    margin-top:10px;padding:12px 15px;background:var(--panel2);border:1px solid var(--line)}
+  .fotro .l{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--brass);margin-right:auto}
+  .fotro .v{font-size:12.5px;color:var(--dim)}
+  .fotro .v b{font-weight:700;color:var(--ink)}
   .fnota{margin:14px 0 0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 
   @media(max-width:760px){
@@ -1379,11 +1386,17 @@ const RANGOS = [
   [4,  "Empleado del mes"], [5, "Encargado"], [6, "Mano derecha"],
   [7,  "Ladrón de oficio"], [8, "Profesional"], [9, "Leyenda"], [10, "Dueño del museo"],
 ];
+/* Cada juego tiene su nombre corto y su rango máximo: "Dueño del museo" no
+   quiere decir nada en el shopping. */
+const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping"};
+const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping"};
+
 function rangoActual(){
   const n = salasHechas();
   let r = RANGOS[0][1];
   for(const [min, nom] of RANGOS) if(n >= min) r = nom;
-  return r;
+  const tope = RANGOS[RANGOS.length - 1][0];
+  return n >= tope ? (RANGO_MAXIMO[JUEGO] || r) : r;
 }
 
 /* ---------- un consejo por sala ----------
@@ -1393,7 +1406,7 @@ let CONSEJOS = {
   tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
   n1:"Tu poder también te esconde en la casilla de al lado de una planta. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
   n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
-  n3:"El Director no tiene trucos, pero es constante. Con <b>E</b> cualquier cómplice te acepta cualquier pieza: no gastes pasos buscando al que la pide.",
+  n3:"El Director no tiene trucos, pero es constante. Con <b>F</b> cualquier cómplice te acepta cualquier pieza: no gastes pasos buscando al que la pide.",
   n4:"No termines el turno en línea recta con La Seguridad si no hay pared en el medio, porque avanza un casillero extra. Guardá tu arreglo de vitrina para cuando te cierre el camino.",
   n5:"Cada vitrina que abrís hace avanzar al Procurador al instante. Abrí primero la más lejana, y guardá tus cuatro pasos para la fuga final.",
   n6:"Al Perro no lo engañan las plantas: te huele igual. Tu termo es tu ventaja, usalo para cruzar la sala de una sola vez.",
@@ -4590,6 +4603,23 @@ function ficha(){
   const total  = Object.keys(SALAS).length;
   const m = recordMaraton();
 
+  /* El legajo guarda los dos juegos, pero la ficha muestra sólo el que estás
+     jugando. Sin esta tira, entrar al shopping con el museo terminado se lee
+     como si hubieras perdido todo: 0 de 10 y de vuelta a Pasante. */
+  const otro = JUEGO === 1 ? 2 : 1;
+  const clavesOtro = Object.keys(JUEGOS[otro].salas);
+  const hechasOtro = clavesOtro.filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
+  const marOtro = (LEGAJO.maratones || {})[otro];
+  const seVe = otro === 1 || elDosEstaAbierto();
+  const tiraOtro = !seVe ? "" :
+    '<div class="fotro">' +
+      '<span class="l">' + NOMBRE_JUEGO[otro] + '</span>' +
+      '<span class="v"><b>' + hechasOtro + '</b>/' + clavesOtro.length + ' salas</span>' +
+      '<span class="v">' + (marOtro
+        ? 'maratón <b>' + marOtro.salas + '</b>/' + clavesOtro.length + (marOtro.completa ? ' · completo' : '')
+        : (hechasOtro ? 'sin maratón' : 'te espera')) + '</span>' +
+    '</div>';
+
   /* Una fila por sala, siempre con las mismas tres columnas: número, nombre y
      marca. Las que faltan se apagan en vez de cambiar de forma, así la columna
      de la derecha queda alineada y el progreso se lee de un vistazo. */
@@ -4611,7 +4641,7 @@ function ficha(){
 
   showModal("Ficha de " + (LEGAJO.nombre || "ladrón"),
     '<div class="fichacab">' +
-      '<div class="fdato ancho"><span class="l">Rango</span>' +
+      '<div class="fdato ancho"><span class="l">Rango · ' + NOMBRE_JUEGO[JUEGO] + '</span>' +
         '<b class="rango">' + rangoActual() + '</b></div>' +
       '<div class="fdato"><span class="l">Salas resueltas</span>' +
         '<b>' + hechas + '<small>/' + total + '</small></b>' +
@@ -4623,7 +4653,7 @@ function ficha(){
       '</div>' +
     '</div>' +
 
-    '<div class="fsalas">' + filas + '</div>' +
+    '<div class="fsalas">' + filas + '</div>' + tiraOtro +
     '<p class="fnota">El ✓ es una sala hecha sin que te sacaran ninguna pieza. ' +
     'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
     '<div class="finbotones">' +
