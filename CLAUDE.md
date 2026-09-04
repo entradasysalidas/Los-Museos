@@ -44,13 +44,21 @@ Lo que el editor guarda queda en el navegador y **sólo se lee con el editor
 abierto**. Al jugar manda siempre lo que dice el código. Fue a propósito: antes lo
 guardado le ganaba al código y cada uno veía una sala distinta.
 
-## Regla que no está en el manual
+## La válvula de la alerta: regla propia, a conciencia
 
-La alerta del antagonista baja un nivel cuando una carta lo manda al baño o a su
-oficina, sin bajar nunca del piso propio de cada uno. **Eso lo inventé yo**, no está
-en el manual. Sin esa válvula la alerta sólo sube, el antagonista termina caminando
-3 casilleros contra los 2 del jugador y el juego es injugable: 5% de victorias
-contra 55% con la válvula. Si aparece la regla real del manual, hay que reemplazarla.
+El turno del antagonista **es fiel al manual y está cerrado**: camina tantos casilleros
+como marque su ira y **después** da vuelta una carta de acción. Las dos cosas, en ese
+orden, cada ronda. El autor lo confirmó contra el reglamento impreso, así que no hay que
+volver a preguntarlo ni «arreglarlo».
+
+Lo que **sí** es agregado de esta versión: la alerta **baja** un nivel cuando una carta
+lo manda al baño o a su oficina, sin bajar nunca del piso propio de cada uno. Eso no
+está en el manual. Sin esa válvula la alerta sólo sube, el antagonista termina caminando
+3 casilleros contra los 2 del jugador y el juego da 5% de victorias contra 54% con ella.
+
+**No la saques.** Es una decisión tomada, no un parche esperando la regla verdadera: el
+juego de mesa es así de duro y esta adaptación eligió ser jugable. Si alguna vez se
+quiere la versión cruda, va como modo aparte, nunca reemplazando a ésta.
 
 ## Probar
 
