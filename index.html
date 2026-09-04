@@ -983,7 +983,7 @@ const CREW = {
 Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); });
 
 const POWERS = {
-  hippie:{n:"Buena onda",       d:"También te escondés en la casilla contigua a una planta."},
+  hippie:{n:"Buena onda",       d:"Te escondés también en la casilla de al lado de una planta, y escondido no te agarra ni «¡Se acerca!»."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
   lamber:{n:"Agenda llena",     d:"Con F convencés a cualquier cómplice de aceptar cualquier pieza."},
   kzk   :{n:"Manos de técnico", d:"Con F, una vez por partida, traés la pieza más lejana a la vitrina vacía más cercana."},
@@ -1416,7 +1416,7 @@ function rangoActual(){
    El consejo aparece en el relato al empezar. */
 let CONSEJOS = {
   tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
-  n1:"Tu poder también te esconde en la casilla de al lado de una planta. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
+  n1:"Tu poder te esconde también en la casilla de al lado de una planta, y a vos ni la carta ¡Se acerca! te encuentra escondido. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
   n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
   n3:"El Director no tiene trucos, pero es constante. Con <b>F</b> cualquier cómplice te acepta cualquier pieza: no gastes pasos buscando al que la pide.",
   n4:"No termines el turno en línea recta con La Seguridad si no hay pared en el medio, porque avanza un casillero extra. Guardá tu arreglo de vitrina para cuando te cierre el camino.",
@@ -1753,7 +1753,9 @@ function endMovement(){
     say("📹 Te agarró la cámara: esta ronda avanza <b>un casillero más</b>.","r");
   }
   S.escondido = hidden;
-  if(hidden) say("🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
+  if(hidden) say(S.heroKey === "hippie"
+    ? "🪴 Terminaste el turno escondido: no te persigue, y a vos <b>ni ¡Se acerca!</b> te encuentra."
+    : "🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
   else if(S.foe.twist==="olfato" && c.type==="planta")
     say("🐕 El Perro te huele igual: la planta no te tapa.","r");
   setTimeout(()=>chasePhase(hidden), 220);
@@ -2041,6 +2043,15 @@ function applyCard(card){
 }
 
 function rushSteps(n){
+  /* El Hippie es el único que se salva de ésta. Su poder es esconderse: una
+     carta que ignora los escondites lo dejaba sin poder justo cuando hace
+     falta. Cuesta 3 puntos de dificultad en su nivel, medidos. */
+  if(S.escondido && S.heroKey === "hippie"){
+    banner("Buena onda: la planta lo tapa hasta de ésta","#79AE9E");
+    say("🪴 <b>Buena onda</b>: viene derecho, pasa al lado y no te ve.","g");
+    syncUI();
+    return setTimeout(nextRound, 620);
+  }
   if(S.escondido) say("🪴 La planta no te salva de ésta: viene igual.","r");
   const señuelo = S.celular;
   if(señuelo) say("📱 El celular suena y lo llama: va para allá en vez de venir a vos.","g");
