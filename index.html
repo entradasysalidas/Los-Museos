@@ -946,9 +946,17 @@ function allOf(role){
    Las del marco (las que tocan una casilla de afuera del 6x4) son fijas para
    todos los niveles, igual que los roles del marco. Las de adentro son de
    cada nivel.                                                              */
+/* Las tres paredes que son del marco y no de la loseta. Se guardan por piso
+   porque el editor las deja tocar por separado, pero son las mismas para
+   todos: el pasillo de arriba es igual en el museo y en el shopping. Ojo con
+   agregar pisos nuevos —antes faltaban dia y noche y el shopping entero se
+   quedó sin ellas—; por eso ahora hay un valor por defecto. */
+const MARCO_BASE = ["v:2:0","v:3:0","v:3:7"];
 let FRAME_WALLS = {
-  gris  : ["v:2:0","v:3:0","v:3:7"],
-  madera: ["v:2:0","v:3:0","v:3:7"],
+  gris  : MARCO_BASE.slice(),
+  madera: MARCO_BASE.slice(),
+  dia   : MARCO_BASE.slice(),
+  noche : MARCO_BASE.slice(),
 };
 function esParedDeMarco(k){
   const [t,a,b]=k.split(":"); const x=+a, y=+b;
@@ -1176,11 +1184,12 @@ function buildBoard(sala, salaKey){
 }
 
 function newGame(salaKey){
+  EPOCA++;                    // los temporizadores de la partida anterior se callan
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
   const hero = CREW[sala.hero], power = POWERS[sala.hero];
-  const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || [];
+  const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
   const puertas = new Set(sala.p || []);
@@ -1233,6 +1242,7 @@ function newGame(salaKey){
   say(`Protagoniza <b>${hero.n}</b> · ${power.n}: ${power.d}`);
   say(`Te persigue <b>${S.foe.n}</b>. ${S.foe.d}`,"r");
   if(CONSEJOS[salaKey]) say(`<span class="ico">💡</span><span>${CONSEJOS[salaKey]}</span>`, "carta y");
+  reiniciarBanderas();
   syncUI();
 }
 
@@ -1252,6 +1262,19 @@ const foeOn = (x,y) => S.foes.some(f=>f.x===x && f.y===y);
 /* quién está calculando el paso: la puerta le contesta distinto a cada uno */
 let COMO = "vos";
 function puertaAbierta(){ return COMO === "vos" && S.hand.length > 0; }
+
+/* ---------- el reloj de la partida ----------
+   Todas las fases se encadenan con temporizadores, y hasta ahora ninguno se
+   cancelaba: si reiniciabas o cambiabas de sala en mitad de una animación, los
+   pendientes se despertaban sobre la partida nueva y le corrían una ronda
+   entera —el jefe ya movido, una carta jugada, ronda 2 sin haber jugado—.
+   Cada partida lleva su número; el temporizador anota el suyo al programarse y
+   se calla si al despertar ya no es el de la partida en curso. */
+let EPOCA = 0;
+function luego(fn, ms){
+  const mia = EPOCA;
+  return setTimeout(() => { if(mia === EPOCA) fn(); }, ms);
+}
 
 function canStep(x,y,nx,ny){
   if(!playable(nx,ny)) return false;
@@ -1622,7 +1645,7 @@ function step(dx,dy){
   if(S.over) return;
   if(S.mp<=0){
     if(canDrinkHere()){ S.awaitMate=true; syncUI(); return; }
-    S.busy=true; setTimeout(endMovement, TUNE.moveMs+110);
+    S.busy=true; luego(endMovement, TUNE.moveMs+110);
   }
   syncUI();
 }
@@ -1727,7 +1750,7 @@ function drinkMate(){
   if(S.matesTurn>=TUNE.matesPerTurn){
     say("🧉 Tercer mate del turno… terminás en tu baño.","r");
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
-    S.busy=true; return setTimeout(endMovement, TUNE.moveMs+110);
+    S.busy=true; return luego(endMovement, TUNE.moveMs+110);
   }
   say("🧉 Mate: recuperaste los pasos de este turno.","g");
   syncUI();
@@ -1735,7 +1758,7 @@ function drinkMate(){
 function finishRound(){
   if(!S||S.over||S.busy||!S.awaitMate) return;
   S.awaitMate=false; S.busy=true;
-  setTimeout(endMovement, 60);
+  luego(endMovement, 60);
 }
 
 function endMovement(){
@@ -1758,7 +1781,7 @@ function endMovement(){
     : "🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
   else if(S.foe.twist==="olfato" && c.type==="planta")
     say("🐕 El Perro te huele igual: la planta no te tapa.","r");
-  setTimeout(()=>chasePhase(hidden), 220);
+  luego(()=>chasePhase(hidden), 220);
 }
 
 /* ======================= FASE 2 · persecución ======================= */
@@ -1877,7 +1900,7 @@ function chasePhase(hidden){
   if(hidden){
     banner("Escondido detrás de la planta: no te persigue","#79AE9E");
     syncUI();
-    return setTimeout(actionPhase, 1200);
+    return luego(actionPhase, 1200);
   }
   banner(`${S.foe.n} te persigue · ${foeSpeed()} casillero${foeSpeed()>1?"s":""}`,"#E0685D");
   say(`<span class="ico">👣</span><span>Te persigue · <b>${foeSpeed()} casillero${foeSpeed()>1?"s":""}</b></span>`, "carta r");
@@ -1886,13 +1909,13 @@ function chasePhase(hidden){
   syncUI();
   (function paso(){
     if(S.over) return;
-    if(i++ >= n) return setTimeout(()=>{
+    if(i++ >= n) return luego(()=>{
       if(S.vistoPorCamara){
         S.vistoPorCamara = false;
         banner("La cámara lo avisó: un casillero más","#E0685D");
         for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
         syncUI();
-        return setTimeout(()=>{
+        return luego(()=>{
           if(S.foe.twist==="linterna" && enLineaRecta()){
             banner("Te alumbró con la linterna: un casillero más","#E0685D");
             say("🔦 Quedaste en su línea recta: avanza un casillero extra.","r");
@@ -1906,13 +1929,13 @@ function chasePhase(hidden){
         say("🔦 Quedaste en su línea recta: avanza un casillero extra.","r");
         for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
         syncUI();
-        return setTimeout(actionPhase, 700);
+        return luego(actionPhase, 700);
       }
       actionPhase();
     }, 620);
     for(const f of S.foes) if(chaseStep(f)) return resolveCatch();
     syncUI();
-    setTimeout(paso, TUNE.foeStepMs);
+    luego(paso, TUNE.foeStepMs);
   })();
 }
 
@@ -1943,9 +1966,12 @@ function calmar(){
 function refillDeck(){
   S.deck = shuffle(DECK.slice());
   S.played = [];
-  if(S.celular && S.alert < TUNE.alertMax){
+  /* El señuelo se pierde cuando la alerta llega al máximo: ahí ya no se
+     distrae con nada. Estaba escrito al revés y hacía justo lo contrario de
+     lo que anunciaba el mensaje. */
+  if(S.celular && S.alert >= TUNE.alertMax){
     S.celular = null;
-    say("📱 Con la alerta arriba ya no le importa el celular.","r");
+    say("📱 Con la alerta al máximo ya no le importa el celular: lo dejó sonando.","r");
   }
   if(S.alert < TUNE.alertMax){
     S.alert++;
@@ -1966,7 +1992,7 @@ function actionPhase(){
   banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
   say(`<span class="ico">${iconoDeCarta(card)}</span><span><b>${card.n}</b> — ${card.d}</span>`, "carta");
   syncUI();
-  setTimeout(()=>applyCard(card), TUNE.cardMs);
+  luego(()=>applyCard(card), TUNE.cardMs);
 }
 
 /* El Restaurador deshace una entrega: la pieza vuelve a su vitrina y hay que
@@ -1988,7 +2014,7 @@ function restaurarUna(){
   S.repuso = true;
   fx.shake = TUNE.shakeMs;
   float(v.x, v.y, PIE[id].sym, PIE[id].color);
-  say(`🧰 <b>El Restaurador</b> deshizo tu entrega: <b>${PIE[id].name}</b> ${PIE[id].sym} volvió a la vitrina. Hay que robarla otra vez.`,"r");
+  say(`🧰 <b>${S.foe.n}</b> deshizo tu entrega: <b>${PIE[id].name}</b> ${PIE[id].sym} volvió a la vitrina. Hay que robarla otra vez.`,"r");
 }
 
 /* La Promotora acomoda la vidriera: dos piezas cambian de lugar entre sí, así
@@ -2039,7 +2065,7 @@ function applyCard(card){
   if(S.foes.some(ff=>ff.x===S.player.x && ff.y===S.player.y)) return resolveCatch();
   float(f.x,f.y,"↯","#D2A24C");
   syncUI();
-  setTimeout(nextRound, 620);
+  luego(nextRound, 620);
 }
 
 function rushSteps(n){
@@ -2050,7 +2076,7 @@ function rushSteps(n){
     banner("Buena onda: la planta lo tapa hasta de ésta","#79AE9E");
     say("🪴 <b>Buena onda</b>: viene derecho, pasa al lado y no te ve.","g");
     syncUI();
-    return setTimeout(nextRound, 620);
+    return luego(nextRound, 620);
   }
   if(S.escondido) say("🪴 La planta no te salva de ésta: viene igual.","r");
   const señuelo = S.celular;
@@ -2058,7 +2084,7 @@ function rushSteps(n){
   let i=0;
   (function paso(){
     if(S.over) return;
-    if(i++ >= n){ syncUI(); return setTimeout(nextRound, 620); }
+    if(i++ >= n){ syncUI(); return luego(nextRound, 620); }
     for(const f of S.foes){
       if(chaseStep(f, señuelo)) return resolveCatch();       // te pisa igual si estabas ahí
       if(S.celular && f.x===S.celular.x && f.y===S.celular.y){
@@ -2068,7 +2094,7 @@ function rushSteps(n){
       }
     }
     syncUI();
-    setTimeout(paso, TUNE.foeStepMs);
+    luego(paso, TUNE.foeStepMs);
   })();
 }
 
@@ -2156,7 +2182,9 @@ function porQueNoEsteObjeto(id){
 /* La agenda del jefe: mirás la carta de arriba del mazo y decidís si la
    descartás o la dejás donde estaba. Como en el manual, versión solitario. */
 function mirarAgenda(){
-  if(!S.deck.length) refillDeck();
+  /* Rearmar el mazo sube la alerta, y mirar la agenda no debería costar
+     nada: si está vacío se baraja sin cobrar. */
+  if(!S.deck.length){ S.deck = shuffle(DECK.slice()); S.played = []; }
   const c = S.deck[S.deck.length - 1];
   showModal("La agenda del jefe",
     '<p class="lead">Su próxima acción es ésta. Podés <b>descartarla</b> —y entonces sacará ' +
@@ -2196,7 +2224,7 @@ function useObject(i){
       say("🧉 Tercer mate del turno… terminás en tu baño.","r");
       S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
       float(S.player.x,S.player.y,OBJECTS[id].ic,"#D2A24C");
-      S.busy=true; return setTimeout(endMovement, TUNE.moveMs+110);
+      S.busy=true; return luego(endMovement, TUNE.moveMs+110);
     }
   }
   if(id==="fernet"){ S.diagonal=true; say("🥃 Fernet: este turno te movés en diagonal.","y"); }
@@ -2225,11 +2253,11 @@ function useObject(i){
     S.anotados = (S.anotados || 0) + 1;
     if(S.anotados % 2 === 0 && S.alert < TUNE.alertMax){     // uno de cada dos
       S.alert++;
-      say(`📋 El Inspector lleva la cuenta: dos objetos, <b>alerta ${S.alert}</b>.`,"r");
+      say(`📋 ${S.foe.n} lleva la cuenta: dos objetos, <b>alerta ${S.alert}</b>.`,"r");
       fx.shake=TUNE.shakeMs;
       if(typeof latidoAlerta==="function") latidoAlerta("sube");
     } else {
-      say("📋 El Inspector lo anotó. Al segundo objeto le sube la alerta.","r");
+      say(`📋 ${S.foe.n} lo anotó. Al segundo objeto le sube la alerta.`,"r");
     }
   }
   syncUI();
@@ -2816,7 +2844,7 @@ function buildFloorLayer(){
   }
 
   // borde del tablero: sombra hacia afuera
-  g.strokeStyle = S.sala.piso==="gris" ? "#00000022" : "#00000055";
+  g.strokeStyle = !S.th.oscuro ? "#00000022" : "#00000055";
   g.lineWidth=3;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     if(!S.grid[y][x].play) continue;
@@ -3583,7 +3611,7 @@ function drawOverlays(now){
     const p=(Math.sin(now/420)+1)/2;
     reachableCells(S.mp).forEach((dist,kk)=>{
       const x=kk%W, y=(kk/W)|0;
-      ctx.fillStyle = S.sala.piso==="gris"
+      ctx.fillStyle = !S.th.oscuro
         ? `rgba(255,255,255,${.30+p*.14})`
         : `rgba(255,255,255,${.09+p*.06})`;
       rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill();
@@ -3877,7 +3905,7 @@ function dibujarPlano(el, salaKey){
   const acento = sala.ac ? sala.ac[0] : "#D9A94F";
   g.clearRect(0,0,AW,AH);
 
-  const paredes = new Set((sala.w || []).concat(FRAME_WALLS[sala.piso] || []));
+  const paredes = new Set((sala.w || []).concat(FRAME_WALLS[sala.piso] || MARCO_BASE));
 
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const cel = grid[y][x];
@@ -4022,6 +4050,15 @@ function dibujarPlanoFinal(el, salaKey, ruta, marca, colorMarca){
 const KEYS = {ArrowUp:[0,-1],ArrowRight:[1,0],ArrowDown:[0,1],ArrowLeft:[-1,0],
               w:[0,-1],d:[1,0],s:[0,1],a:[-1,0]};
 let walking = false, picking = false;
+
+/* Todo lo que puede quedar arriba de una partida a la siguiente. Antes, si
+   reiniciabas mientras elegías qué pieza entregar, picking quedaba en true y
+   el juego no aceptaba ni teclas ni clics hasta recargar la página. */
+function reiniciarBanderas(){
+  walking = false;
+  picking = false;
+  if(S){ S.busy = false; S.awaitMate = false; }
+}
 let editMode = false, hoverEdge = null, mouseCellEdit = null;
 
 addEventListener("keydown", e=>{
@@ -4150,7 +4187,7 @@ cv.addEventListener("click", e=>{
       if(quitar) S.walls.delete(ed.k); else S.walls.add(ed.k);
       if(esParedDeMarco(ed.k)){
         const piso = S.sala.piso;
-        const base = new Set(loadFrameWalls(piso) || FRAME_WALLS[piso] || []);
+        const base = new Set(loadFrameWalls(piso) || FRAME_WALLS[piso] || MARCO_BASE);
         if(quitar) base.delete(ed.k); else base.add(ed.k);
         saveFrameWalls(piso, [...base]);
         $("editmsg").textContent = "Pared del marco: vale para todas las salas de piso " + piso + ".";
@@ -4210,7 +4247,7 @@ function walkPath(path){
   (function go(){
     if(!S||S.over||i>=path.length||S.mp<=0){ walking=false; return; }
     step(...path[i++]);
-    if(S && !S.over && S.mp>0 && i<path.length) setTimeout(go, TUNE.moveMs+40);
+    if(S && !S.over && S.mp>0 && i<path.length) luego(go, TUNE.moveMs+40);
     else walking=false;
   })();
 }
@@ -4475,6 +4512,8 @@ function ayuda(){
     '<p>Su mazo entero. Da vuelta una por ronda. Las de <b>baño</b> y <b>oficina</b> además ' +
     'le <b>bajan</b> la alerta; las dos de <b>¡Se acerca!</b> son las únicas que lo traen ' +
     'derecho hacia vos.</p>' +
+    '<div class="premios">' + cartasDelMazo() + '</div>' +
+    '<h4>Los objetos · te los dan los cómplices</h4>' +
     '<div class="premios">' + objetosRecompensa() + '</div>' +
     '<h4>Qué es cada cosa</h4>' +
     '<div class="leyenda" id="legend"></div>' +
@@ -4529,15 +4568,22 @@ let yaEntre = false;
    la caja pero todavía no hay salas adentro. */
 let JUEGO = 1;
 
+/* El sello de la segunda tapa. Vive aparte porque hace falta en dos momentos:
+   al elegir una tapa y al abrir la página. Antes sólo corría en el primero. */
+function sellarTapaDos(){
+  const sel = document.getElementById("sello2");
+  if(!sel) return;
+  sel.textContent = elDosEstaAbierto()
+    ? Object.keys(JUEGOS[2].salas).length + " salas"
+    : "🔒 Cerrado";
+}
+
 function elegirJuego(n){
   const t1 = document.getElementById("tapa1"), t2 = document.getElementById("tapa2");
   JUEGO = (n === 2) ? 2 : 1;
   if(t1){ t1.classList.toggle("elegida", JUEGO===1); t1.setAttribute("aria-pressed", JUEGO===1 ? "true" : "false"); }
   if(t2){ t2.classList.toggle("elegida", JUEGO===2); t2.setAttribute("aria-pressed", JUEGO===2 ? "true" : "false"); }
-  const sel = document.getElementById("sello2");
-  if(sel) sel.textContent = elDosEstaAbierto()
-    ? Object.keys(JUEGOS[2].salas).length + " salas"
-    : "🔒 Cerrado";
+  sellarTapaDos();
   const fila = document.getElementById("filaclave");
   if(fila && fila.classList) fila.classList.toggle("off", !(JUEGO===2 && !elDosEstaAbierto()));
   textoDelPie();
@@ -4569,6 +4615,7 @@ function prepararPortal(){
   const pie = document.getElementById("portalpie");
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
   textoDelPie();
+  sellarTapaDos();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 
