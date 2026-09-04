@@ -1225,6 +1225,7 @@ function subirEscalera(quien, avisar){
   const h = hermanaDe(quien.x, quien.y);
   if(!h) return false;
   quien.x = h.x; quien.y = h.y;
+  quien.px = h.x; quien.py = h.y;                 // aparece del otro lado, no se desliza
   if(avisar){
     float(h.x, h.y, "↑↓", acentoSala());
     say("🛗 Tomaste la escalera y saliste del otro lado.","y");
@@ -1503,10 +1504,11 @@ function step(dx,dy){
   const nx=S.player.x+dx, ny=S.player.y+dy;
   if(!canStep(S.player.x,S.player.y,nx,ny)) return;
   S.player.x=nx; S.player.y=ny; S.mp--;
-  if(subirEscalera(S.player, true) && S.ruta) S.ruta.push({x:S.player.x, y:S.player.y});
-  else if(S.ruta) S.ruta.push({x:S.player.x, y:S.player.y});
-  if(foeOn(nx,ny)){ resolveCatch(); return; }
-  passThrough(nx,ny);
+  subirEscalera(S.player, true);
+  const ax = S.player.x, ay = S.player.y;         // donde quedaste de verdad
+  if(S.ruta) S.ruta.push({x:ax, y:ay});
+  if(foeOn(ax,ay)){ resolveCatch(); return; }
+  passThrough(ax,ay);
   if(S.over) return;
   if(S.mp<=0){
     if(canDrinkHere()){ S.awaitMate=true; syncUI(); return; }
