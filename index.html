@@ -4453,7 +4453,9 @@ function elegirJuego(n){
   if(t1){ t1.classList.toggle("elegida", JUEGO===1); t1.setAttribute("aria-pressed", JUEGO===1 ? "true" : "false"); }
   if(t2){ t2.classList.toggle("elegida", JUEGO===2); t2.setAttribute("aria-pressed", JUEGO===2 ? "true" : "false"); }
   const sel = document.getElementById("sello2");
-  if(sel) sel.textContent = elDosEstaAbierto() ? "4 salas" : "🔒 Cerrado";
+  if(sel) sel.textContent = elDosEstaAbierto()
+    ? Object.keys(JUEGOS[2].salas).length + " salas"
+    : "🔒 Cerrado";
   const fila = document.getElementById("filaclave");
   if(fila && fila.classList) fila.classList.toggle("off", !(JUEGO===2 && !elDosEstaAbierto()));
   textoDelPie();
