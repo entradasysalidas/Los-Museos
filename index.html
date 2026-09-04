@@ -1459,7 +1459,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:1:2","h:3:3","v:4:2","h:5:4"],
     v:["v:3:4","h:2:2","v:5:3"] },
 
-  s2:{ num:2, name:"Electrónica", wing:"Franquicia", piso:"noche", ac:["#5FD8E8","#2C6B78","#0E2429"],
+  s2:{ num:2, name:"Electrónica", wing:"Franquicia", piso:"noche", afuera:"pasillo", ac:["#5FD8E8","#2C6B78","#0E2429"],
     hero:"damian", foe:"encargada", comps:["lamber","chuna","kzk"],
     e:L(`Q..M.P
          ..C...
@@ -1468,7 +1468,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:2:2","h:2:4","v:5:3","h:4:4"],
     v:["v:3:2","h:5:2","v:1:5"] },
 
-  s3:{ num:3, name:"Pasillo central", wing:"Franquicia", piso:"noche", ac:["#9B6BE0","#5A3A8C","#1B1428"],
+  s3:{ num:3, name:"Pasillo central", wing:"Franquicia", piso:"noche", afuera:"atrio", ac:["#9B6BE0","#5A3A8C","#1B1428"],
     hero:"lamber", foe:"gerente", comps:["matxi","hippie","damian"],
     e:L(`P.K..P
          .E....
@@ -1478,7 +1478,7 @@ const SALAS_2 = {
     v:["v:1:2","h:4:3","v:2:5"],
     p:["v:3:4"] },
 
-  s4:{ num:4, name:"Perfumería", wing:"Cadena", piso:"dia", ac:["#E0559B","#8A2D5C","#FCE7F1"],
+  s4:{ num:4, name:"Perfumería", wing:"Cadena", piso:"dia", afuera:"pasillo", ac:["#E0559B","#8A2D5C","#FCE7F1"],
     hero:"kzk", foe:"seguridad2", comps:["damian","matxi","lamber"],
     e:L(`.P.K.P
          .L....
@@ -1487,7 +1487,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:2:2","h:3:3","v:5:4","h:1:4"],
     v:["v:4:2","h:5:3","v:3:5"] },
 
-  s5:{ num:5, name:"Casa de deportes", wing:"Cadena", piso:"dia", ac:["#3FA76B","#1F5E3C","#E3F5EA"],
+  s5:{ num:5, name:"Casa de deportes", wing:"Cadena", piso:"dia", afuera:"pasillo", ac:["#3FA76B","#1F5E3C","#E3F5EA"],
     hero:"chuna", foe:"promotora", comps:["damian","matxi","lamber"],
     e:L(`Q....P
          .E.T..
@@ -1496,7 +1496,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:1:3","h:2:2","v:4:5","h:5:4"],
     v:["v:2:4","h:4:2","v:3:2"] },
 
-  s6:{ num:6, name:"El multicine", wing:"Corporación", piso:"noche", ac:["#E0554F","#8A2C28","#2A1210"],
+  s6:{ num:6, name:"El multicine", wing:"Corporación", piso:"noche", afuera:"butacas", ac:["#E0554F","#8A2C28","#2A1210"],
     hero:"tomy", foe:"limpieza", comps:["hippie","kzk","chuna"],
     e:L(`P.A..Q
          .K....
@@ -1505,7 +1505,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:3:3","h:2:4","v:5:2","h:4:5"],
     v:["v:1:5","h:3:2","v:2:2"] },
 
-  s7:{ num:7, name:"El súper", wing:"Corporación", piso:"noche", ac:["#4FBF8F","#257054","#0E2A20"],
+  s7:{ num:7, name:"El súper", wing:"Corporación", piso:"noche", afuera:"carritos", ac:["#4FBF8F","#257054","#0E2A20"],
     hero:"matxi", foe:"repositor", comps:["chupa","damian","marian"],
     e:L(`P..K.P
          ..T...
@@ -1515,7 +1515,7 @@ const SALAS_2 = {
     v:["v:3:5","h:5:4","v:1:3"],
     p:["v:3:3"] },
 
-  s8:{ num:8, name:"Locales de lujo", wing:"Grupo inversor", piso:"noche", ac:["#D8B44C","#8A6F26","#241D0B"],
+  s8:{ num:8, name:"Locales de lujo", wing:"Grupo inversor", piso:"noche", afuera:"maniquies", ac:["#D8B44C","#8A6F26","#241D0B"],
     hero:"chupa", foe:"auditor", comps:["lamber","tomy","hippie"],
     e:L(`Q.K...
          .E..P.
@@ -1524,7 +1524,7 @@ const SALAS_2 = {
     w:["h:5:1","h:4:1","v:1:2","h:3:4","v:4:3","h:5:2"],
     v:["v:3:3","h:2:3","v:5:4"] },
 
-  s9:{ num:9, name:"Atrio central", wing:"Grupo inversor", piso:"noche", ac:["#9B6BE0","#5A3A8C","#1B1428"],
+  s9:{ num:9, name:"Atrio central", wing:"Grupo inversor", piso:"noche", afuera:"atrio", ac:["#9B6BE0","#5A3A8C","#1B1428"],
     hero:"marian", foe:"dueno", comps:["chuna","matxi","kzk"],
     e:L(`Q.K..P
          .E.A..
@@ -2499,12 +2499,11 @@ const AUTOS = ["#C0483E","#3E6FB0","#D8B33E","#E8E4DC","#3C8A5E","#8A5AB8","#2E3
 function drawAfuera(g, th){
   g.fillStyle = th.fondo;
   g.fillRect(0, 0, W*CS, H*CS);
-  if(th.afuera === "mesas"){
-    g.fillStyle = th.oscuro ? "#00000030" : "#0000001A";
-    g.fillRect(0, 0, W*CS, H*CS);
-    drawMesas(g, th);
-    return;
-  }
+  const ESCENAS = {
+    mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
+    maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
+  };
+  if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
 
   /* el asfalto: gris propio, sin el tinte de la sala */
@@ -2543,8 +2542,138 @@ function drawAfuera(g, th){
   });
 }
 
+/* ---------- lo que se ve afuera de cada sala ----------
+   Cada local del shopping da a otra cosa. Se dibuja sobre todo el lienzo y el
+   piso le pasa por encima, así que sólo asoma en los bordes. */
+function franjasDeAfuera(){
+  return [{cx: CS*0.52, lado:1}, {cx: W*CS - CS*0.52, lado:-1}];
+}
+function velo(g, th, fuerza){
+  g.fillStyle = th.oscuro ? "rgba(0,0,0,"+(fuerza+.12)+")" : "rgba(0,0,0,"+fuerza+")";
+  g.fillRect(0, 0, W*CS, H*CS);
+}
+
+/* las butacas del cine, en filas */
+function drawButacas(g, th){
+  velo(g, th, .30);
+  const paso = CS*0.52;
+  franjasDeAfuera().forEach((f, nf) => {
+    for(let i=0; i*paso < H*CS; i++){
+      const cy = paso*0.55 + i*paso, A = CS*0.62, L = paso*0.72;
+      g.fillStyle = "#00000040"; rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L, 4); g.fill();
+      g.fillStyle = (i+nf)%3 ? "#8A2C34" : "#6E2229";
+      rr(g, f.cx-A/2, cy-L/2, A, L, 4); g.fill();
+      g.fillStyle = "#00000030";                               // el hueco del asiento
+      rr(g, f.cx-A/2+4, cy-L/2+3, A-8, L*0.52, 3); g.fill();
+      g.fillStyle = "#FFFFFF14";                               // los apoyabrazos
+      g.fillRect(f.cx-A/2, cy-L/2+2, 3, L-4);
+      g.fillRect(f.cx+A/2-3, cy-L/2+2, 3, L-4);
+    }
+  });
+}
+
+/* los carritos del súper, encastrados */
+function drawCarritos(g, th){
+  velo(g, th, .22);
+  const paso = CS*0.34;
+  franjasDeAfuera().forEach((f, nf) => {
+    for(let i=0; i*paso < H*CS - CS*0.4; i++){
+      const cy = paso*0.9 + i*paso, A = CS*0.50;
+      g.strokeStyle = th.oscuro ? "#7C8794" : "#B9C0C9";
+      g.lineWidth = 2;
+      g.beginPath();                                            // la reja del carro
+      g.moveTo(f.cx-A/2, cy); g.lineTo(f.cx+A/2, cy);
+      g.moveTo(f.cx-A/2, cy-5); g.lineTo(f.cx+A/2, cy-5);
+      g.stroke();
+      g.strokeStyle = th.oscuro ? "#5E6874" : "#8F98A3";
+      g.lineWidth = 1.4;
+      for(let j=0;j<4;j++){
+        const x = f.cx - A/2 + 3 + j*(A-6)/3;
+        g.beginPath(); g.moveTo(x, cy-6); g.lineTo(x, cy+1); g.stroke();
+      }
+      if(i%3===0){ g.fillStyle="#E0554F"; rr(g, f.cx-A/2, cy-9, A*0.34, 3, 1); g.fill(); }
+    }
+  });
+}
+
+/* los maniquíes de las vidrieras de lujo */
+function drawManiquies(g, th){
+  velo(g, th, .34);
+  const paso = CS*0.86;
+  franjasDeAfuera().forEach((f, nf) => {
+    for(let i=0; i*paso < H*CS; i++){
+      const cy = paso*0.55 + i*paso;
+      /* el nicho iluminado */
+      g.fillStyle = th.oscuro ? "#FFFFFF10" : "#FFFFFF55";
+      rr(g, f.cx-CS*0.32, cy-paso*0.40, CS*0.64, paso*0.80, 4); g.fill();
+      if(rnd(i, nf+4, 6) < .2) continue;                        // algún nicho vacío
+      const ropa = ["#C0483E","#3E6FB0","#D8B33E","#2E3138","#8A5AB8"][(i*2+nf) % 5];
+      g.fillStyle = "#00000030";
+      g.beginPath(); g.ellipse(f.cx+1, cy+paso*0.30, CS*0.13, 3.5, 0, 0, 7); g.fill();
+      g.fillStyle = ropa;                                        // el torso
+      rr(g, f.cx-CS*0.11, cy-paso*0.16, CS*0.22, paso*0.34, 5); g.fill();
+      g.fillStyle = th.oscuro ? "#C9C3B8" : "#EFE9DE";           // la cabeza y el pie
+      g.beginPath(); g.arc(f.cx, cy-paso*0.24, CS*0.075, 0, 7); g.fill();
+      g.fillRect(f.cx-1.5, cy+paso*0.18, 3, paso*0.13);
+    }
+  });
+}
+
+/* la baranda del atrio, con las plantas colgando al vacío */
+function drawAtrio(g, th){
+  velo(g, th, .42);
+  franjasDeAfuera().forEach((f, nf) => {
+    const x = f.cx + (f.lado===1 ? CS*0.30 : -CS*0.30);
+    g.strokeStyle = th.oscuro ? "#8A929E" : "#C6CBD2";          // el pasamanos
+    g.lineWidth = 4; g.lineCap = "round";
+    g.beginPath(); g.moveTo(x, 6); g.lineTo(x, H*CS-6); g.stroke();
+    g.strokeStyle = th.oscuro ? "#4E5661" : "#9BA3AD";           // los barrotes
+    g.lineWidth = 1.6;
+    for(let y = 10; y < H*CS-10; y += 11){
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + (f.lado===1 ? -CS*0.26 : CS*0.26), y); g.stroke();
+    }
+    for(let i=0; i*CS*1.1 < H*CS; i++){                          // las macetas colgando
+      const cy = CS*0.6 + i*CS*1.1;
+      const mx = x + (f.lado===1 ? -CS*0.13 : CS*0.13);
+      g.fillStyle = "#8A5A38"; rr(g, mx-CS*0.09, cy, CS*0.18, CS*0.11, 2); g.fill();
+      g.fillStyle = "#3C7A46";
+      for(const [dx,dy] of [[-6,-3],[0,-6],[6,-3],[-3,2],[4,3]]){
+        g.beginPath(); g.arc(mx+dx, cy+dy, 5.5, 0, 7); g.fill();
+      }
+    }
+  });
+}
+
+/* el pasillo del shopping: bancos y macetas */
+function drawPasillo(g, th){
+  velo(g, th, .20);
+  const paso = CS*1.15;
+  franjasDeAfuera().forEach((f, nf) => {
+    for(let i=0; i*paso < H*CS; i++){
+      const cy = paso*0.5 + i*paso;
+      if((i+nf) % 2){
+        const A = CS*0.30, L = CS*0.62;                          // un banco
+        g.fillStyle = "#00000035"; rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L, 3); g.fill();
+        g.fillStyle = th.oscuro ? "#6B5B48" : "#A98D6B";
+        rr(g, f.cx-A/2, cy-L/2, A, L, 3); g.fill();
+        g.fillStyle = "#00000022";
+        for(let j=1;j<4;j++) g.fillRect(f.cx-A/2+2, cy-L/2+j*L/4, A-4, 1.5);
+      }else{
+        const R = CS*0.20;                                       // una maceta
+        g.fillStyle = "#00000035"; g.beginPath(); g.ellipse(f.cx+1.5, cy+R*0.9, R*0.9, 4, 0, 0, 7); g.fill();
+        g.fillStyle = "#8A5A38"; rr(g, f.cx-R*0.75, cy+R*0.2, R*1.5, R*0.8, 3); g.fill();
+        g.fillStyle = "#3C7A46";
+        for(const [dx,dy] of [[-8,-2],[0,-8],[8,-2],[-4,4],[5,5],[0,0]]){
+          g.beginPath(); g.arc(f.cx+dx, cy+dy, 7, 0, 7); g.fill();
+        }
+      }
+    }
+  });
+}
+
 /* el patio de comidas visto desde arriba: mesas redondas con sus sillas */
 function drawMesas(g, th){
+  velo(g, th, .10);
   const paso = CS * 1.05;
   const franjas = [{cx: CS*0.52}, {cx: W*CS - CS*0.52}];
   franjas.forEach((f, nf) => {
