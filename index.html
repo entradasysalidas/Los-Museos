@@ -3715,23 +3715,27 @@ function buildLegend(){
     ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>. Ojo: de la carta <b>¡Se acerca!</b> no te salva", g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
-    ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1)],
-    ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
-    ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }],
-    ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g)],
-    ["Vidrio",    "Una vidriera: no se puede cruzar, pero <b>tampoco te tapa</b>. El guardia y las cámaras te ven a través", g=>drawVidrioChico(g)],
+    ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1), 2],
+    ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g), 2],
+    ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }, 2],
+    ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g), 2],
+    ["Vidrio",    "Una vidriera: no se puede cruzar, pero <b>tampoco te tapa</b>. El guardia y las cámaras te ven a través", g=>drawVidrioChico(g), 2],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
     ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
     ["Salida",    "Al norte. Se abre con las 3 piezas entregadas",         g=>drawSalida(g,false)],
   ];
-  box.innerHTML = items.map((it,i)=>
+  /* Los cinco elementos del shopping no existen en el museo: en el juego 1 la
+     leyenda los saltea, para no explicarle a alguien que recién arranca cosas
+     que no va a ver en el tablero. */
+  const visibles = items.filter(it => !it[3] || it[3] === JUEGO);
+  box.innerHTML = visibles.map((it,i)=>
     '<div class="leg"><canvas width="48" height="48" data-i="'+i+'"></canvas>'+
     '<div><b>'+it[0]+'</b><small>'+it[1]+'</small></div></div>').join("");
   box.querySelectorAll("canvas").forEach(c=>{
     const g=c.getContext("2d");
     g.fillStyle=S.th.piso[0]; g.fillRect(0,0,48,48);
-    items[+c.dataset.i][2](g);
+    visibles[+c.dataset.i][2](g);
   });
 }
 
