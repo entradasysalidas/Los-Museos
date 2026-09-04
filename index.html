@@ -1836,6 +1836,25 @@ function teVeLaCamara(){
   return casillasVigiladas().has(key(S.player.x, S.player.y));
 }
 
+/* Las casillas donde la linterna te agarra si terminás el turno ahí. Sale del
+   mismo recorrido que enLineaRecta, para que lo dibujado y lo que pasa no
+   puedan separarse nunca. */
+function casillasAlumbradas(){
+  const set = new Set();
+  if(!S || S.foe.twist !== "linterna") return set;
+  const f = S.foes[0];
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    let x = f.x, y = f.y;
+    for(let i = 0; i < ALCANCE_LINTERNA; i++){
+      const nx = x+dx, ny = y+dy;
+      if(!dejaVer(x, y, nx, ny)) break;
+      set.add(key(nx, ny));
+      x = nx; y = ny;
+    }
+  }
+  return set;
+}
+
 function enLineaRecta(){
   const f=S.foes[0], p=S.player;
   if(f.x!==p.x && f.y!==p.y) return false;
@@ -3525,6 +3544,16 @@ function drawOverlays(now){
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const v=d[key(x,y)];
     if(v>0 && v<=foeSpeed()) ctx.fillRect(x*CS,y*CS,CS,CS);
+  }
+  /* La linterna del guardia se pinta como el cono de la cámara: es la misma
+     clase de amenaza y antes era la única invisible, así que había que llevar
+     la cuenta de memoria en cada paso. */
+  if(S.foe.twist === "linterna"){
+    const luz = casillasAlumbradas();
+    ctx.fillStyle = "#E0685D22";
+    luz.forEach(kk => ctx.fillRect((kk%W)*CS, ((kk/W)|0)*CS, CS, CS));
+    ctx.strokeStyle = "#E0685D55"; ctx.lineWidth = 1.5;
+    luz.forEach(kk => ctx.strokeRect((kk%W)*CS+1, ((kk/W)|0)*CS+1, CS-2, CS-2));
   }
   if(S.marks.camaras && S.marks.camaras.length){
     const vistas = casillasVigiladas();
