@@ -1112,6 +1112,8 @@ function newGame(salaKey){
   const walls = new Set([...delMarco, ...delNivel]);
   const puertas = new Set(sala.p || []);
   for(const k of puertas) walls.delete(k);        // una puerta no es también pared
+  const vidrios = new Set(sala.v || []);
+  for(const k of vidrios) walls.add(k);           // el vidrio frena igual que un muro
 
   const pile = shuffle(PIECES.map(o=>o.id));
   b.marks.vitrinas.forEach((v,i)=>{ b.grid[v.y][v.x].piece = pile[i]; });
@@ -1134,7 +1136,7 @@ function newGame(salaKey){
     pile, under, hand:[], delivered:[], taken:0,
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
-    ruta:[], celular:null, guantes:false, anotados:0, puertas, reloj:null,
+    ruta:[], celular:null, guantes:false, anotados:0, puertas, vidrios, reloj:null,
     deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
@@ -1379,7 +1381,8 @@ const SALAS_2 = {
          .M....
          ..T.C.
          D..P.P`),
-    w:["h:5:1","h:4:1","v:2:3","h:4:3","v:4:4"] },
+    w:["h:5:1","h:4:1","v:2:3","h:4:3","v:4:4"],
+    v:["v:2:3"] },
 
   s1:{ num:1, name:"Patio de comidas", wing:"Local", piso:"dia", afuera:"mesas",
        ac:["#F0A02C","#9A6415","#FDF0DC"],
@@ -1388,7 +1391,8 @@ const SALAS_2 = {
          .AT.M.
          .C...D
          P..E.P`),
-    w:["h:5:1","h:4:1","v:1:2","h:3:3","v:4:2"] },
+    w:["h:5:1","h:4:1","v:1:2","h:3:3","v:4:2"],
+    v:["v:4:2"] },
 
   s2:{ num:2, name:"Electrónica", wing:"Franquicia", piso:"noche", ac:["#5FD8E8","#2C6B78","#0E2429"],
     hero:"damian", foe:"encargada", comps:["lamber","chuna","kzk"],
@@ -1396,7 +1400,8 @@ const SALAS_2 = {
          ..C...
          .T..A.
          P...DK`),
-    w:["h:5:1","h:4:1","v:2:2","h:2:4","v:5:3"] },
+    w:["h:5:1","h:4:1","v:2:2","h:2:4","v:5:3"],
+    v:["v:5:3"] },
 
   s3:{ num:3, name:"Pasillo central", wing:"Franquicia", piso:"noche", ac:["#9B6BE0","#5A3A8C","#1B1428"],
     hero:"lamber", foe:"gerente", comps:["matxi","hippie","damian"],
@@ -1405,6 +1410,7 @@ const SALAS_2 = {
          ...E..
          D.T.CP`),
     w:["h:5:1","h:4:1","v:3:2","h:1:3"],
+    v:["v:3:2"],
     p:["v:3:4"] },
 
   s4:{ num:4, name:"Perfumería", wing:"Cadena", piso:"dia", ac:["#E0559B","#8A2D5C","#FCE7F1"],
@@ -1413,7 +1419,8 @@ const SALAS_2 = {
          .L....
          ..C.D.
          P..T.M`),
-    w:["h:5:1","h:4:1","v:2:2","h:3:3","v:5:4"] },
+    w:["h:5:1","h:4:1","v:2:2","h:3:3","v:5:4"],
+    v:["v:5:4"] },
 
   s5:{ num:5, name:"Casa de deportes", wing:"Cadena", piso:"dia", ac:["#3FA76B","#1F5E3C","#E3F5EA"],
     hero:"chuna", foe:"promotora", comps:["damian","matxi","lamber"],
@@ -1421,7 +1428,8 @@ const SALAS_2 = {
          .E.T..
          ..C.E.
          P...D.`),
-    w:["h:5:1","h:4:1","v:1:3","h:2:2","v:4:5"] },
+    w:["h:5:1","h:4:1","v:1:3","h:2:2","v:4:5"],
+    v:["v:1:3"] },
 
   s6:{ num:6, name:"El multicine", wing:"Corporación", piso:"noche", ac:["#E0554F","#8A2C28","#2A1210"],
     hero:"tomy", foe:"limpieza", comps:["hippie","kzk","chuna"],
@@ -1429,7 +1437,8 @@ const SALAS_2 = {
          .K....
          .AC.T.
          P...D.`),
-    w:["h:5:1","h:4:1","v:3:3","h:1:4","v:5:2"] },
+    w:["h:5:1","h:4:1","v:3:3","h:1:4","v:5:2"],
+    v:["v:5:2"] },
 
   s7:{ num:7, name:"El súper", wing:"Corporación", piso:"noche", ac:["#4FBF8F","#257054","#0E2A20"],
     hero:"matxi", foe:"repositor", comps:["chupa","damian","marian"],
@@ -1438,6 +1447,7 @@ const SALAS_2 = {
          .C..D.
          M...AP`),
     w:["h:5:1","h:4:1","v:2:4","h:4:2"],
+    v:["h:4:2"],
     p:["v:3:3"] },
 
   s8:{ num:8, name:"Locales de lujo", wing:"Grupo inversor", piso:"noche", ac:["#D8B44C","#8A6F26","#241D0B"],
@@ -1446,7 +1456,8 @@ const SALAS_2 = {
          .E..P.
          ..T.C.
          P..E.D`),
-    w:["h:5:1","h:4:1","v:1:2","h:3:4","v:4:3"] },
+    w:["h:5:1","h:4:1","v:1:2","h:3:4","v:4:3"],
+    v:["v:1:2"] },
 
   s9:{ num:9, name:"Atrio central", wing:"Grupo inversor", piso:"noche", ac:["#9B6BE0","#5A3A8C","#1B1428"],
     hero:"marian", foe:"dueno", comps:["chuna","matxi","kzk"],
@@ -1455,6 +1466,7 @@ const SALAS_2 = {
          ..T.C.
          P..E.D`),
     w:["h:5:1","h:4:1","v:2:3","h:5:3"],
+    v:["v:2:3"],
     p:["v:4:4"] },
 };
 
@@ -1657,6 +1669,14 @@ function chaseStep(f, destino){
 }
 
 /* ¿el jugador quedó en la línea recta del antagonista, sin paredes en medio? */
+/* Se puede ver a través del vidrio aunque no se pueda pasar. Lo usan la
+   linterna del guardia y las cámaras. */
+function dejaVer(x, y, nx, ny){
+  if(!playable(nx, ny)) return false;
+  if(canStep(x, y, nx, ny)) return true;
+  return !!(S.vidrios && S.vidrios.has(edgeKey({x,y},{x:nx,y:ny})));
+}
+
 const ALCANCE_LINTERNA = 2;              // casilleros: más allá no te ilumina
 
 
@@ -1679,7 +1699,7 @@ function loQueVe(cam){
   let x = cam.x, y = cam.y;
   for(let i = 0; i < ALCANCE_CAMARA; i++){
     const nx = x+dx, ny = y+dy;
-    if(!canStep(x, y, nx, ny)) break;
+    if(!dejaVer(x, y, nx, ny)) break;             // la cámara ve a través del vidrio
     vistas.push({x:nx, y:ny});
     x = nx; y = ny;
   }
@@ -1706,7 +1726,7 @@ function enLineaRecta(){
   let x=f.x, y=f.y;
   while(x!==p.x || y!==p.y){
     const nx=x+step1[0], ny=y+step1[1];
-    if(!canStep(x,y,nx,ny)) return false;
+    if(!dejaVer(x,y,nx,ny)) return false;         // el vidrio deja ver
     x=nx; y=ny;
   }
   return true;
@@ -2569,23 +2589,44 @@ function drawParedes(){
 
   // 2. las paredes de adentro, iguales
   S.walls.forEach(w=>{
+    if(S.vidrios && S.vidrios.has(w)) return;     // el vidrio se dibuja aparte
     const [k,a,b]=w.split(":"), x=+a, y=+b;
     if(k==="v") ctx.fillRect((x+1)*CS - t/2, y*CS + 2, t, CS - 4);
     else        ctx.fillRect(x*CS + 2, (y+1)*CS - t/2, CS - 4, t);
   });
 
-  // 2b. la tira de neón de las vidrieras
-  if(S.th.cartel){
-    const ac = acentoSala();
-    const f0 = S.th.cartel;
+  // 2b. el vidrio: celeste, transparente, con el marco arriba y abajo
+  if(S.vidrios && S.vidrios.size){
+    const celeste = "#7FD6EE";
     ctx.save();
-    ctx.shadowColor = ac; ctx.shadowBlur = 9 * f0;
-    ctx.fillStyle = hexA(ac, .85 * f0);
-    const f = Math.max(1.6, t*0.34);
-    S.walls.forEach(w=>{
+    S.vidrios.forEach(w=>{
       const [k,a,b]=w.split(":"), x=+a, y=+b;
-      if(k==="v") ctx.fillRect((x+1)*CS - f/2, y*CS + 5, f, CS - 10);
-      else        ctx.fillRect(x*CS + 5, (y+1)*CS - f/2, CS - 10, f);
+      const vert = (k==="v");
+      const px = vert ? (x+1)*CS - t/2 : x*CS + 2;
+      const py = vert ? y*CS + 2       : (y+1)*CS - t/2;
+      const an = vert ? t : CS - 4;
+      const al = vert ? CS - 4 : t;
+
+      /* el paño */
+      ctx.fillStyle = hexA(celeste, .34);
+      ctx.fillRect(px, py, an, al);
+      /* los montantes, del blanco de las paredes */
+      ctx.fillStyle = S.th.pared;
+      if(vert){ ctx.fillRect(px, py, an, 7); ctx.fillRect(px, py+al-7, an, 7); }
+      else    { ctx.fillRect(px, py, 7, al); ctx.fillRect(px+an-7, py, 7, al); }
+      /* el reflejo que lo delata como vidrio */
+      ctx.strokeStyle = hexA("#FFFFFF", .55); ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      if(vert){ ctx.moveTo(px+an*.35, py+10); ctx.lineTo(px+an*.35, py+al-10); }
+      else    { ctx.moveTo(px+10, py+al*.35); ctx.lineTo(px+an-10, py+al*.35); }
+      ctx.stroke();
+      /* y su resplandor, del color de la sala */
+      ctx.shadowColor = acentoSala(); ctx.shadowBlur = 10 * (S.th.cartel || .5);
+      ctx.fillStyle = hexA(acentoSala(), .55);
+      const f = Math.max(1.4, t*0.26);
+      if(vert) ctx.fillRect(px + an/2 - f/2, py + 8, f, al - 16);
+      else     ctx.fillRect(px + 8, py + al/2 - f/2, an - 16, f);
+      ctx.shadowBlur = 0;
     });
     ctx.restore();
   }
@@ -2782,6 +2823,15 @@ function drawRelojito(g, c){
   g.beginPath(); g.moveTo(0,0); g.lineTo(0,-4); g.stroke();
   g.beginPath(); g.moveTo(0,0); g.lineTo(3,1.5); g.stroke();
   g.restore();
+}
+
+/* un paño de vidrio, para la leyenda */
+function drawVidrioChico(g){
+  g.fillStyle="#00000018"; g.fillRect(4,6,40,36);
+  g.fillStyle="#7FD6EE58"; g.fillRect(21,6,6,36);
+  g.fillStyle="#EFEADF"; g.fillRect(21,6,6,7); g.fillRect(21,35,6,7);
+  g.strokeStyle="#FFFFFF90"; g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(23,15); g.lineTo(23,33); g.stroke();
 }
 
 function drawMojado(g){
@@ -3068,9 +3118,18 @@ function capReturn(g,bob,sinOjos,cejaY){
   alerta(g,bob);
 }
 
+let memoCerca = {clave:"", cerca:false};
+function elFoeEstaCerca(){
+  const clave = S.player.x+","+S.player.y+"|" + S.foes.map(f=>f.x+","+f.y).join(";");
+  if(memoCerca.clave === clave) return memoCerca.cerca;
+  const d = bfsFrom({x:S.player.x, y:S.player.y});
+  const cerca = S.foes.some(f => { const n = d[key(f.x,f.y)]; return n >= 0 && n <= 2; });
+  memoCerca = {clave, cerca};
+  return cerca;
+}
+
 function alerta(g,bob){
-  const d = Math.min(...S.foes.map(f=>Math.abs(f.x-S.player.x)+Math.abs(f.y-S.player.y)));
-  if(d>2 || S.over) return;
+  if(S.over || !elFoeEstaCerca()) return;
   const b=Math.sin(performance.now()/150)*2;
   g.fillStyle="#E0685D"; g.beginPath(); g.arc(15,-27+b,8.5,0,7); g.fill();
   g.fillStyle="#fff"; g.font="bold 13px system-ui";
@@ -3394,6 +3453,7 @@ function buildLegend(){
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g)],
     ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }],
     ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g)],
+    ["Vidrio",    "Una vidriera: no se puede cruzar, pero <b>tampoco te tapa</b>. El guardia y las cámaras te ven a través", g=>drawVidrioChico(g)],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
     ["Baño",      "El tuyo y el suyo, en el marco del tablero",            g=>drawBanio(g)],
@@ -3679,6 +3739,7 @@ cv.addEventListener("mouseleave", ()=>{ mouseCell=null; hoverEdge=null; mouseCel
 const TOOLS = [
   {id:"pared",     n:"Pared",      zona:"arista", ic:"▬"},
   {id:"puerta",    n:"Puerta",     zona:"arista", ic:"🚪"},
+  {id:"vidrio",    n:"Vidrio",     zona:"arista", ic:"🪟"},
   {id:"P",         n:"Vitrina",    zona:"centro", ic:"▣"},
   {id:"Q",         n:"Vitrina ⏱",  zona:"centro", ic:"⏱"},
   {id:"M",         n:"Mate",       zona:"centro", ic:"🧉"},
