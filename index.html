@@ -203,6 +203,18 @@
     text-align:center}
   .goal .lbl{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim)}
+  /* El ojo de halcón de Marian: la carta que el jefe va a sacar esta ronda.
+     Vive en su propia tarjeta porque es su poder, no información de todos. */
+  .ojo{margin-top:8px;background:var(--brass-soft);border:1px solid var(--brass-dim);
+    padding:9px 11px;display:flex;align-items:center;gap:10px}
+  .ojo.off{display:none}
+  .ojo.rush{border-color:var(--alarm)}
+  .ojo .ic{font-size:21px;line-height:1;flex:none;width:26px;text-align:center;color:var(--brass)}
+  .ojo.rush .ic{color:var(--alarm)}
+  .ojo .t{min-width:0}
+  .ojo .l{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .ojo .n{font:700 13.5px/1.25 "Archivo",sans-serif;color:var(--ink);margin-top:4px}
   .goal .val{font:400 23px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
     margin-top:6px;letter-spacing:-.02em}
   .goal.listo{border-color:var(--patina)} .goal.listo .val{color:var(--patina)}
@@ -759,6 +771,7 @@
           <div class="goal" id="gmov"><div class="lbl">Movimiento</div><div class="val"><span class="mps" id="mps"></span></div></div>
           <div class="goal" id="gsalida"><div class="lbl">Salida</div><div class="val">🔒</div></div>
         </div>
+        <div class="ojo off" id="ojo"></div>
       </div>
 
       <div class="card">
@@ -1211,7 +1224,6 @@ function newGame(salaKey){
   if(sala.hero==="chupa") S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
   if(sala.hero==="tomy")  S.objects.push("mate1");   // el termo va con él
   if(sala.hero==="matxi") S.freeCatch = true;
-  if(sala.hero==="marian") S.peek = S.deck[S.deck.length-1];
 
   fx.floats.length=0; fx.shake=0; fx.banner=null;
   if(typeof limpiarRelato==="function") limpiarRelato();
@@ -2051,7 +2063,6 @@ function nextRound(){
   }
   S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear();
   S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
-  if(S.heroKey==="marian") S.peek=S.deck[S.deck.length-1];
   syncUI();
 }
 
@@ -3599,6 +3610,20 @@ function syncUI(){
   drawRetrato();
   $("yonombre").textContent = S.hero.n;
   $("yopoder").innerHTML = "<b>"+S.power.n+"</b> · "+S.power.d;
+
+  /* El ojo de halcón: hasta ahora la carta se calculaba y no se dibujaba en
+     ningún lado, así que el poder de Marian no se veía. Se saca del mazo acá
+     mismo, en un solo lugar, para que no pueda quedar viejo. */
+  S.peek = (S.heroKey==="marian" && S.deck.length) ? S.deck[S.deck.length-1] : null;
+  const ojo = $("ojo");
+  if(ojo && ojo.classList){
+    ojo.classList.toggle("off", !S.peek);
+    ojo.classList.toggle("rush", !!S.peek && S.peek.k==="rush");
+    if(S.peek) ojo.innerHTML =
+      '<span class="ic">' + iconoDeCarta(S.peek) + '</span>' +
+      '<span class="t"><span class="l">Su próxima acción</span>' +
+      '<span class="n">' + S.peek.n + '</span></span>';
+  }
 
   const abierta = S.delivered.length>=3;
   setStat("gpiezas", S.delivered.length+"/3", abierta);
