@@ -2624,6 +2624,23 @@ function atPos(g,fx_,fy_,fn){ g.save(); g.translate(fx_*CS+CS/2, fy_*CS+CS/2+7*U
    lienzo y el piso del local le pasa por encima, así que sólo asoma afuera. */
 const AUTOS = ["#C0483E","#3E6FB0","#D8B33E","#E8E4DC","#3C8A5E","#8A5AB8","#2E3138","#B85A2E"];
 
+/* Reparte piezas a lo largo del alto del lienzo sin que la última quede
+   cortada por el borde. Antes cada escena avanzaba de a un paso hasta pasarse,
+   así que abajo siempre asomaba media mesa o media butaca. Ahora se calcula
+   cuántas entran, se reparten parejo y se descarta la que no entre entera.
+   `alto` es lo que mide la pieza de punta a punta, sombra incluida. */
+function repartirAlto(paso, alto){
+  const total = H*CS;
+  const cuantas = Math.max(1, Math.round(total / paso));
+  const hueco = total / cuantas;
+  const ys = [];
+  for(let i = 0; i < cuantas; i++){
+    const cy = hueco*(i + 0.5);
+    if(cy - alto/2 >= 0 && cy + alto/2 <= total) ys.push(cy);
+  }
+  return ys;
+}
+
 function drawAfuera(g, th){
   g.fillStyle = th.fondo;
   g.fillRect(0, 0, W*CS, H*CS);
@@ -2686,8 +2703,8 @@ function drawButacas(g, th){
   velo(g, th, .30);
   const paso = CS*0.52;
   franjasDeAfuera().forEach((f, nf) => {
-    for(let i=0; i*paso < H*CS; i++){
-      const cy = paso*0.55 + i*paso, A = CS*0.62, L = paso*0.72;
+    repartirAlto(paso, paso*0.72 + 4).forEach((cy, i) => {
+      const A = CS*0.62, L = paso*0.72;
       g.fillStyle = "#00000040"; rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L, 4); g.fill();
       g.fillStyle = (i+nf)%3 ? "#8A2C34" : "#6E2229";
       rr(g, f.cx-A/2, cy-L/2, A, L, 4); g.fill();
@@ -2696,7 +2713,7 @@ function drawButacas(g, th){
       g.fillStyle = "#FFFFFF14";                               // los apoyabrazos
       g.fillRect(f.cx-A/2, cy-L/2+2, 3, L-4);
       g.fillRect(f.cx+A/2-3, cy-L/2+2, 3, L-4);
-    }
+    });
   });
 }
 
@@ -2705,8 +2722,8 @@ function drawCarritos(g, th){
   velo(g, th, .22);
   const paso = CS*0.34;
   franjasDeAfuera().forEach((f, nf) => {
-    for(let i=0; i*paso < H*CS - CS*0.4; i++){
-      const cy = paso*0.9 + i*paso, A = CS*0.50;
+    repartirAlto(paso, 22).forEach((cy, i) => {
+      const A = CS*0.50;
       g.strokeStyle = th.oscuro ? "#7C8794" : "#B9C0C9";
       g.lineWidth = 2;
       g.beginPath();                                            // la reja del carro
@@ -2720,7 +2737,7 @@ function drawCarritos(g, th){
         g.beginPath(); g.moveTo(x, cy-6); g.lineTo(x, cy+1); g.stroke();
       }
       if(i%3===0){ g.fillStyle="#E0554F"; rr(g, f.cx-A/2, cy-9, A*0.34, 3, 1); g.fill(); }
-    }
+    });
   });
 }
 
@@ -2729,12 +2746,11 @@ function drawManiquies(g, th){
   velo(g, th, .34);
   const paso = CS*0.86;
   franjasDeAfuera().forEach((f, nf) => {
-    for(let i=0; i*paso < H*CS; i++){
-      const cy = paso*0.55 + i*paso;
+    repartirAlto(paso, paso*0.80).forEach((cy, i) => {
       /* el nicho iluminado */
       g.fillStyle = th.oscuro ? "#FFFFFF10" : "#FFFFFF55";
       rr(g, f.cx-CS*0.32, cy-paso*0.40, CS*0.64, paso*0.80, 4); g.fill();
-      if(rnd(i, nf+4, 6) < .2) continue;                        // algún nicho vacío
+      if(rnd(i, nf+4, 6) < .2) return;                          // algún nicho vacío
       const ropa = ["#C0483E","#3E6FB0","#D8B33E","#2E3138","#8A5AB8"][(i*2+nf) % 5];
       g.fillStyle = "#00000030";
       g.beginPath(); g.ellipse(f.cx+1, cy+paso*0.30, CS*0.13, 3.5, 0, 0, 7); g.fill();
@@ -2743,7 +2759,7 @@ function drawManiquies(g, th){
       g.fillStyle = th.oscuro ? "#C9C3B8" : "#EFE9DE";           // la cabeza y el pie
       g.beginPath(); g.arc(f.cx, cy-paso*0.24, CS*0.075, 0, 7); g.fill();
       g.fillRect(f.cx-1.5, cy+paso*0.18, 3, paso*0.13);
-    }
+    });
   });
 }
 
@@ -2777,8 +2793,7 @@ function drawPasillo(g, th){
   velo(g, th, .20);
   const paso = CS*1.15;
   franjasDeAfuera().forEach((f, nf) => {
-    for(let i=0; i*paso < H*CS; i++){
-      const cy = paso*0.5 + i*paso;
+    repartirAlto(paso, CS*0.66).forEach((cy, i) => {
       if((i+nf) % 2){
         const A = CS*0.30, L = CS*0.62;                          // un banco
         g.fillStyle = "#00000035"; rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L, 3); g.fill();
@@ -2795,7 +2810,7 @@ function drawPasillo(g, th){
           g.beginPath(); g.arc(f.cx+dx, cy+dy, 7, 0, 7); g.fill();
         }
       }
-    }
+    });
   });
 }
 
@@ -2805,11 +2820,10 @@ function drawMesas(g, th){
   const paso = CS * 1.05;
   const franjas = [{cx: CS*0.52}, {cx: W*CS - CS*0.52}];
   franjas.forEach((f, nf) => {
-    for(let i = 0; i*paso < H*CS; i++){
-      const cy = paso*0.55 + i*paso;
-      if(rnd(i, nf+5, 3) < .18) continue;
+    repartirAlto(paso, CS*1.00).forEach((cy, i) => {   // la mesa con sus cuatro sillas
+      if(rnd(i, nf+5, 3) < .18) return;
       dibujarMesa(g, f.cx, cy, th, rnd(i, nf, 8));
-    }
+    });
   });
 }
 function dibujarMesa(g, cx, cy, th, semilla){
