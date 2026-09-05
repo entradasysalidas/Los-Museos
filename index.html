@@ -608,11 +608,6 @@
     aside{order:2}
     #relato{display:none}
     #cartel{font-size:15px;padding:6px 12px;min-height:34px}
-    #cartel.reposo{opacity:1;animation:none;border-color:transparent;
-      font:600 12.5px/1.35 "Archivo",system-ui,sans-serif;color:var(--dim);
-      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-      overflow:hidden;text-align:center}
-    #cartel.reposo b{color:var(--ink)}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -1286,8 +1281,6 @@ function newGame(salaKey){
 
 function say(t,cls){
   S.log.push(`<span class="${cls||""}">${t}</span>`);
-  S.ultimo = t;                                      // lo que muestra el cartel en reposo
-  if(typeof cartelEnReposo==="function") cartelEnReposo();
   if(typeof renderLog==="function") renderLog();     // el registro corto vive en la ayuda
   if(typeof pushEvento==="function") pushEvento(t, cls);   // y el relato, en la columna
 }
@@ -3604,21 +3597,6 @@ function frame(now){
 /* cartel de fase: dice qué está pasando antes de que pase */
 /* El cartel vive abajo del tablero, en HTML. Adentro del lienzo no habia
    lugar: quedaba pegado al muro de abajo y tapaba las casillas del puesto. */
-/* Entre aviso y aviso el cartel quedaba vacío, y en el teléfono eso era una
-   franja blanca permanente debajo del tablero. No se lo puede achicar sin que
-   todo salte una vez por ronda, ni poner encima del mapa —vive afuera del
-   lienzo justamente para no taparle nunca la puerta de salida—. Así que el
-   espacio se queda, pero deja de estar vacío: muestra la última cosa que pasó,
-   que es el registro que en el teléfono no entra. */
-function cartelEnReposo(){
-  const el = document.getElementById("cartel");
-  if(!el || !el.classList || !S) return;
-  if(el.classList.contains("on")) return;      // hay un aviso a la vista, no lo pises
-  el.classList.add("reposo");
-  el.style.color = ""; el.style.borderColor = "";
-  el.innerHTML = S.ultimo || "";
-}
-
 function pintarCartel(txt, color){
   const el=document.getElementById("cartel");
   if(!el || !el.style) return;
@@ -3628,15 +3606,7 @@ function pintarCartel(txt, color){
   if(el.classList){
     el.classList.remove("on");
     void el.offsetWidth;              // reiniciar la animación
-    el.classList.remove("reposo");
     el.classList.add("on");
-    if(!el.dataset.atado){
-      el.dataset.atado = "1";
-      el.addEventListener("animationend", () => {
-        el.classList.remove("on");
-        cartelEnReposo();
-      });
-    }
   }
 }
 
