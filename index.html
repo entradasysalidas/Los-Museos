@@ -5332,6 +5332,10 @@ function volverAlPortal(){
   const p = document.getElementById("portal");
   if(!p || !p.classList) return;
   yaEntre = false;
+  /* La sala que estabas jugando le deja su piel al cuerpo: las de piso
+     claro encienden body.claro y el shopping body.juego2. La portada tiene
+     la suya y hay que devolvérsela, si no vuelve pintada como la oficina. */
+  document.body.classList.remove("claro", "juego2");
   p.classList.remove("off", "sale");
   prepararPortal();
 }
