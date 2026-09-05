@@ -607,7 +607,20 @@
     #boardwrap{order:1;width:100%;margin:0}
     aside{order:2}
     #relato{display:none}
-    #cartel{font-size:15px;padding:6px 12px;min-height:34px}
+    /* El cartel de avisos sale del flujo: reservaba una franja fija debajo del
+       tablero y en el teléfono ese alto es lo que hacía que la carta del jefe
+       quedara cortada. Pasa a flotar sobre el borde de abajo del tablero, que
+       es el lado seguro: la puerta de salida está arriba y nunca se tapa. */
+    #boardwrap{position:relative}
+    #cartel{position:absolute;left:8px;right:8px;bottom:8px;z-index:3;
+      min-height:0;padding:8px 14px;font-size:14px;pointer-events:none;
+      background:var(--panel);border-radius:9px;box-shadow:0 8px 24px #00000055}
+
+    /* y vos entrás en una sola línea: los pasos al lado del nombre, no debajo */
+    #cartayo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    #cartayo .yo{flex:1 1 0;min-width:0}
+    #cartayo .goals{margin-top:0!important;flex:0 0 auto}
+    #cartayo .ojo{flex-basis:100%;margin-top:0}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -791,7 +804,7 @@
 
   <div id="stage">
     <aside>
-      <div class="card">
+      <div class="card" id="cartayo">
         <div class="yo">
           <canvas id="retrato" width="88" height="88"></canvas>
           <div>
