@@ -212,7 +212,9 @@
   .deckcard.vacia{border-style:dashed;border-color:var(--line);align-items:center}
   .deckcard.vacia .tt{color:var(--dim);font-weight:500}
   @keyframes flip{from{transform:translateY(-6px) scale(.97);opacity:0}}
-  .deckfoot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;
+  /* La pila asoma 6px por debajo de la carta, así que el pie necesita más
+     que eso de aire o la esquina le toca el texto. */
+  .deckfoot{display:flex;justify-content:space-between;align-items:center;margin-top:13px;
     font:500 11.5px/1 "IBM Plex Mono",monospace;color:var(--dim)}
   .deckfoot b{color:var(--brass)}
 
@@ -708,7 +710,9 @@
     .deckcard .ic{font-size:18px;width:22px}
     .deckcard .tt{font-size:12.5px}
     .deckcard .dd{display:none}
-    .deckfoot{font-size:9px;margin-top:4px}
+    .deckback:nth-child(1){transform:translate(6px,0)}
+    .deckback:nth-child(2){transform:translate(3px,0)}
+    .deckfoot{font-size:9px;margin-top:7px}
 
     /* De los tres marcadores quedan los pasos: «entregadas» ya lo dicen las
        joyas de abajo y «salida» está dibujada en el tablero. No se pierde
