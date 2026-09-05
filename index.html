@@ -2848,7 +2848,7 @@ function aislados(){
 /* ---------- las pantallas del final ----------
    Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
    marca que quedó y en qué anda tu legajo. */
-function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones){
+function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable){
   const s = SALAS[salaKey];
   const ac = s.ac ? s.ac[0] : "#D9A94F";
   const keys = Object.keys(SALAS), next = keys[keys.indexOf(salaKey)+1];
@@ -2899,7 +2899,7 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones){
         : "") +
       '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
       '<button class="btn alt" onclick="menu()">Todas las salas</button>')) +
-    '</div>', false);
+    '</div>', cerrable === true);
 
   const lienzo = $("finlienzo");
   if(lienzo) dibujarPlanoFinal(lienzo, salaKey, S.ruta,
@@ -3004,8 +3004,11 @@ let MARATON_ULTIMA = 0;
 
 /* La pantalla del desafío diario. No ofrece revancha —ese es el punto— y
    trae el botón para copiar el resultado y pegarlo en el grupo. */
+let cerrarVuelveAlMuseo = false;
+
 function finalDiaria(gano, motivo){
   const d = anotarDiaria(gano, S.round);
+  cerrarVuelveAlMuseo = true;
   const racha = d.racha > 0
     ? "Racha de <b>" + d.racha + " día" + (d.racha > 1 ? "s" : "") + "</b>."
     : "Se te cortó la racha.";
@@ -3016,7 +3019,8 @@ function finalDiaria(gano, motivo){
     gano ? "El desafío de hoy, resuelto" : "El desafío de hoy se te fue",
     '<button class="btn" id="btncopiar" onclick="copiarResultado()">Copiar para el grupo</button>' +
     '<button class="btn alt" onclick="salirDelDiario(true)">Mi ficha</button>' +
-    '<button class="btn alt" onclick="salirDelDiario()">Todas las salas</button>');
+    '<button class="btn alt" onclick="salirDelDiario()">Todas las salas</button>',
+    true);        // se puede cerrar: el día ya quedó anotado
 }
 
 function gameWin(){
@@ -4988,6 +4992,7 @@ function modalAbierto(){
 function closeModal(forzar){
   if(!forzar && !modalCerrable) return;   // el candado es para el que mira
   modalCerrable = true;
+  if(!forzar && cerrarVuelveAlMuseo){ cerrarVuelveAlMuseo = false; salirDelDiario(); return; }
   $("overlay").classList.add("off");
 }
 function fondoCierra(e){
@@ -5039,8 +5044,10 @@ function menu(){
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
     '<button class="btn" onclick="empezarMaraton()">Modo maratón · las diez seguidas</button>' +
+    '<button class="btn alt" onclick="irAlDiario()">Desafío diario</button>' +
     '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
-    '<button class="btn alt" onclick="ficha()">Mi ficha</button>', !!S);
+    '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
+    '<button class="btn alt" onclick="volverAlPortal()">Portada</button>', !!S);
 
   const raiz = $("modal");
   if(raiz && raiz.querySelectorAll){
@@ -5304,7 +5311,10 @@ function entrarDiaria(){
   guardarLegajo(LEGAJO);
   yaEntre = true;
   const p = document.getElementById("portal");
-  const arrancar = () => { empezarDiaria(); if(yaJugueHoy()) verResultadoDeHoy(); };
+  const arrancar = () => {
+    if(yaJugueHoy()){ cargarJuego(1); verResultadoDeHoy(); }
+    else empezarDiaria();
+  };
   if(!p || !p.classList) return arrancar();
   p.classList.add("sale");
   luego(()=>{ p.classList.add("off"); arrancar(); }, 380);
@@ -5313,12 +5323,33 @@ function entrarDiaria(){
 /* si ya lo jugaste, se muestra lo que hiciste en vez de dejarte jugar de nuevo */
 /* Salir del desafío devuelve a la campaña: si no, la lista de salas queda con
    una sola y la ficha cuenta sobre un solo nivel. */
+/* La portada de vuelta, con las dos tapas y el desafío. */
+function volverAlPortal(){
+  cerrarVuelveAlMuseo = false;
+  closeModal(true);
+  const p = document.getElementById("portal");
+  if(!p || !p.classList) return;
+  yaEntre = false;
+  p.classList.remove("off", "sale");
+  prepararPortal();
+}
+
+/* el desafío del día, sin pasar por la portada */
+function irAlDiario(){
+  cerrarVuelveAlMuseo = false;
+  closeModal(true);
+  if(yaJugueHoy()){ cargarJuego(1); verResultadoDeHoy(); return; }
+  empezarDiaria();
+}
+
 function salirDelDiario(aFicha){
+  cerrarVuelveAlMuseo = false;
   cargarJuego(JUEGO === 3 ? 1 : JUEGO);
   if(aFicha) ficha(); else menu();
 }
 
 function verResultadoDeHoy(){
+  cerrarVuelveAlMuseo = true;
   const d = leerDiaria();
   const racha = d.racha > 0 ? "Racha de <b>" + d.racha + " día" + (d.racha>1?"s":"") + "</b>." : "";
   showModal("Ya lo jugaste",
@@ -5329,7 +5360,7 @@ function verResultadoDeHoy(){
       '<button class="btn" id="btncopiar" onclick="copiarResultado()">Copiar para el grupo</button>' +
       '<button class="btn alt" onclick="salirDelDiario(true)">Mi ficha</button>' +
       '<button class="btn alt" onclick="salirDelDiario()">Todas las salas</button>' +
-    '</div>', false);
+    '</div>', true);
 }
 
 addEventListener("keydown", e=>{
@@ -5463,6 +5494,7 @@ function ficha(){
     '<div class="finbotones">' +
       '<button class="btn" onclick="menu()">Todas las salas</button>' +
       '<button class="btn alt" onclick="empezarMaraton()">Correr el maratón</button>' +
+      '<button class="btn alt" onclick="volverAlPortal()">Portada</button>' +
       '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>' +
     '</div>', !!S);
 }
