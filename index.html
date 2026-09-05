@@ -362,13 +362,19 @@
     text-align:center;min-height:18px}
   .quiensos .pie b{color:var(--brass)}
 
+  /* Ojo con 100vh en el teléfono: en iOS mide la pantalla con las barras
+     escondidas, o sea más de lo que se ve. El modal se pasaba de alto y,
+     como está centrado, el título terminaba arriba del borde visible. dvh
+     sí mide lo que se ve; vh queda de respaldo para navegadores viejos. */
   #overlay{position:fixed;inset:0;background:#05060899;backdrop-filter:blur(3px);
     display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
+  @supports (height:100dvh){ #overlay{height:100dvh} }
   body.claro #overlay{background:#3a382f66}
   #overlay.off{display:none}
   .modal{background:var(--panel);border:1px solid var(--line);padding:0;
     max-width:1280px;width:100%;max-height:calc(100vh - 36px);display:flex;
     flex-direction:column;box-shadow:0 30px 80px #000c}
+  @supports (height:100dvh){ .modal{max-height:calc(100dvh - 36px)} }
   .modal{position:relative}
   .cerrar{position:absolute;top:14px;right:16px;width:38px;height:38px;padding:0;
     background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;
@@ -379,7 +385,10 @@
   .modal h2{margin:0;font:400 clamp(26px,3.4vw,36px)/1 "Archivo Black","Archivo",sans-serif;
     color:var(--ink);text-transform:uppercase;letter-spacing:-.03em;
     padding:22px 26px 14px;border-bottom:1px solid var(--line);flex:none}
-  .modalbody{padding:20px 26px 24px;overflow-y:auto;overscroll-behavior:contain}
+  /* flex:1 con min-height:0 es lo que deja que el cuerpo se encoja y haga su
+     propio scroll. Sin eso empuja al titulo fuera de la pantalla. */
+  .modalbody{padding:20px 26px 24px;overflow-y:auto;overscroll-behavior:contain;
+    flex:1 1 auto;min-height:0}
   .modal .lead{color:var(--dim);font-size:14px;margin:0 0 14px;line-height:1.6}
   .modal .lead b{color:var(--body)}
 
@@ -720,6 +729,7 @@
     .tapa .rotulo b{font-size:12.5px}
     .tapa .rotulo small{font-size:8px}
     .modal{max-height:calc(100vh - 20px)}
+    @supports (height:100dvh){ .modal{max-height:calc(100dvh - 16px)} }
     .modal h2{padding:16px 18px 12px;font-size:24px}
     .modalbody{padding:16px 18px 20px}
     .lvls{grid-template-columns:1fr}
