@@ -5043,11 +5043,13 @@ function menu(){
     cabecera +
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
-    '<button class="btn" onclick="empezarMaraton()">Modo maratón · las diez seguidas</button>' +
-    '<button class="btn alt" onclick="irAlDiario()">Desafío diario</button>' +
-    '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
-    '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
-    '<button class="btn alt" onclick="volverAlPortal()">Portada</button>', !!S);
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="empezarMaraton()">Modo maratón · las diez seguidas</button>' +
+      '<button class="btn alt" onclick="irAlDiario()">Desafío diario</button>' +
+      '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
+      '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
+      '<button class="btn alt" onclick="volverAlPortal()">Portada</button>' +
+    '</div>', !!S);
 
   const raiz = $("modal");
   if(raiz && raiz.querySelectorAll){
