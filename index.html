@@ -6,6 +6,16 @@
 <title>Los Museos</title>
 <link rel="icon" href="caja.jpg">
 <link rel="apple-touch-icon" href="caja.jpg">
+<link rel="manifest" href="manifest.json">
+<!-- Agregado a la pantalla de inicio, el juego abre sin barra de direcciones ni
+     barra de abajo: son unos 100px más de alto, que en el teléfono es la
+     diferencia entre entrar en una pantalla o no. Desde adentro del navegador
+     no hay forma de esconderlas: iPhone no tiene pantalla completa para webs. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Los Museos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#14161B">
 <meta name="description" content="9 amigos. 1 misión: escapar del museo. Robá tres piezas, pasáselas a tus cómplices y salí antes de que te agarren.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Super Noob">
