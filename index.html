@@ -4598,9 +4598,9 @@ let JUEGO = 1;
 function sellarTapaDos(){
   const sel = document.getElementById("sello2");
   if(!sel) return;
-  sel.textContent = elDosEstaAbierto()
-    ? Object.keys(JUEGOS[2].salas).length + " salas"
-    : "🔒 Cerrado";
+  const abierto = elDosEstaAbierto();
+  sel.textContent = abierto ? "" : "🔒 Cerrado";
+  sel.hidden = abierto;          // ganada la tapa, la franja se va y se ve el dibujo
 }
 
 function elegirJuego(n){
