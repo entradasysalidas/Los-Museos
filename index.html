@@ -577,6 +577,24 @@
     text-transform:uppercase;color:var(--brass);margin-right:auto}
   .fotro .v{font-size:12.5px;color:var(--dim)}
   .fotro .v b{font-weight:700;color:var(--ink)}
+  /* el calendario del desafío: un mes de un vistazo */
+  .caldia{margin-top:10px;padding:13px 15px;background:var(--panel2);border:1px solid var(--line)}
+  .calcab{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin-bottom:11px}
+  .calcab .l{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--brass);margin-right:auto}
+  .calcab .v{font-size:12px;color:var(--dim)}
+  .calcab .v b{color:var(--ink);font-weight:700}
+  .calgrilla{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cd{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:5px;font:600 11px/1 "IBM Plex Mono",monospace;
+    color:var(--dim);background:var(--sunk)}
+  .cd.cab{background:none;color:var(--hair);font-size:9px;letter-spacing:.06em}
+  .cd.vacia{background:none}
+  .cd.porvenir{background:none;color:var(--hair);opacity:.5}
+  .cd.sinjugar{background:var(--sunk);color:var(--hair)}
+  .cd.gano{background:var(--brass);color:var(--bg)}
+  .cd.perdio{background:var(--alarm);color:#fff;opacity:.8}
+  .cd.hoy{outline:2px solid var(--ink);outline-offset:1px}
   .fnota{margin:14px 0 0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 
   @media(max-width:760px){
@@ -2003,6 +2021,7 @@ function enDiaria(){ return JUEGO === 3; }
 
 function leerDiaria(){
   if(!LEGAJO.diaria) LEGAJO.diaria = {ultimo:"", gano:false, rondas:0, racha:0, mejor:0, jugadas:0, ganadas:0};
+  if(!LEGAJO.diaria.dias) LEGAJO.diaria.dias = {};   // uno por fecha, para el calendario
   return LEGAJO.diaria;
 }
 function yaJugueHoy(){ return leerDiaria().ultimo === claveDelDia(); }
@@ -2018,6 +2037,7 @@ function anotarDiaria(gano, rondas){
   d.jugadas = (d.jugadas || 0) + 1;
   d.ganadas = (d.ganadas || 0) + (gano ? 1 : 0);
   d.ultimo = hoy; d.gano = gano; d.rondas = rondas;
+  d.dias[hoy] = {g: gano ? 1 : 0, r: rondas};
   guardarLegajo(LEGAJO);
   return d;
 }
@@ -3258,28 +3278,48 @@ function drawPasillo(g, th){
   });
 }
 
-/* la oficina de al lado: hileras de escritorios iguales hasta el borde, que es
-   lo que se ve desde adentro de un cubículo */
+/* La oficina de al lado. Primero salieron escritorios chiquitos y llenos de
+   detalle, y a lo ancho de esa franja no se leían: quedaban manchas con una
+   raya azul. Lo que dice oficina de un vistazo no es el escritorio sino la
+   mampara, así que ahora son menos, más grandes, y lo que manda es el panel.
+   La pantalla queda apagada salvo alguna suelta. */
 function drawCubiculos(g, th){
   velo(g, th, .16);
-  const paso = CS*0.92, alto = paso*0.78;
+  const paso = CS*1.25, alto = paso*0.80;
   franjasDeAfuera().forEach((f, nf) => {
     repartirAlto(paso, alto).forEach((cy, i) => {
-      const A = CS*0.62, L = alto;
-      g.fillStyle = "#00000030";                           // la sombra del escritorio
-      rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L*0.62, 3); g.fill();
-      g.fillStyle = th.oscuro ? "#6E6A62" : "#D8D4CC";      // la tabla
-      rr(g, f.cx-A/2, cy-L/2, A, L*0.62, 3); g.fill();
-      g.fillStyle = th.oscuro ? "#23262C" : "#3A3F49";      // el monitor
-      rr(g, f.cx-A*0.26, cy-L/2+3, A*0.52, L*0.24, 2); g.fill();
-      g.fillStyle = (i+nf)%4 ? "#7FA8D8" : "#8FBF9A";       // la pantalla prendida
-      rr(g, f.cx-A*0.22, cy-L/2+4.5, A*0.44, L*0.16, 1); g.fill();
-      g.fillStyle = th.oscuro ? "#4A4740" : "#B4AFA6";      // la silla
-      g.beginPath(); g.arc(f.cx, cy+L*0.22, CS*0.13, 0, 7); g.fill();
-      if((i+nf)%3===0){                                     // un papel encima
-        g.fillStyle = "#F4F1EA";
-        rr(g, f.cx+A*0.16, cy-L/2+L*0.34, A*0.20, L*0.16, 1); g.fill();
+      const A = CS*0.70, L = alto;
+      const arriba = cy - L/2;
+
+      /* la mampara: es lo que se reconoce */
+      g.fillStyle = "#00000026";
+      rr(g, f.cx-A/2+1.5, arriba+2.5, A, L*0.16, 2); g.fill();
+      g.fillStyle = th.oscuro ? "#575349" : "#9C978C";
+      rr(g, f.cx-A/2, arriba, A, L*0.16, 2); g.fill();
+      g.fillStyle = "#FFFFFF1C";
+      rr(g, f.cx-A/2+2, arriba+1.5, A-4, L*0.05, 1); g.fill();
+
+      /* el escritorio, pegado a la mampara */
+      const dy = arriba + L*0.20;
+      g.fillStyle = "#00000022";
+      rr(g, f.cx-A/2+1.5, dy+2, A, L*0.40, 3); g.fill();
+      g.fillStyle = th.oscuro ? "#7A736A" : "#E3DFD6";
+      rr(g, f.cx-A/2, dy, A, L*0.40, 3); g.fill();
+
+      /* el monitor, de espaldas: casi siempre apagado */
+      g.fillStyle = th.oscuro ? "#2A2D34" : "#4A4F58";
+      rr(g, f.cx-A*0.20, dy+L*0.06, A*0.40, L*0.17, 2); g.fill();
+      if((i*3+nf) % 5 === 0){
+        g.fillStyle = "#8FA9C8";
+        rr(g, f.cx-A*0.16, dy+L*0.08, A*0.32, L*0.11, 1); g.fill();
       }
+
+      /* la silla, corrida del escritorio como la deja todo el mundo */
+      const sx = f.cx + (i % 2 ? CS*0.09 : -CS*0.09);
+      g.fillStyle = "#00000022";
+      g.beginPath(); g.arc(sx+1, dy+L*0.62+1.5, CS*0.115, 0, 7); g.fill();
+      g.fillStyle = th.oscuro ? "#524C43" : "#B9B3A8";
+      g.beginPath(); g.arc(sx, dy+L*0.62, CS*0.115, 0, 7); g.fill();
     });
   });
 }
@@ -5331,6 +5371,37 @@ function copiarTodo(){
 }
 
 /* ---------- la ficha: para sacarle captura y tirarla al grupo ---------- */
+/* El mes de un vistazo: qué días jugaste, cuáles ganaste y cuáles te
+   salteaste. Empieza en lunes, como los almanaques de acá. */
+function calendarioDiario(){
+  const d = leerDiaria();
+  if(!d.jugadas) return "";
+  const hoy = new Date();
+  const año = hoy.getFullYear(), mes = hoy.getMonth();
+  const primero = new Date(año, mes, 1);
+  const arranque = (primero.getDay() + 6) % 7;          // lunes primero
+  const cuantos = new Date(año, mes + 1, 0).getDate();
+  const dos = n => (n < 10 ? "0" : "") + n;
+  let celdas = "";
+  for(let i = 0; i < arranque; i++) celdas += '<span class="cd vacia"></span>';
+  for(let n = 1; n <= cuantos; n++){
+    const clave = año + "-" + dos(mes+1) + "-" + dos(n);
+    const r = d.dias[clave];
+    const esHoy = n === hoy.getDate();
+    const cls = r ? (r.g ? "gano" : "perdio") : (n > hoy.getDate() ? "porvenir" : "sinjugar");
+    const tit = r ? (r.g ? "Ganado en " + r.r + " rondas" : "Te agarraron") : "";
+    celdas += '<span class="cd ' + cls + (esHoy ? " hoy" : "") + '" title="' + tit + '">' + n + '</span>';
+  }
+  const nombres = ["L","M","M","J","V","S","D"]
+    .map(x => '<span class="cd cab">' + x + '</span>').join("");
+  return '<div class="caldia">' +
+    '<div class="calcab"><span class="l">Desafío diario · ' + MESES_DIA[mes] + '</span>' +
+      '<span class="v"><b>' + d.racha + '</b> de racha · mejor <b>' + d.mejor + '</b> · ' +
+      d.ganadas + ' de ' + d.jugadas + '</span></div>' +
+    '<div class="calgrilla">' + nombres + celdas + '</div>' +
+  '</div>';
+}
+
 function ficha(){
   const hechas = salasHechas();
   const total  = Object.keys(SALAS).length;
@@ -5386,7 +5457,7 @@ function ficha(){
       '</div>' +
     '</div>' +
 
-    '<div class="fsalas">' + filas + '</div>' + tiraOtro +
+    '<div class="fsalas">' + filas + '</div>' + tiraOtro + calendarioDiario() +
     '<p class="fnota">El ✓ es una sala hecha sin que te sacaran ninguna pieza. ' +
     'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
     '<div class="finbotones">' +
