@@ -321,6 +321,24 @@
 
   /* las dos cajas, para elegir a cuál entrar */
   .tapas{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+  /* El desafío diario no es una tercera caja: es otra forma de jugar, así
+     que entra por una franja aparte debajo de las dos tapas. */
+  .diaria{appearance:none;-webkit-appearance:none;cursor:pointer;
+    display:flex;align-items:center;gap:14px;text-align:left;
+    width:min(100%,420px);margin:26px auto 0;padding:10px 16px 10px 10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    color:inherit;transition:transform .15s ease, border-color .15s ease}
+  .diaria:hover{transform:translateY(-2px);border-color:var(--brass)}
+  .diaria:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+  .diaria img{width:56px;height:56px;flex:none;border-radius:8px;object-fit:cover}
+  .diaria .txt{min-width:0}
+  .diaria b{display:block;font:400 15px/1.15 "Archivo Black","Archivo",sans-serif;
+    text-transform:uppercase;letter-spacing:-.01em;color:var(--ink)}
+  .diaria small{display:block;margin-top:4px;font:500 10px/1.35 "IBM Plex Mono",monospace;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .diaria.hecho{border-color:var(--patina)}
+  .diaria.hecho small{color:var(--patina)}
   .tapa{background:none;border:0;padding:0;cursor:pointer;color:inherit;
     display:flex;flex-direction:column;gap:11px;align-items:center;
     width:min(38vw,270px);transition:.16s ease}
@@ -985,6 +1003,11 @@
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
   </div>
+  <button class="diaria" id="botondiaria" onclick="entrarDiaria()">
+    <img src="diario.jpg" alt="Desafío diario">
+    <span class="txt"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
+  </button>
+
   <div class="quiensos">
     <label for="nombre">¿Quién entra al museo?</label>
     <div class="fila">
@@ -1035,7 +1058,11 @@ const DIRS  = [[1,0],[-1,0],[0,-1],[0,1]];      // prioridad del manual: → ←
 const DIAGS = [[1,-1],[1,1],[-1,1],[-1,-1]];
 const key = (x,y) => y*W + x;
 const inside = (x,y) => x>=0 && y>=0 && x<W && y<H;
-const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+/* De dónde sale el azar. En las partidas normales es Math.random; en el
+   desafío diario se cambia por un generador con semilla, para que a los nueve
+   les toque la misma partida. Todo lo que sortea algo pasa por acá. */
+let AZAR = Math.random;
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(AZAR()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
 
 /* --- el marco: roles por casilla, editables ---
    Arriba van la oficina del jefe, la salida y su baño, más casillas vacías.
@@ -1763,16 +1790,292 @@ const DECK_2 = [
   {n:"¡Se acerca!",                    d:"Va derecho hacia vos. Las plantas no te salvan.", k:"rush", ic:"🏃"},
 ];
 
+
+/* ==========================================================================
+   EL DESAFÍO DIARIO · una sala nueva por día, la misma para todos
+   Todo lo que decide la sala —el tablero, las paredes, qué joya está en qué
+   vitrina, el orden del mazo, quién juega y quién persigue— sale de una
+   semilla hecha con la fecha. A los nueve les toca exactamente la misma
+   partida, que es lo que hace que valga compararla.
+   Transcurre en una oficina, que es de donde salió el juego original.
+   Las semillas de SEMILLAS_DIA no son cualquiera: el bot jugó cada una
+   cientos de veces y sólo quedaron las que caen en la banda de dificultad,
+   así que ninguna sala del día sale regalada ni imposible.
+   ========================================================================== */
+
+/* La sala de hoy vive acá: se arma al entrar y se pisa cada día. */
+const SALAS_DIA = {};
+
+const THEMES_3 = {
+  oficina:{ oscuro:false, piso:["#C6C8CE","#BFC1C7"], patron:"alfombra", junta:"#00000018",
+            luz:"#EAF2FF", luzA:.16, pared:"#F2F1EC", void:"#A9ADB4", vineta:.12,
+            fondo:"#A9ADB4", luces:false, neon:null, cartel:.5 },
+};
+
+/* La luz cambia según el día: el lunes es un tubo fluorescente frío y el
+   viernes son las seis de la tarde entrando por la ventana. */
+const LUZ_SEMANA = [
+  {luz:"#DCE6F4", luzA:.10, dia:"Domingo"},
+  {luz:"#E2ECFF", luzA:.13, dia:"Lunes"},
+  {luz:"#E6EEFB", luzA:.15, dia:"Martes"},
+  {luz:"#ECEFF6", luzA:.17, dia:"Miércoles"},
+  {luz:"#F3EFEC", luzA:.20, dia:"Jueves"},
+  {luz:"#FFE9C8", luzA:.26, dia:"Viernes"},
+  {luz:"#FFF0D4", luzA:.22, dia:"Sábado"},
+];
+
+/* el amarillo del post-it: el desafío diario se reconoce por ese color, como
+   el museo por el latón y el shopping por el celeste */
+const ACENTO_DIARIO = ["#E8B93B","#8A6B18","#3A2F10"];
+
+/* Un generador con semilla: la misma entrada da siempre la misma salida.
+   No se puede usar Math.random en ningún lado de acá adentro. */
+function rngDia(semilla){
+  let a = semilla >>> 0;
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* Arma el tablero: primero las paredes, después el contenido. Ninguna pared
+   se acepta si deja una casilla incomunicada. */
+function generarTableroDia(semilla){
+  const r = rngDia(semilla);
+  const COLS = 6, FILAS = 4;
+  const aristas = [];
+  for(let y = 0; y < FILAS; y++) for(let x = 0; x < COLS; x++){
+    if(x < COLS-1) aristas.push("v:" + (CX0+x) + ":" + (CY0+y));
+    if(y < FILAS-1) aristas.push("h:" + (CX0+x) + ":" + (CY0+y));
+  }
+  const mezclar = arr => {
+    const c = arr.slice();
+    for(let i = c.length-1; i > 0; i--){ const j = Math.floor(r()*(i+1)); const t = c[i]; c[i] = c[j]; c[j] = t; }
+    return c;
+  };
+  const comunicado = ps => {
+    const set = new Set(ps);
+    const tapada = (x1,y1,x2,y2) => set.has(x1 === x2
+      ? "h:" + (CX0+x1) + ":" + (CY0+Math.min(y1,y2))
+      : "v:" + (CX0+Math.min(x1,x2)) + ":" + (CY0+y1));
+    const vistas = new Set(["0,0"]); const cola = [[0,0]];
+    while(cola.length){
+      const c = cola.shift();
+      for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx = c[0]+d[0], ny = c[1]+d[1];
+        if(nx < 0 || ny < 0 || nx >= COLS || ny >= FILAS) continue;
+        if(vistas.has(nx + "," + ny)) continue;
+        if(tapada(c[0], c[1], nx, ny)) continue;
+        vistas.add(nx + "," + ny); cola.push([nx, ny]);
+      }
+    }
+    return vistas.size === COLS*FILAS;
+  };
+
+  const paredes = [];
+  const tope = 5 + Math.floor(r()*3);
+  for(const p of mezclar(aristas)){
+    if(paredes.length >= tope) break;
+    paredes.push(p);
+    if(!comunicado(paredes)) paredes.pop();
+  }
+
+  /* las entradas desde el pasillo: se cierran dos arriba y a veces una abajo,
+     porque una sala abierta de par en par se escapa sola */
+  const arriba = [2,3,4,5].map(x => "h:" + x + ":1");
+  const abajo  = [3,4].map(x => "h:" + x + ":5");
+  const bordes = mezclar(arriba).slice(0,2).concat(r() < .5 ? mezclar(abajo).slice(0,1) : []);
+
+  /* el contenido, sobre casillas mezcladas */
+  const libres = mezclar((function(){
+    const t = [];
+    for(let y = 0; y < FILAS; y++) for(let x = 0; x < COLS; x++) t.push({x, y});
+    return t;
+  })());
+  const grilla = [];
+  for(let y = 0; y < FILAS; y++) grilla.push(new Array(COLS).fill("."));
+  const poner = ch => { const c = libres.pop(); grilla[c.y][c.x] = ch; };
+
+  poner(r() < .45 ? "Q" : "P"); poner("P"); poner("P");
+  poner("D"); poner("T"); poner("C");
+  const plantas = 1 + Math.floor(r()*2);
+  for(let i = 0; i < plantas; i++) poner("A");
+  if(r() < .55) poner("M");
+  if(r() < .60) poner("L");
+  if(r() < .70) poner("K");
+  if(r() < .45){ poner("E"); poner("E"); }
+
+  return { e: grilla.map(f => f.join("")), w: paredes.concat(bordes) };
+}
+
+/* De qué día es cada semilla. Se cuenta desde el 1 de septiembre de 2026. */
+/* Las semillas que pasaron el filtro del bot. Se generan aparte y se pegan
+   acá: ver el comentario de arriba. */
+const SEMILLAS_DIA = [
+  1001, 1002, 1003, 1004, 1006, 1007, 1008, 1010, 1011, 1013,
+  1015, 1016, 1017, 1018, 1019, 1020, 1024, 1025, 1026, 1028,
+  1029, 1032, 1033, 1034, 1035, 1036, 1037, 1039, 1041, 1042,
+  1043, 1045, 1046, 1047, 1048, 1049, 1050, 1055, 1057, 1058,
+  1060, 1061, 1062, 1067, 1070, 1073, 1075, 1076, 1077, 1078,
+  1079, 1080, 1081, 1082, 1086, 1087, 1088, 1089, 1090, 1091,
+  1093, 1094, 1095, 1096, 1097, 1099, 1100, 1102, 1103, 1104,
+  1106, 1107, 1108, 1109, 1110, 1112, 1113, 1114, 1115, 1118,
+  1119, 1120, 1121, 1122, 1126, 1130, 1131, 1132, 1134, 1138,
+  1139, 1140, 1141, 1142, 1143, 1144, 1145, 1147, 1152, 1153,
+  1157, 1158, 1159, 1160, 1161, 1163, 1164, 1165, 1166, 1167,
+  1171, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1182,
+  1184, 1185, 1187, 1188, 1189, 1190, 1192, 1194, 1196, 1197,
+  1201, 1202, 1203, 1204, 1206, 1207, 1209, 1210, 1211, 1212,
+  1213, 1214, 1215, 1216, 1219, 1220, 1221, 1222, 1223, 1224,
+  1225, 1226, 1227, 1228, 1229, 1231, 1232, 1233, 1235, 1237,
+  1238, 1240, 1241, 1242, 1245, 1247, 1248, 1249, 1250, 1251,
+  1254, 1255, 1257, 1258, 1259, 1262, 1263, 1264, 1265, 1266,
+  1267, 1268, 1269, 1271, 1272, 1273, 1274, 1276, 1277, 1279,
+  1281, 1282, 1283, 1284, 1285, 1286, 1289, 1292, 1294, 1295,
+  1296, 1297, 1298, 1303, 1304, 1305, 1306, 1307, 1308, 1310,
+  1311, 1314, 1315, 1316, 1317, 1320, 1321, 1322, 1323, 1325,
+  1326, 1327, 1328, 1329, 1330, 1332, 1335, 1337, 1338, 1339,
+  1342, 1345, 1346, 1349, 1352, 1353, 1354, 1355, 1357, 1359,
+  1360, 1364, 1367, 1370, 1372, 1374, 1376, 1379, 1380, 1381,
+  1382, 1383, 1384, 1386, 1387, 1389, 1390, 1391, 1393, 1394,
+  1395, 1397, 1398, 1399, 1400, 1401, 1402, 1404, 1407, 1409,
+  1410, 1412, 1413, 1414, 1415, 1416, 1417, 1419, 1421, 1422,
+  1424, 1427, 1428, 1431, 1433, 1434, 1438, 1439, 1440, 1442,
+  1444, 1445, 1448, 1449, 1450, 1452, 1454, 1458, 1459, 1461,
+  1462, 1463, 1464, 1465, 1466, 1468, 1469, 1470, 1471, 1478,
+  1479, 1480, 1482, 1483, 1486, 1487, 1488, 1490, 1491, 1493,
+  1494, 1495, 1498, 1500, 1501, 1502, 1504, 1505, 1507, 1508,
+  1509, 1510, 1511, 1512, 1514, 1516, 1517, 1519, 1521, 1526,
+  1527, 1528, 1529, 1530, 1531, 1532, 1534, 1535, 1536, 1537,
+  1538, 1539, 1540, 1541, 1542, 1544, 1545, 1546, 1547, 1548,
+  1549, 1550, 1551, 1552, 1554,
+];
+
+const EPOCA_DIA = Date.UTC(2026, 8, 1);
+function numeroDeDia(fecha){
+  const f = fecha || new Date();
+  const hoy = Date.UTC(f.getFullYear(), f.getMonth(), f.getDate());
+  return Math.floor((hoy - EPOCA_DIA) / 86400000);
+}
+function claveDelDia(fecha){
+  const f = fecha || new Date();
+  const dos = n => (n < 10 ? "0" : "") + n;
+  return f.getFullYear() + "-" + dos(f.getMonth()+1) + "-" + dos(f.getDate());
+}
+
+/* La sala entera del día: tablero, quién juega, quién persigue y la luz. */
+function salaDelDia(fecha){
+  const f = fecha || new Date();
+  const n = numeroDeDia(f);
+  const cuantas = SEMILLAS_DIA.length;
+  const semilla = SEMILLAS_DIA[((n % cuantas) + cuantas) % cuantas];
+  const g = generarTableroDia(semilla);
+  const r = rngDia(semilla ^ 0x5f3759df);
+  const eleg = a => a[Math.floor(r() * a.length)];
+
+  const heroes = Object.keys(CREW);
+  const hero = eleg(heroes);
+  const resto = heroes.filter(h => h !== hero);
+  const comps = [];
+  for(let i = 0; i < 3; i++) comps.push(resto.splice(Math.floor(r()*resto.length), 1)[0]);
+
+  const todos = Object.assign({}, JUEGOS[1].foes, JUEGOS[2].foes);
+  const luz = LUZ_SEMANA[f.getDay()];
+  const tema = Object.assign({}, THEMES_3.oficina, {luz: luz.luz, luzA: luz.luzA});
+
+  return {
+    num: n + 1, name: luz.dia + " " + f.getDate() + " de " + MESES_DIA[f.getMonth()],
+    wing: "Desafío diario", piso: "oficina", afuera: "cubiculos",
+    ac: ACENTO_DIARIO, hero: hero, foe: eleg(Object.keys(todos)), comps: comps,
+    e: g.e, w: g.w, temaPropio: tema, semilla: semilla,
+  };
+}
+
+/* Arranca el desafío de hoy. Fija el azar en la semilla del día antes de
+   armar nada: el tablero, el mazo, las joyas y los objetos tienen que salir
+   iguales en los nueve teléfonos. */
+/* ---------- el registro del desafío diario ----------
+   Un intento por día. Se guarda qué día jugaste, si ganaste y la racha, que
+   es lo que después duele perder. */
+function enDiaria(){ return JUEGO === 3; }
+
+function leerDiaria(){
+  if(!LEGAJO.diaria) LEGAJO.diaria = {ultimo:"", gano:false, rondas:0, racha:0, mejor:0, jugadas:0, ganadas:0};
+  return LEGAJO.diaria;
+}
+function yaJugueHoy(){ return leerDiaria().ultimo === claveDelDia(); }
+
+function anotarDiaria(gano, rondas){
+  const d = leerDiaria();
+  const hoy = claveDelDia();
+  if(d.ultimo === hoy) return d;                 // por las dudas: una sola vez
+  const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+  const seguido = d.ultimo === claveDelDia(ayer);
+  d.racha  = gano ? (seguido && d.racha ? d.racha + 1 : 1) : 0;
+  d.mejor  = Math.max(d.mejor || 0, d.racha);
+  d.jugadas = (d.jugadas || 0) + 1;
+  d.ganadas = (d.ganadas || 0) + (gano ? 1 : 0);
+  d.ultimo = hoy; d.gano = gano; d.rondas = rondas;
+  guardarLegajo(LEGAJO);
+  return d;
+}
+
+/* El texto que se pega en el grupo. Corto, sin spoilear el tablero: lo que se
+   compara son las rondas, no cómo lo resolviste. */
+function textoParaCompartir(){
+  const d = leerDiaria();
+  const s = S.sala;
+  const marca = d.gano ? "🏃 " + d.rondas + " rondas" : "💼 me agarraron";
+  const limpio = d.gano && S.taken === 0 ? " · sin que me sacaran ninguna" : "";
+  const racha = d.racha > 1 ? "\nRacha: " + d.racha + " días" : "";
+  return "LOS MUSEOS · desafío diario\n" + s.name + "\n" +
+         CREW[s.hero].n + " vs " + S.foe.n + "\n" + marca + limpio + racha +
+         "\nentradasysalidas.github.io/Los-Museos/";
+}
+
+function copiarResultado(){
+  const txt = textoParaCompartir();
+  const listo = () => { const b = document.getElementById("btncopiar"); if(b) b.textContent = "¡Copiado!"; };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(listo, () => pegarAMano(txt, listo));
+  }else pegarAMano(txt, listo);
+}
+function pegarAMano(txt, listo){
+  const t = document.createElement("textarea");
+  t.value = txt; t.style.position = "fixed"; t.style.opacity = "0";
+  document.body.appendChild(t); t.select();
+  try{ document.execCommand("copy"); listo(); }catch(e){}
+  document.body.removeChild(t);
+}
+
+
+function empezarDiaria(){
+  const sala = salaDelDia();
+  SALAS_DIA.hoy = sala;
+  cargarJuego(3);
+  AZAR = rngDia(sala.semilla ^ 0x9E3779B9);
+  newGame("hoy");
+}
+
+const MESES_DIA = ["enero","febrero","marzo","abril","mayo","junio","julio",
+                   "agosto","septiembre","octubre","noviembre","diciembre"];
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
   2: { n:"Los Museos 2", salas:SALAS_2, foes:FOES_2, themes:THEMES_2, deck:DECK_2,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_2 },
+  3: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
+       themes:THEMES_3, deck:DECK, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS,
+       consejos:{} },
 };
 
 function cargarJuego(n){
   const j = JUEGOS[n];
   if(!j) return false;
+  AZAR = Math.random;          // el desafío diario lo vuelve a fijar después
   SALAS = j.salas; FOES = j.foes; THEMES = j.themes; DECK = j.deck;
   FRAME_DEF = j.frameDef; FRAME_WALLS = j.frameWalls; CONSEJOS = j.consejos;
   FRAME_MAP = null;            // se rearma con el marco del juego nuevo
@@ -2525,7 +2828,7 @@ function aislados(){
 /* ---------- las pantallas del final ----------
    Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
    marca que quedó y en qué anda tu legajo. */
-function pantallaFinal(gano, titulo, bajada, salaKey, remate){
+function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones){
   const s = SALAS[salaKey];
   const ac = s.ac ? s.ac[0] : "#D9A94F";
   const keys = Object.keys(SALAS), next = keys[keys.indexOf(salaKey)+1];
@@ -2565,8 +2868,8 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate){
           : gano ? '<p class="marca nueva">Mejor marca: <b>' + S.round + ' rondas</b>.</p>' : "") +
       '</div>' +
     '</div>' +
-    '<div class="finbotones">' +
-      (gano && next
+    '<div class="finbotones">' + (botones ||
+      ((gano && next
         ? '<button class="btn" onclick="startSala(&quot;' + next + '&quot;)">Seguir: ' +
           SALAS[next].name + '</button>'
         : '<button class="btn" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal(true)">' +
@@ -2575,7 +2878,7 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate){
         ? '<button class="btn alt" onclick="newGame(&quot;' + salaKey + '&quot;);closeModal(true)">Repetir</button>'
         : "") +
       '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
-      '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
+      '<button class="btn alt" onclick="menu()">Todas las salas</button>')) +
     '</div>', false);
 
   const lienzo = $("finlienzo");
@@ -2679,9 +2982,27 @@ function siguienteDelMaraton(){
 }
 let MARATON_ULTIMA = 0;
 
+/* La pantalla del desafío diario. No ofrece revancha —ese es el punto— y
+   trae el botón para copiar el resultado y pegarlo en el grupo. */
+function finalDiaria(gano, motivo){
+  const d = anotarDiaria(gano, S.round);
+  const racha = d.racha > 0
+    ? "Racha de <b>" + d.racha + " día" + (d.racha > 1 ? "s" : "") + "</b>."
+    : "Se te cortó la racha.";
+  const cuenta = " Llevás <b>" + d.ganadas + " de " + d.jugadas + "</b> desafíos.";
+  pantallaFinal(gano, gano ? "¡Ganaste!" : "Te agarraron",
+    (gano ? "Tres piezas entregadas y afuera. " : motivo + " ") + racha + cuenta,
+    "hoy",
+    gano ? "El desafío de hoy, resuelto" : "El desafío de hoy se te fue",
+    '<button class="btn" id="btncopiar" onclick="copiarResultado()">Copiar para el grupo</button>' +
+    '<button class="btn alt" onclick="salirDelDiario(true)">Mi ficha</button>' +
+    '<button class="btn alt" onclick="salirDelDiario()">Todas las salas</button>');
+}
+
 function gameWin(){
   S.over = "win";
   float(S.exit.x, S.exit.y, "¡AFUERA!", "#79AE9E");
+  if(enDiaria()) return finalDiaria(true);
   const primeraVez = !(LEGAJO.salas[S.salaKey] && LEGAJO.salas[S.salaKey].hecha);
   anotarSala(S.salaKey, S.round, S.taken === 0);
   if(enMaraton()) return siguienteDelMaraton();
@@ -2698,6 +3019,7 @@ function gameLose(reason){
   S.over = "lose";
   fx.shake = TUNE.shakeMs * 1.7;
   say("💼 <b>" + reason + "</b>", "r");
+  if(enDiaria()) return finalDiaria(false, reason);
   if(enMaraton()){
     MARATON_ULTIMA = MARATON.i;
     MARATON.rondas += S.round;
@@ -2768,6 +3090,7 @@ function drawAfuera(g, th){
   const ESCENAS = {
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
+    cubiculos: drawCubiculos,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -2935,6 +3258,32 @@ function drawPasillo(g, th){
   });
 }
 
+/* la oficina de al lado: hileras de escritorios iguales hasta el borde, que es
+   lo que se ve desde adentro de un cubículo */
+function drawCubiculos(g, th){
+  velo(g, th, .16);
+  const paso = CS*0.92, alto = paso*0.78;
+  franjasDeAfuera().forEach((f, nf) => {
+    repartirAlto(paso, alto).forEach((cy, i) => {
+      const A = CS*0.62, L = alto;
+      g.fillStyle = "#00000030";                           // la sombra del escritorio
+      rr(g, f.cx-A/2+1.5, cy-L/2+2, A, L*0.62, 3); g.fill();
+      g.fillStyle = th.oscuro ? "#6E6A62" : "#D8D4CC";      // la tabla
+      rr(g, f.cx-A/2, cy-L/2, A, L*0.62, 3); g.fill();
+      g.fillStyle = th.oscuro ? "#23262C" : "#3A3F49";      // el monitor
+      rr(g, f.cx-A*0.26, cy-L/2+3, A*0.52, L*0.24, 2); g.fill();
+      g.fillStyle = (i+nf)%4 ? "#7FA8D8" : "#8FBF9A";       // la pantalla prendida
+      rr(g, f.cx-A*0.22, cy-L/2+4.5, A*0.44, L*0.16, 1); g.fill();
+      g.fillStyle = th.oscuro ? "#4A4740" : "#B4AFA6";      // la silla
+      g.beginPath(); g.arc(f.cx, cy+L*0.22, CS*0.13, 0, 7); g.fill();
+      if((i+nf)%3===0){                                     // un papel encima
+        g.fillStyle = "#F4F1EA";
+        rr(g, f.cx+A*0.16, cy-L/2+L*0.34, A*0.20, L*0.16, 1); g.fill();
+      }
+    });
+  });
+}
+
 /* el patio de comidas visto desde arriba: mesas redondas con sus sillas */
 function drawMesas(g, th){
   velo(g, th, .10);
@@ -3045,7 +3394,13 @@ function drawPiso(g,x,y,th){
   const px=x*CS, py=y*CS;
   g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
   g.fillRect(px,py,CS,CS);
-  if(th.patron==="parquet"){
+  if(th.patron==="alfombra"){
+    /* alfombra industrial: el grano fino que tienen todas las oficinas */
+    for(let i=0;i<14;i++){
+      g.fillStyle = rnd(x,y,i) > .5 ? "#00000012" : "#ffffff10";
+      g.fillRect(px + rnd(x,y,i+2)*CS, py + rnd(x,y,i+5)*CS, 2, 2);
+    }
+  }else if(th.patron==="parquet"){
     for(let i=0;i<5;i++){
       g.fillStyle = rnd(x,y,i)>.5 ? "#00000014" : "#ffffff0e";
       g.fillRect(px, py+i*(CS/5)+rnd(x,y,i+9)*3, CS, 1.6);
@@ -4185,7 +4540,7 @@ function mezcla(a, b, t){
   return "#" + ((1<<24) + (r<<16) + (g<<8) + z).toString(16).slice(1);
 }
 function temaDeSala(sala){
-  const base = THEMES[sala.piso];
+  const base = sala.temaPropio || THEMES[sala.piso];   // la sala del día trae su luz
   const ac = sala.ac && sala.ac[0];
   if(!ac) return base;
   /* Sobre el parquet oscuro alcanza con poco: parte de un casi negro y
@@ -4264,6 +4619,7 @@ addEventListener("keydown", e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
   if(k==="r"){
     if(enMaraton()){ banner("En el maratón no hay revancha","#E0685D"); return; }
+    if(enDiaria()){ banner("El desafío del día es un solo intento","#E0685D"); return; }
     if(S){ newGame(S.salaKey); closeModal(true); }
     return;
   }
@@ -4775,6 +5131,20 @@ let JUEGO = 1;
 
 /* El sello de la segunda tapa. Vive aparte porque hace falta en dos momentos:
    al elegir una tapa y al abrir la página. Antes sólo corría en el primero. */
+/* la franja del desafío: qué día es, y si ya lo jugaste */
+function pintarFranjaDiaria(){
+  const b = document.getElementById("botondiaria");
+  const p = document.getElementById("diariapie");
+  if(!b || !p) return;
+  const d = leerDiaria();
+  const hecho = d.ultimo === claveDelDia();
+  if(b.classList) b.classList.toggle("hecho", hecho);
+  const racha = d.racha > 1 ? " · racha " + d.racha : "";
+  p.textContent = hecho
+    ? (d.gano ? "Hecho hoy en " + d.rondas + " rondas" : "Hoy te agarraron") + racha
+    : "Una sala nueva, la misma para todos" + racha;
+}
+
 function sellarTapaDos(){
   const sel = document.getElementById("sello2");
   if(!sel) return;
@@ -4820,7 +5190,8 @@ function prepararPortal(){
   const pie = document.getElementById("portalpie");
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
   textoDelPie();
-  sellarTapaDos();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
+  sellarTapaDos();
+  pintarFranjaDiaria();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 
@@ -4874,6 +5245,51 @@ function entrar(){
   if(!p || !p.classList) return menu();
   p.classList.add("sale");
   setTimeout(()=>{ p.classList.add("off"); menu(); }, 380);
+}
+
+/* El desafío diario entra por su propia puerta: no pide la palabra del
+   shopping —no muestra ninguna sala de la campaña— pero sí el nombre, que
+   es de donde salen la racha y el récord. */
+function entrarDiaria(){
+  if(yaEntre) return;
+  const inp = document.getElementById("nombre");
+  const pie = document.getElementById("portalpie");
+  const nom = (inp && inp.value ? inp.value : "").trim().slice(0,16);
+  if(!nom){
+    if(pie) pie.innerHTML = "Poné un nombre, aunque sea un apodo.";
+    if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
+    return;
+  }
+  LEGAJO.nombre = nom;
+  guardarLegajo(LEGAJO);
+  yaEntre = true;
+  const p = document.getElementById("portal");
+  const arrancar = () => { empezarDiaria(); if(yaJugueHoy()) verResultadoDeHoy(); };
+  if(!p || !p.classList) return arrancar();
+  p.classList.add("sale");
+  luego(()=>{ p.classList.add("off"); arrancar(); }, 380);
+}
+
+/* si ya lo jugaste, se muestra lo que hiciste en vez de dejarte jugar de nuevo */
+/* Salir del desafío devuelve a la campaña: si no, la lista de salas queda con
+   una sola y la ficha cuenta sobre un solo nivel. */
+function salirDelDiario(aFicha){
+  cargarJuego(JUEGO === 3 ? 1 : JUEGO);
+  if(aFicha) ficha(); else menu();
+}
+
+function verResultadoDeHoy(){
+  const d = leerDiaria();
+  const racha = d.racha > 0 ? "Racha de <b>" + d.racha + " día" + (d.racha>1?"s":"") + "</b>." : "";
+  showModal("Ya lo jugaste",
+    '<p class="lead">El desafío es <b>un intento por día</b>. Hoy ' +
+    (d.gano ? 'lo sacaste en <b>' + d.rondas + ' rondas</b>. ' : 'te agarraron. ') + racha +
+    ' Mañana hay otra sala.</p>' +
+    '<div class="finbotones">' +
+      '<button class="btn" id="btncopiar" onclick="copiarResultado()">Copiar para el grupo</button>' +
+      '<button class="btn alt" onclick="salirDelDiario(true)">Mi ficha</button>' +
+      '<button class="btn alt" onclick="salirDelDiario()">Todas las salas</button>' +
+    '</div>', false);
 }
 
 addEventListener("keydown", e=>{
