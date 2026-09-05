@@ -595,13 +595,19 @@
      de su caja. En el teléfono el scroll es lo natural. */
   @media (max-width:860px){
     html,body{overflow:auto;height:auto}
-    #app{height:auto;min-height:100%;display:block;padding:8px 8px 16px}
-    header{border-top:3px solid var(--brass);margin-bottom:8px}
-    #stage{display:block}
-    #boardwrap{width:100%;margin-bottom:8px;order:-1}
-    #relato{display:flex;max-height:40vh;margin-top:8px}
-    .ev{font-size:14px}
-    #cartel{font-size:16px;padding:9px 16px;min-height:40px}
+    #app{height:auto;min-height:100%;display:block;padding:6px 6px 8px}
+    header{border-top:3px solid var(--brass);margin-bottom:6px}
+    /* ---- el teléfono, de una sola pantalla ----
+       Antes había que subir y bajar: las tres tarjetas iban arriba, el
+       tablero abajo y el registro al final. Ahora el tablero va primero y
+       conserva su tamaño —es lo que se toca— y todo lo demás se aplana en
+       franjas de una línea alrededor. El registro se va: lo que importa ya
+       lo canta el cartel arriba del tablero. */
+    #stage{display:flex;flex-direction:column;gap:6px}
+    #boardwrap{order:1;width:100%;margin:0}
+    aside{order:2}
+    #relato{display:none}
+    #cartel{font-size:15px;padding:6px 12px;min-height:34px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -612,39 +618,55 @@
     .salaname h1{font-size:clamp(18px,5.4vw,26px);margin-top:3px}
     .hbtn{padding:0 12px;font-size:11px;letter-spacing:.04em}
 
-    #boardwrap{padding:6px}
-    aside{flex-direction:row;flex-wrap:wrap;gap:8px;align-items:stretch}
-    .card{padding:9px 11px;flex:1 1 100%}
-    .card h3{margin-bottom:6px;font-size:10px}
+    #boardwrap{padding:5px}
+    aside{flex-direction:column;gap:6px}
+    .card{padding:8px 10px;flex:none}
+    .card h3{display:none}          /* los títulos se entienden por el dibujo */
 
     /* quién sos: se resume en una línea */
-    .yo canvas{width:34px;height:34px}
-    .yo .n{font-size:16px}
+    .yo{align-items:center;gap:9px}
+    .yo canvas{width:30px;height:30px}
+    .yo .n{font-size:14px}
     /* El poder se leía sólo en pantalla grande, así que en el teléfono
        parecía que los personajes no tenían ninguno. Se achica, no se esconde. */
-    .yo .p{font-size:11.5px;line-height:1.3;margin-top:3px}
+    .yo .p{font-size:11px;line-height:1.25;margin-top:1px}
+    .ojo{margin-top:7px;padding:6px 9px;gap:8px}
+    .ojo .ic{font-size:17px;width:20px}
+    .ojo .n{font-size:12px;margin-top:2px}
 
     /* el antagonista, en una fila */
-    #foecard{flex:1 1 100%}
-    .foename{font-size:19px}
+    .foename{font-size:15px}
     .foewhy{display:none}
-    .foestats{margin-top:8px;gap:8px}
-    .stat{padding:7px 9px}
-    .stat .val{font-size:20px;margin-top:3px}
-    .deckwrap{min-height:74px;margin-top:8px}
-    .deckcard{min-height:74px;padding:9px 11px;gap:9px}
-    .deckcard .ic{font-size:21px;width:26px}
-    .deckcard .tt{font-size:13.5px}
-    .deckcard .dd{font-size:11.5px;margin-top:2px}
+    .foestats{margin-top:6px;gap:6px}
+    .stat{padding:5px 8px;display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+    .stat .lbl{font-size:8px}
+    .stat .val{font-size:16px;margin-top:0}
+    .alertpips{flex-basis:100%;margin-top:3px}
+    .deckwrap{min-height:54px;margin-top:6px}
+    .deckcard{min-height:54px;padding:7px 9px;gap:8px}
+    .deckcard .ic{font-size:18px;width:22px}
+    .deckcard .tt{font-size:12.5px}
+    .deckcard .dd{display:none}
+    .deckfoot{font-size:9px;margin-top:4px}
 
-    .goals{margin-top:9px!important}
-    .goal{padding:7px 8px}
-    .goal .val{font-size:19px;margin-top:3px}
-    .slot{min-height:84px;padding:9px 4px 8px}
-    .slot .ic{font-size:27px}
-    .slot.hand .ic{font-size:32px}
-    .slot .nm{font-size:10.5px}
-    .slot .st{font-size:8px}
+    /* De los tres marcadores quedan los pasos: «entregadas» ya lo dicen las
+       joyas de abajo y «salida» está dibujada en el tablero. No se pierde
+       información, se deja de repetirla. */
+    .goals{margin-top:7px!important;gap:6px}
+    #gpiezas,#gsalida{display:none}
+    .goal{padding:4px 9px;display:flex;align-items:center;gap:9px}
+    .goal .lbl{font-size:8px}
+    .goal .val{font-size:15px;margin-top:0}
+
+    /* las joyas y los objetos comparten una sola fila */
+    #cartaitems{display:flex;gap:6px;align-items:stretch}
+    #cartaitems .slots{margin-top:0;gap:5px;flex:1 1 0;min-width:0}
+    #objslots:empty{display:none}
+    .slot{min-height:50px;padding:6px 3px 5px}
+    .slot .ic{font-size:20px}
+    .slot.hand .ic{font-size:23px}
+    .slot .nm{font-size:8.5px;line-height:1.15}
+    .slot .st{display:none}
 
     /* la ficha, que es lo que se saca por captura */
     .fichacab{grid-template-columns:1fr}
@@ -785,7 +807,7 @@
         <div class="ojo off" id="ojo"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="cartaitems">
         <h3>Piezas · salen de las vitrinas</h3>
         <div class="slots" id="pieceslots"></div>
         <h3 style="margin-top:14px">Objetos · te los dan los cómplices</h3>
