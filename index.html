@@ -4380,13 +4380,19 @@ function syncUI(){
     pistas.push("⏱️ <b>" + S.reloj.quedan + (S.reloj.quedan===1 ? " ronda" : " rondas") +
       "</b> para entregarle " + PIE[S.reloj.id].sym + " <b>" + PIE[S.reloj.id].name +
       "</b> a " + CREW[compOf(S.reloj.id)].n + " o suena la alarma");
+  /* Acá iban las teclas: «Espacio tomás el mate, Enter cerrás la ronda». En
+     el teléfono no hay ni Espacio ni Enter, así que la ronda se frenaba
+     pidiendo algo imposible. Van botones, como el poder y la entrega; las
+     teclas siguen andando y se nombran adentro del botón. */
+  const boton = (accion, txt) =>
+    '<button class="hbtn" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick="' + accion + '">' + txt + '</button>';
   const esperando = S.awaitMate;
   if(esperando){
-    pistas.push(canDrinkHere()
-      ? "Te toca decidir · <b>Espacio</b> tomás el mate y recuperás los pasos · <b>Enter</b> cerrás la ronda"
-      : "Te toca decidir · <b>Enter</b> para cerrar la ronda");
+    if(canDrinkHere())
+      pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · volvés a tener los dos pasos"));
+    pistas.push(boton("finishRound()", "<b>Cerrar la ronda</b>"));
   } else if(canDrinkHere()){
-    pistas.push("<b>Espacio</b> para tomar el mate y recuperar los pasos que diste");
+    pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
   } else {
     const porque = porQueNoElMate();
     if(porque) pistas.push("🧉 " + porque);
