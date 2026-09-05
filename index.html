@@ -7,6 +7,11 @@
 <link rel="icon" href="caja.jpg">
 <link rel="apple-touch-icon" href="caja.jpg">
 <link rel="manifest" href="manifest.json">
+<!-- Mientras el juego se sigue tocando, que el telefono no se quede con una
+     copia vieja: GitHub Pages la manda con diez minutos de cache y agregado a
+     la pantalla de inicio no hay boton de recargar. Con esto pregunta si hay
+     algo nuevo cada vez que se abre. Cuando dejemos de cambiarlo, se saca. -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <!-- Agregado a la pantalla de inicio, el juego abre sin barra de direcciones ni
      barra de abajo: son unos 100px más de alto, que en el teléfono es la
      diferencia entre entrar en una pantalla o no. Desde adentro del navegador
