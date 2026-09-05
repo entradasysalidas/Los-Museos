@@ -607,7 +607,10 @@
     #boardwrap{order:1;width:100%;margin:0}
     aside{order:2}
     #relato{display:none}
-    #cartel{font-size:15px;padding:6px 12px;min-height:34px}
+    #boardwrap{gap:0}
+    #cartel{font-size:15px;min-height:0;padding:0;border-width:0}
+    #cartel.on{min-height:34px;padding:6px 12px;border-width:2px;margin-top:6px}
+    .hintbar.on{margin-top:6px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -3607,6 +3610,10 @@ function pintarCartel(txt, color){
     el.classList.remove("on");
     void el.offsetWidth;              // reiniciar la animación
     el.classList.add("on");
+    if(!el.dataset.atado){
+      el.dataset.atado = "1";
+      el.addEventListener("animationend", () => el.classList.remove("on"));
+    }
   }
 }
 
