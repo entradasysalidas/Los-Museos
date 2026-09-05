@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Los Museos</title>
 <link rel="icon" href="caja.jpg">
 <link rel="apple-touch-icon" href="caja.jpg">
@@ -377,7 +377,11 @@
      como está centrado, el título terminaba arriba del borde visible. dvh
      sí mide lo que se ve; vh queda de respaldo para navegadores viejos. */
   #overlay{position:fixed;inset:0;background:#05060899;backdrop-filter:blur(3px);
-    display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
+    display:flex;align-items:center;justify-content:center;z-index:40;
+    padding:calc(18px + env(safe-area-inset-top,0px))
+            calc(18px + env(safe-area-inset-right,0px))
+            calc(18px + env(safe-area-inset-bottom,0px))
+            calc(18px + env(safe-area-inset-left,0px))}
   @supports (height:100dvh){ #overlay{height:100dvh} }
   body.claro #overlay{background:#3a382f66}
   #overlay.off{display:none}
@@ -627,7 +631,15 @@
      de su caja. En el teléfono el scroll es lo natural. */
   @media (max-width:860px){
     html,body{overflow:auto;height:auto}
-    #app{height:auto;min-height:100%;display:block;padding:6px 6px 8px}
+    /* El reloj, la señal y la batería arriba, y la barra del gesto abajo,
+       ocupan lugar sobre la página: sin esto el encabezado quedaba debajo
+       del reloj. env() da lo que mide cada zona en este teléfono; en los
+       que no tienen muesca vale cero y no cambia nada. */
+    #app{height:auto;min-height:100%;display:block;
+      padding:calc(6px + env(safe-area-inset-top,0px))
+              calc(6px + env(safe-area-inset-right,0px))
+              calc(8px + env(safe-area-inset-bottom,0px))
+              calc(6px + env(safe-area-inset-left,0px))}
     header{border-top:3px solid var(--brass);margin-bottom:6px}
     /* ---- el teléfono, de una sola pantalla ----
        Antes había que subir y bajar: las tres tarjetas iban arriba, el
