@@ -214,19 +214,16 @@
     text-transform:uppercase;color:var(--dim)}
   /* El ojo de halcón de Marian: la carta que el jefe va a sacar esta ronda.
      Vive en su propia tarjeta porque es su poder, no información de todos. */
-  /* el botón del poder que se aprieta */
-  .poderbtn{appearance:none;-webkit-appearance:none;cursor:pointer;width:100%;
-    margin-top:8px;padding:9px 12px;border-radius:8px;
-    display:flex;align-items:center;gap:9px;text-align:left;
-    font:700 13px/1.2 "Archivo",system-ui,sans-serif;
+  /* La F que la explicación ya nombra es la que se aprieta: en el teléfono no
+     hay teclado, y un botón aparte comía media pantalla. Se agranda un poco
+     y se pinta como tecla para que se note que se toca. */
+  .teclaF{appearance:none;-webkit-appearance:none;cursor:pointer;
+    display:inline-block;margin:0 1px;padding:1px 7px;border-radius:5px;
+    font:700 1.2em/1.1 "Archivo",system-ui,sans-serif;vertical-align:baseline;
     background:var(--brass-soft);border:1px solid var(--brass);color:var(--brass)}
-  .poderbtn.off{display:none}
-  .poderbtn:disabled{cursor:default;background:var(--panel2);
+  .teclaF:disabled{cursor:default;background:transparent;
     border-color:var(--line);color:var(--dim)}
-  .poderbtn .k{flex:none;font:600 9px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;
-    border:1px solid currentColor;border-radius:4px;padding:4px 6px}
-  .poderbtn .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .poderbtn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  .teclaF:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
   .ojo{margin-top:8px;background:var(--brass-soft);border:1px solid var(--brass-dim);
     padding:9px 11px;display:flex;align-items:center;gap:10px}
@@ -636,8 +633,11 @@
     #cartayo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
     #cartayo .yo{flex:1 1 0;min-width:0}
     #cartayo .goals{margin-top:0!important;flex:0 0 auto}
+    /* sin el rótulo, los pasos ocupan lo que miden: el ancho que sobra se lo
+       queda la explicación del poder, que si no quedaba en una tira angosta */
+    #cartayo .goal .lbl{display:none}
+    #cartayo .goal{padding:6px 10px}
     #cartayo .ojo{flex-basis:100%;margin-top:0}
-    #cartayo .poderbtn{width:auto;margin-top:0;flex:0 0 auto;padding:8px 11px;font-size:12px}
     canvas{width:100%;height:auto;max-width:100%;max-height:none}
     .hbtn .larga{display:none} .hbtn .corta{display:inline}
     header{border-top:3px solid var(--brass);border-left-width:5px}
@@ -841,7 +841,6 @@
           <div class="goal" id="gmov"><div class="lbl">Movimiento</div><div class="val"><span class="mps" id="mps"></span></div></div>
           <div class="goal" id="gsalida"><div class="lbl">Salida</div><div class="val">🔒</div></div>
         </div>
-        <button class="poderbtn off" id="poderbtn" onclick="usarPoder()"></button>
         <div class="ojo off" id="ojo"></div>
       </div>
 
@@ -3785,26 +3784,22 @@ function syncUI(){
 
   drawRetrato();
   $("yonombre").textContent = S.hero.n;
-  $("yopoder").innerHTML = "<b>"+S.power.n+"</b> · "+S.power.d;
+  /* La F de la explicación es el botón. Tres poderes se activan a mano y en
+     el teléfono no había forma de usarlos: la tecla que el texto ya nombra
+     es la que se toca, y se apaga mientras el poder no se pueda usar. */
+  let expl = S.power.d;
+  if(poderSeActiva()){
+    const listo = puedePoder();
+    expl = expl.replace("Con F", "Con " +
+      '<button class="teclaF" onclick="usarPoder()"' + (listo ? "" : " disabled") +
+      ' title="' + (listo ? "Usar tu poder" : "Todavía no se puede") + '">F</button>');
+  }
+  $("yopoder").innerHTML = "<b>"+S.power.n+"</b> · "+expl;
 
   /* El ojo de halcón: hasta ahora la carta se calculaba y no se dibujaba en
      ningún lado, así que el poder de Marian no se veía. Se saca del mazo acá
      mismo, en un solo lugar, para que no pueda quedar viejo. */
   S.peek = (S.heroKey==="marian" && S.deck.length) ? S.deck[S.deck.length-1] : null;
-  /* el botón del poder: aparece sólo con los tres que se activan, y se
-     apaga mientras no se pueda usar */
-  const pb = $("poderbtn");
-  if(pb && pb.classList){
-    const hay = poderSeActiva();
-    pb.classList.toggle("off", !hay);
-    if(hay){
-      const listo = puedePoder();
-      pb.disabled = !listo;
-      pb.classList.toggle("listo", listo);
-      pb.innerHTML = '<span class="k">F</span><span class="t">' + S.power.n + '</span>';
-    }
-  }
-
   const ojo = $("ojo");
   if(ojo && ojo.classList){
     ojo.classList.toggle("off", !S.peek);
