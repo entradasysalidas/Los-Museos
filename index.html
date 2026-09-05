@@ -770,6 +770,28 @@
     .editbar.on .tool{width:auto;flex:1 1 calc(50% - 5px)}
   }
 
+  /* ---- agregado a la pantalla de inicio ----
+     Sin las barras del navegador sobran unos 100px. El tablero no los puede
+     usar: es cuadrado y ya ocupa todo el ancho, que es lo que lo limita. Así
+     que el aire va a lo que hubo que sacrificar para entrar en el navegador,
+     y lo primero es el cartel: vuelve a tener su propia franja debajo del
+     tablero, en vez de flotarle por encima. Los que juegan sin instalarlo no
+     ven ningún cambio.
+     Sólo en vertical: apaisado tiene su propio reparto más abajo. */
+  @media (max-width:860px) and (orientation:portrait) and (display-mode:standalone){
+    /* el aviso deja de taparle la fila de abajo al tablero */
+    #cartel{position:static;min-height:34px;padding:6px 12px;
+      background:none;box-shadow:none;border-radius:0}
+
+    /* y la carta del jefe vuelve a explicar qué hace */
+    .deckcard .dd{display:block;font-size:11.5px;margin-top:3px}
+    .deckwrap,.deckcard{min-height:64px}
+
+    /* los pasos recuperan su rótulo */
+    #cartayo .goal .lbl{display:block}
+    #cartayo .goal{padding:5px 9px}
+  }
+
   /* apaisado: el panel se acomoda en dos columnas al lado del tablero */
   @media (max-width:860px) and (orientation:landscape){
     .card{flex:1 1 calc(50% - 4px)}
