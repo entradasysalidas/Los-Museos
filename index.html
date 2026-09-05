@@ -466,6 +466,8 @@
   .marca{margin:12px 0 0;font-size:13px;color:var(--dim)}
   .marca.nueva{color:var(--ac);font-weight:600}
   .marca b{color:var(--ink)}
+  .finremate{margin:0 0 8px;font:400 clamp(17px,2.4vw,22px)/1.15 "Archivo Black","Archivo",sans-serif;
+    text-transform:uppercase;letter-spacing:-.01em;color:var(--ac)}
   .finbotones{display:flex;flex-wrap:wrap;gap:0}
 
   /* ---------- la ficha: es lo que se comparte, va prolija ---------- */
@@ -706,6 +708,13 @@
     .modal h2{padding:16px 18px 12px;font-size:24px}
     .modalbody{padding:16px 18px 20px}
     .lvls{grid-template-columns:1fr}
+    /* Los botones del final se acomodaban solos y quedaban de anchos
+       distintos, con un hueco a la derecha. Grilla de dos: el principal
+       ocupa la fila entera, y el último también si queda solo. */
+    .finbotones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+    .finbotones .btn{margin:0;width:100%;padding:13px 10px;font-size:14px}
+    .finbotones .btn:first-child{grid-column:1 / -1}
+    .finbotones .btn:last-child:nth-child(even){grid-column:1 / -1}
 
     /* editor en el celular: antes el panel (position:fixed + inset:8px)
        tapaba toda la pantalla y no dejaba ver el tablero para tocarlo.
@@ -2406,7 +2415,7 @@ function aislados(){
 /* ---------- las pantallas del final ----------
    Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
    marca que quedó y en qué anda tu legajo. */
-function pantallaFinal(gano, titulo, bajada, salaKey){
+function pantallaFinal(gano, titulo, bajada, salaKey, remate){
   const s = SALAS[salaKey];
   const ac = s.ac ? s.ac[0] : "#D9A94F";
   const keys = Object.keys(SALAS), next = keys[keys.indexOf(salaKey)+1];
@@ -2431,6 +2440,7 @@ function pantallaFinal(gano, titulo, bajada, salaKey){
           '<small>' + (s.num===0 ? "Tutorial" : "Nivel " + s.num) + ' · ' + s.wing + '</small></div>' +
       '</div>' +
       '<div class="findatos">' +
+        (remate ? '<p class="finremate">' + remate + '</p>' : '') +
         '<p class="lead">' + bajada + '</p>' +
         '<div class="datos">' +
           dato("Rondas", S.round, gano) +
@@ -2566,11 +2576,12 @@ function gameWin(){
   anotarSala(S.salaKey, S.round, S.taken === 0);
   if(enMaraton()) return siguienteDelMaraton();
   const hechas = salasHechas();
-  pantallaFinal(true, "Se escapó " + S.hero.n,
+  pantallaFinal(true, "¡Ganaste!",
     "Tres piezas entregadas y la puerta de emergencia atrás. <b>" + S.foe.n +
     "</b> se quedó con la alerta en " + S.alert + "." +
     (primeraVez ? " Van <b>" + hechas + " de 10</b> salas: sos <b>" + rangoActual() + "</b>." : ""),
-    S.salaKey);
+    S.salaKey,
+    "Se escapó " + S.hero.n);
 }
 
 function gameLose(reason){
