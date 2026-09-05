@@ -1205,9 +1205,9 @@ const PIECES = [
 const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
 
 const OBJECTS = {
-  mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en este turno.",
+  mate1 :{ic:"🧉", n:"Mate",     d:"Te deja los dos pasos otra vez. Rinde el doble si llegás con los dos gastados: pisarlo lejos vale más que pisarlo al lado.",
            aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
-  mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en este turno.",
+  mate2 :{ic:"🧉", n:"Mate",     d:"Te deja los dos pasos otra vez. Rinde el doble si llegás con los dos gastados: pisarlo lejos vale más que pisarlo al lado.",
            aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
   fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal.",
            aviso:"si después tomás un mate, se te va el efecto."},
@@ -4446,7 +4446,7 @@ function buildLegend(){
     ["Vitrina",   "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
     ["Con alarma","Vacía: ya te llevaste la gema",                         g=>drawVitrina(g,{alarm:1,piece:null})],
     ["Cómplice",  "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,compCell)],
-    ["Mate",      "Te devuelve los pasos del turno",                       g=>drawMate(g)],
+    ["Mate",      "Te deja los <b>dos pasos</b> otra vez. Llegá con los dos gastados y rinde el doble: 2 para llegar + 2 de nuevo", g=>drawMate(g)],
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>. Ojo: de la carta <b>¡Se acerca!</b> no te salva", g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1), 2],
