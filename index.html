@@ -1393,7 +1393,14 @@ const foeOn = (x,y) => S.foes.some(f=>f.x===x && f.y===y);
 /* ¿se puede ir de (x,y) al vecino (nx,ny)? Ortogonal, sin pared en la arista */
 /* quién está calculando el paso: la puerta le contesta distinto a cada uno */
 let COMO = "vos";
-function puertaAbierta(){ return COMO === "vos" && S.hand.length > 0; }
+/* El lector abre con mercadería encima… y también cuando ya entregaste las
+   tres. Antes sólo lo primero, y como entregar te deja las manos vacías, la
+   puerta quedaba cerrada justo durante la corrida final —al revés de lo que
+   prometía su propio consejo—. Ahora, hechas las tres entregas, se libera
+   como una salida de emergencia. Para el jefe sigue cerrada siempre. */
+function puertaAbierta(){
+  return COMO === "vos" && (S.hand.length > 0 || S.delivered.length >= 3);
+}
 
 /* ---------- el reloj de la partida ----------
    Todas las fases se encadenan con temporizadores, y hasta ahora ninguno se
@@ -1719,7 +1726,7 @@ const CONSEJOS_2 = {
   s0:"El Vigilante camina y nada más. La cámara del techo <b>barre un cuarto de vuelta por ronda</b>: fijate para dónde mira antes de cruzar, porque terminar el turno en su campo lo hace avanzar un casillero extra.",
   s1:"El Becario no te persigue: <b>deambula</b>. Suena fácil y es lo contrario, porque no podés anticiparlo. Y las dos escaleras están hermanadas: pisás una y salís por la otra, pero él también las usa.",
   s2:"La vidriera con reloj te da <b>cuatro rondas</b> para entregar esa pieza. Y La Encargada avanza cada vez que abrís una: robá primero la que tengas más lejos de ella.",
-  s3:"La puerta del pasillo <b>lee la mercadería</b>: se abre si llevás una pieza encima y para El Gerente está siempre cerrada. Guardala como refugio para la corrida final.",
+  s3:"La puerta del pasillo <b>lee la mercadería</b>: se abre si llevás una pieza encima, y con las <b>tres entregadas</b> queda libre. Para El Gerente está cerrada siempre, así que cruzarla es sacarle varios casilleros: usala cargado y en la corrida final.",
   s4:"El de Seguridad te alumbra si terminás a <b>dos casilleros o menos en su línea recta</b>. Ojo con el vidrio: te corta el paso pero no te esconde, así que una vidriera no te salva de la linterna.",
   s5:"La Promotora acomoda las vidrieras: cada vez que va a un local, <b>dos piezas cambian de lugar</b>. No armes la ruta entera de entrada, porque te la desarma.",
   s6:"Al de Limpieza no lo engañan las plantas: está justamente limpiándolas. Y hay vidriera con reloj, así que acá <b>no conviene esconderse, conviene apurarse</b>.",
@@ -4003,7 +4010,7 @@ function buildLegend(){
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1), 2],
     ["Escalera",  "Van de a dos: pisás una y salís por la otra. <b>El jefe también la usa</b>", g=>drawEscalera(g), 2],
     ["Vitrina ⏱", "Al robarla arrancan <b>4 rondas</b> para entregar esa pieza. Si no llegás, suena y sube la alerta", g=>{ drawVitrina(g,{alarm:0,piece:"circulo"}); drawRelojito(g,{}); }, 2],
-    ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g), 2],
+    ["Puerta",    "Lee la mercadería: se abre si <b>llevás una pieza encima</b>, y queda libre con las <b>tres entregadas</b>. Para el jefe está siempre cerrada", g=>drawPuertaChica(g), 2],
     ["Vidrio",    "Una vidriera: no se puede cruzar, pero <b>tampoco te tapa</b>. El guardia y las cámaras te ven a través", g=>drawVidrioChico(g), 2],
     ["Tu puesto", "Tu casilla de inicio. No se toca nada acá",             g=>drawPuesto(g,true)],
     ["Su oficina","Donde empieza y vuelve el antagonista",                 g=>drawPuesto(g,false)],
