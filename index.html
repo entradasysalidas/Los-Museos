@@ -620,7 +620,9 @@
     /* quién sos: se resume en una línea */
     .yo canvas{width:34px;height:34px}
     .yo .n{font-size:16px}
-    .yo .p{display:none}
+    /* El poder se leía sólo en pantalla grande, así que en el teléfono
+       parecía que los personajes no tenían ninguno. Se achica, no se esconde. */
+    .yo .p{font-size:11.5px;line-height:1.3;margin-top:3px}
 
     /* el antagonista, en una fila */
     #foecard{flex:1 1 100%}
@@ -3618,7 +3620,15 @@ function drawOverlays(now){
   }
   if(S.mp>0 && !S.busy){
     const p=(Math.sin(now/420)+1)/2;
-    reachableCells(S.mp).forEach((dist,kk)=>{
+    /* La boca de la escalera se pinta como alcanzable cuando lo es su otra
+       punta: es una puerta, y si no se resalta parece que no se puede tocar. */
+    const llego = reachableCells(S.mp);
+    for(const punta of (S.marks.puntas || [])){
+      const h = hermanaDe(punta.x, punta.y);
+      if(h && llego.has(key(h.x, h.y)) && !llego.has(key(punta.x, punta.y)))
+        llego.set(key(punta.x, punta.y), llego.get(key(h.x, h.y)));
+    }
+    llego.forEach((dist,kk)=>{
       const x=kk%W, y=(kk/W)|0;
       ctx.fillStyle = !S.th.oscuro
         ? `rgba(255,255,255,${.30+p*.14})`
@@ -4222,9 +4232,15 @@ cv.addEventListener("click", e=>{
   if(S.over||S.busy||walking||picking) return;
   if(S.mp<=0 && !S.awaitMate) return;
   const t=cellFromEvent(e); if(!t) return;
-  if(t.x===S.player.x && t.y===S.player.y)
+  /* Tocar la escalera es querer tomarla. La boca no es un destino en sí —el
+     que la pisa sale por la otra punta—, así que pathTo() nunca encontraba
+     camino hasta ella y en el teléfono, donde se juega con el dedo, la
+     escalera no respondía a nada. El dedo apunta a la otra punta. */
+  const otra = hermanaDe(t.x, t.y);
+  const meta = (otra && !(otra.x === S.player.x && otra.y === S.player.y)) ? otra : t;
+  if(meta.x===S.player.x && meta.y===S.player.y)
     return canDrinkHere() ? drinkMate() : finishRound();
-  const path=pathTo(t,S.mp); if(!path) return;
+  const path=pathTo(meta,S.mp); if(!path) return;
   walkPath(path);
 });
 
