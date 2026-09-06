@@ -102,6 +102,26 @@
     box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:6px;min-height:0;min-width:0}
 
+  /* Cuando la ronda te espera, la decisión aparece <b>sobre el tablero y al lado
+     tuyo</b>, no en una barra abajo: si no la ves, el juego parece colgado y se
+     corta el ritmo, que es lo mejor que tiene. Dos botones grandes, tocás y
+     seguís. La barra de abajo sigue estando para el que quiera leer el detalle. */
+  .eleccion{position:absolute;z-index:4;display:flex;gap:10px;
+    transform:translate(-50%,-50%);pointer-events:auto}
+  .eleccion.off{display:none}
+  .ele{appearance:none;-webkit-appearance:none;cursor:pointer;
+    width:60px;height:60px;border-radius:50%;font-size:27px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 22px #00000066;border:3px solid #fff}
+  .ele.si{background:var(--brass);color:var(--bg)}
+  .ele.no{background:#E0685D;color:#fff;font-size:24px;font-weight:700}
+  .ele:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+  .ele:active{transform:scale(.93)}
+  .eleccion:not(.off) .ele{animation:asomar .18s ease-out both}
+  .eleccion:not(.off) .ele:nth-child(2){animation-delay:.05s}
+  @keyframes asomar{ from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
+  @media (prefers-reduced-motion: reduce){ .eleccion .ele{animation:none} }
+
   /* el cartel vive fuera del lienzo: asi nunca tapa la puerta de salida */
   #cartel{flex:none;min-height:46px;display:flex;align-items:center;justify-content:center;
     font:700 19px/1.25 "Archivo",system-ui,sans-serif;text-align:center;
@@ -1012,6 +1032,7 @@
     <div id="boardwrap">
       <canvas id="c" width="544" height="544"></canvas>
       <div id="cartel"></div>
+      <div class="eleccion off" id="eleccion"></div>
       <div class="hintbar" id="hint"></div>
     </div>
 
@@ -4433,6 +4454,28 @@ function syncUI(){
      el teléfono no hay ni Espacio ni Enter, así que la ronda se frenaba
      pidiendo algo imposible. Van botones, como el poder y la entrega; las
      teclas siguen andando y se nombran adentro del botón. */
+  /* los dos botones sobre el tablero, al lado de tu personaje */
+  const ele = $("eleccion");
+  if(ele && ele.classList){
+    const hayQueDecidir = !!S.awaitMate && !S.over;
+    ele.classList.toggle("off", !hayQueDecidir);
+    if(hayQueDecidir){
+      const iM = mateEnLaMochila();
+      const tomar = canDrinkHere() ? "drinkMate()" : (iM >= 0 ? "useObject(" + iM + ")" : null);
+      ele.innerHTML =
+        (tomar ? '<button class="ele si" title="Tomar el mate" onclick="' + tomar + '">🧉</button>' : "") +
+        '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
+      /* pegado a vos, y del lado que haya lugar */
+      const cx = (S.player.x + 0.5) / W * 100;
+      const arriba = S.player.y > H/2;
+      const cy = (S.player.y + (arriba ? -0.85 : 1.35)) / H * 100;
+      if(ele.style){
+        ele.style.left = Math.min(82, Math.max(18, cx)) + "%";
+        ele.style.top  = Math.min(88, Math.max(12, cy)) + "%";
+      }
+    }
+  }
+
   const boton = (accion, txt) =>
     '<button class="hbtn" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick="' + accion + '">' + txt + '</button>';
   const esperando = S.awaitMate;
