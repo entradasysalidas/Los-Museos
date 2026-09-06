@@ -1258,6 +1258,13 @@ const OBJECTS = {
   mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en esta ronda. Cuantos más hayas gastado, más te rinde: con los dos gastados caminás cuatro.",
            aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
   fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal.",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<path d="M7 3h10l-1.1 17.2A1.9 1.9 0 0 1 14 22h-4a1.9 1.9 0 0 1-1.9-1.8Z" fill="#E8EDF2" opacity=".9"/>' +
+             '<path d="M7.6 8h8.8l-.75 12.2A1.9 1.9 0 0 1 13.8 22h-3.6a1.9 1.9 0 0 1-1.85-1.8Z" fill="#3A1B14"/>' +
+             '<rect x="9.4" y="9.6" width="3" height="3" rx=".6" fill="#FFFFFF" opacity=".55"/>' +
+             '<rect x="12.7" y="13" width="2.6" height="2.6" rx=".6" fill="#FFFFFF" opacity=".4"/>' +
+             '<path d="M8.4 4.2 8 20" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1.1" fill="none"/>' +
+           '</svg>',
            aviso:"si después tomás un mate, se te va el efecto."},
   empa  :{ic:"🥟", n:"Empanada", d:"Te teletransporta a tu baño."},
   altavoz:{ic:"📢",n:"Altavoz",  d:"Llamado falso: el antagonista vuelve a su oficina."},
@@ -4442,7 +4449,7 @@ function syncUI(){
              '<div class="nm" style="color:var(--dim)">—</div><div class="st">por ganar</div></div>';
     const o=OBJECTS[S.objects[i]], usado=S.objUsed.includes(i);
     return '<div class="slot '+(usado?"used":"obj")+'" '+(usado?"":'onclick="useObject('+i+')"')+
-           ' title="'+o.d+'"><div class="ic">'+o.ic+'</div><div class="nm">'+o.n+'</div>'+
+           ' title="'+o.d+'"><div class="ic">'+(o.dib || o.ic)+'</div><div class="nm">'+o.n+'</div>'+
            '<div class="st">'+(usado?"usado":"tecla "+(i+1))+'</div></div>';
   }).join("");
 
@@ -5205,7 +5212,7 @@ function objetosRecompensa(){
     if(vistos.includes(o.n)) return false;
     vistos.push(o.n); return true;
   }).map(o =>
-    '<div class="premio"><span class="ic">' + o.ic + '</span><div><b>' + o.n + '</b>' +
+    '<div class="premio"><span class="ic">' + (o.dib || o.ic) + '</span><div><b>' + o.n + '</b>' +
     '<p>' + o.d + (o.aviso ? ' <em>Cuidado:</em> ' + o.aviso : '') + '</p></div></div>'
   ).join("");
 }
