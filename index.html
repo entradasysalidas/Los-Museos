@@ -97,7 +97,7 @@
   @media(max-width:1360px){ #stage{grid-template-columns:300px minmax(0,1fr) 280px} }
   @media(max-width:1120px){ #stage{grid-template-columns:280px minmax(0,1fr)} #relato{display:none} }
 
-  #boardwrap{background:var(--panel);padding:10px;
+  #boardwrap{position:relative;background:var(--panel);padding:10px;
     border:1px solid color-mix(in srgb, var(--brass) 26%, var(--line));
     box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:6px;min-height:0;min-width:0}
@@ -4465,13 +4465,17 @@ function syncUI(){
       ele.innerHTML =
         (tomar ? '<button class="ele si" title="Tomar el mate" onclick="' + tomar + '">🧉</button>' : "") +
         '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
-      /* pegado a vos, y del lado que haya lugar */
-      const cx = (S.player.x + 0.5) / W * 100;
-      const arriba = S.player.y > H/2;
-      const cy = (S.player.y + (arriba ? -0.85 : 1.35)) / H * 100;
-      if(ele.style){
-        ele.style.left = Math.min(82, Math.max(18, cx)) + "%";
-        ele.style.top  = Math.min(88, Math.max(12, cy)) + "%";
+      /* Pegado a vos, medido sobre el lienzo. El marco incluye el cartel y
+         la barra de abajo, así que un porcentaje del marco no cae donde uno
+         cree: hay que usar el alto y el ancho del tablero de verdad. */
+      if(ele.style && cv && cv.offsetWidth){
+        const an = cv.offsetWidth, al = cv.offsetHeight;
+        const x0 = cv.offsetLeft, y0 = cv.offsetTop;
+        const arriba = S.player.y > H/2;
+        const px = x0 + (S.player.x + 0.5) * an / W;
+        const py = y0 + (S.player.y + (arriba ? -0.75 : 1.5)) * al / H;
+        ele.style.left = Math.min(x0 + an - 66, Math.max(x0 + 66, px)) + "px";
+        ele.style.top  = Math.min(y0 + al - 40, Math.max(y0 + 40, py)) + "px";
       }
     }
   }
@@ -4480,12 +4484,8 @@ function syncUI(){
     '<button class="hbtn" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick="' + accion + '">' + txt + '</button>';
   const esperando = S.awaitMate;
   if(esperando){
-    if(canDrinkHere())
-      pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
-    const iMate = mateEnLaMochila();
-    if(iMate >= 0)
-      pistas.push(boton("useObject(" + iMate + ")", "🧉 <b>Mate de la mochila</b> · recuperás los pasos que diste"));
-    pistas.push(boton("finishRound()", "<b>Cerrar la ronda</b>"));
+    /* los botones están sobre el tablero: acá alcanza con decir qué pasa */
+    pistas.push("La ronda te espera: <b>tomá el mate</b> o <b>cerrá la ronda</b> con los botones del tablero.");
   } else if(canDrinkHere()){
     pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
   } else {
