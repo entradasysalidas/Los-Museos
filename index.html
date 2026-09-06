@@ -2237,6 +2237,7 @@ function takePiece(cell, silent){
     }
     // El Procurador escucha la alarma y se acerca en el acto
     else if(S.foe.twist==="alarma"){
+      banner("La alarma lo llamó: un casillero más", "#E0685D");
       say("🚨 La alarma lo llamó: avanza un casillero al instante.","r");
       fx.shake = TUNE.shakeMs*.6;
       for(const f of S.foes) if(chaseStep(f)){ resolveCatch(); return id; }
@@ -2559,6 +2560,7 @@ function restaurarUna(){
   S.grid[v.y][v.x].alarm = 0;
   S.repuso = true;
   fx.shake = TUNE.shakeMs;
+  banner(S.foe.n + " te deshizo una entrega", "#E0685D");
   float(v.x, v.y, PIE[id].sym, PIE[id].color);
   say(`🧰 <b>${S.foe.n}</b> deshizo tu entrega: <b>${PIE[id].name}</b> ${PIE[id].sym} volvió a la vitrina. Hay que robarla otra vez.`,"r");
 }
@@ -2571,6 +2573,7 @@ function reordenarVidriera(){
   const [a, b] = shuffle(llenas.slice()).slice(0, 2);
   const ca = S.grid[a.y][a.x], cb = S.grid[b.y][b.x];
   const guarda = ca.piece; ca.piece = cb.piece; cb.piece = guarda;
+  banner("Acomodó la vidriera: dos piezas cambiaron de lugar", "#E0685D");
   float(a.x, a.y, PIE[ca.piece].sym, PIE[ca.piece].color);
   float(b.x, b.y, PIE[cb.piece].sym, PIE[cb.piece].color);
   say(`<span class="ico">🔁</span><span><b>${S.foe.n}</b> acomodó la vidriera: <b>${PIE[ca.piece].name}</b> y <b>${PIE[cb.piece].name}</b> cambiaron de lugar.</span>`,"carta r");
