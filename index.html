@@ -324,6 +324,27 @@
 
   /* El desafío diario no es una tercera caja: es otra forma de jugar, así
      que entra por una franja aparte debajo de las dos tapas. */
+  /* Un aviso para el que ya venía jugando: los cambios de regla se notan
+     recién jugando, y hasta entonces parece que el juego se colgó. Se ve
+     una sola vez y sólo si ya tenés ficha; al que entra por primera vez no
+     le dice nada porque no tiene con qué comparar. */
+  .novedad{width:min(100%,420px);margin:22px auto 0;padding:14px 16px;
+    background:var(--brass-soft);border:1px solid var(--brass);border-radius:12px;
+    display:flex;flex-direction:column;gap:11px;text-align:left}
+  .novedad.off{display:none}
+  .novedad b{display:block;font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--brass);margin-bottom:7px}
+  .novedad p{margin:0;font-size:13.5px;line-height:1.5;color:var(--body)}
+  .novedad p b{display:inline;font:inherit;font-weight:700;letter-spacing:0;
+    text-transform:none;color:var(--ink);margin:0}
+  .novedad .muestra{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0}
+  .novedad .muestra .hbtn{padding:6px 12px;border:1px solid var(--brass);
+    border-radius:999px;color:var(--brass);font:600 11.5px/1.2 "Archivo",sans-serif;
+    background:none;height:auto;cursor:default}
+  .novedad .muestra .hbtn b{display:inline;font-weight:700;letter-spacing:0;
+    text-transform:none;color:inherit;margin:0;font-size:inherit}
+  .novedad .btn{margin:0;align-self:flex-start}
+
   .diaria{appearance:none;-webkit-appearance:none;cursor:pointer;
     display:flex;align-items:center;gap:14px;text-align:left;
     width:min(100%,420px);margin:26px auto 0;padding:10px 16px 10px 10px;
@@ -1034,6 +1055,11 @@
     <span class="txt"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
   </button>
 
+  <div class="novedad off" id="novedad">
+    <div class="txt"><b>Antes de empezar</b><p id="novedadtxt"></p></div>
+    <button class="btn" onclick="cerrarNovedad()">Entendido</button>
+  </div>
+
   <div class="quiensos">
     <label for="nombre">¿Quién entra al museo?</label>
     <div class="fila">
@@ -1593,6 +1619,8 @@ function leerLegajo(){
       salas     : l.salas || {},
       maratones : l.maratones || {},
       clave2    : !!l.clave2,
+      diaria    : l.diaria || null,      // el desafio diario y su racha
+      novedad   : l.novedad || "",         // que avisos ya viste
     };
     /* los récords viejos eran uno solo: eran del museo */
     if(l.maraton && !legajo.maratones[1]) legajo.maratones[1] = l.maraton;
@@ -5241,6 +5269,46 @@ let JUEGO = 1;
 /* El sello de la segunda tapa. Vive aparte porque hace falta en dos momentos:
    al elegir una tapa y al abrir la página. Antes sólo corría en el primero. */
 /* la franja del desafío: qué día es, y si ya lo jugaste */
+/* ==========================================================================
+   EL AVISO DE LA PORTADA · se maneja desde acá, no hay que tocar nada más
+
+   Para cambiar el aviso : escribí el texto nuevo en NOVEDAD_TXT y ponele una
+                           clave nueva a NOVEDAD_ID. Al cambiar la clave el
+                           aviso vuelve a aparecerle a todos, una vez.
+   Para sacarlo del todo : dejá NOVEDAD_ID en "". No se muestra nunca más.
+   Para que reaparezca   : cambiale la clave ("mate-2026-09" -> "loquesea-2").
+
+   Se muestra una vez por aparato y se cierra con Entendido. Va para todos,
+   no sólo para el que ya jugó: los que entran desde otro teléfono no tienen
+   ficha, y el que nunca leyó las reglas es el que más lo necesita.
+   El texto acepta HTML; <span class="muestra"> dibuja botones de ejemplo.
+   ========================================================================== */
+const NOVEDAD_ID = "mate-2026-09";        // "" = sin aviso
+const NOVEDAD_TXT =
+  "Cuando terminás tus pasos y te queda un <b>mate</b> por tomar, la ronda " +
+  "<b>te espera</b> en vez de cerrarse sola. Abajo del tablero aparecen estos dos:" +
+  '<span class="muestra">' +
+    '<span class="hbtn">🧉 <b>Tomar el mate</b></span>' +
+    '<span class="hbtn">Cerrar la ronda</span>' +
+  '</span>' +
+  "El mate te devuelve los pasos que <b>ya diste</b>: cuantos más gastaste, más te " +
+  "rinde. Con los dos gastados caminás cuatro casilleros en la ronda.";
+
+function pintarNovedad(){
+  const n = document.getElementById("novedad");
+  const t = document.getElementById("novedadtxt");
+  if(!n || !n.classList || !t) return;
+  if(!NOVEDAD_ID){ n.classList.add("off"); return; }   // apagado a mano
+  t.innerHTML = NOVEDAD_TXT;
+  n.classList.toggle("off", LEGAJO.novedad === NOVEDAD_ID);
+}
+function cerrarNovedad(){
+  LEGAJO.novedad = NOVEDAD_ID;
+  guardarLegajo(LEGAJO);
+  const n = document.getElementById("novedad");
+  if(n && n.classList) n.classList.add("off");
+}
+
 function pintarFranjaDiaria(){
   const b = document.getElementById("botondiaria");
   const p = document.getElementById("diariapie");
@@ -5300,7 +5368,8 @@ function prepararPortal(){
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
   textoDelPie();
   sellarTapaDos();
-  pintarFranjaDiaria();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
+  pintarFranjaDiaria();
+  pintarNovedad();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 
