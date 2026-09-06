@@ -1205,9 +1205,9 @@ const PIECES = [
 const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
 
 const OBJECTS = {
-  mate1 :{ic:"🧉", n:"Mate",     d:"Te deja los dos pasos otra vez. Rinde el doble si llegás con los dos gastados: pisarlo lejos vale más que pisarlo al lado.",
+  mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en esta ronda. Cuantos más hayas gastado, más te rinde: con los dos gastados caminás cuatro.",
            aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
-  mate2 :{ic:"🧉", n:"Mate",     d:"Te deja los dos pasos otra vez. Rinde el doble si llegás con los dos gastados: pisarlo lejos vale más que pisarlo al lado.",
+  mate2 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en esta ronda. Cuantos más hayas gastado, más te rinde: con los dos gastados caminás cuatro.",
            aviso:"si tomás tres en la misma fase, contando los del tablero, terminás en tu baño."},
   fernet:{ic:"🥃", n:"Fernet",   d:"Este turno podés moverte en diagonal.",
            aviso:"si después tomás un mate, se te va el efecto."},
@@ -2127,7 +2127,7 @@ function step(dx,dy){
   passThrough(ax,ay);
   if(S.over) return;
   if(S.mp<=0){
-    if(canDrinkHere()){ S.awaitMate=true; syncUI(); return; }
+    if(canDrinkHere() || mateEnLaMochila() >= 0){ S.awaitMate=true; syncUI(); return; }
     S.busy=true; luego(endMovement, TUNE.moveMs+110);
   }
   syncUI();
@@ -2209,6 +2209,19 @@ function offerDelivery(){
   syncUI();
 }
 
+/* El mate de la mochila también devuelve los pasos, pero la ronda se cerraba
+   sola al gastar el segundo: sólo esperaba si estabas parado sobre un mate
+   del tablero. Con el de la mochila nunca llegabas a usarlo, y quedaba
+   obligado a gastarlo con un paso de sobra, o sea desperdiciando uno. */
+function mateEnLaMochila(){
+  if(!S || S.matesTurn >= TUNE.matesPerTurn) return -1;
+  for(let i = 0; i < S.objects.length; i++){
+    const o = S.objects[i];
+    if((o === "mate1" || o === "mate2") && !S.objUsed.includes(i)) return i;
+  }
+  return -1;
+}
+
 function canDrinkHere(){
   const c=S.grid[S.player.y][S.player.x];
   if(c.type!=="mate") return false;
@@ -2235,7 +2248,7 @@ function drinkMate(){
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
     S.busy=true; return luego(endMovement, TUNE.moveMs+110);
   }
-  say("🧉 Mate: recuperaste los pasos de este turno.","g");
+  say(`🧉 Mate: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`,"g");
   syncUI();
 }
 function finishRound(){
@@ -2652,6 +2665,14 @@ function resetPositions(){
 /* ======================= objetos ======================= */
 /* por qué este objeto no se puede usar ahora */
 function porQueNoEsteObjeto(id){
+  /* El mate repone los pasos gastados, así que con los pasos llenos sería
+     tirarlo: el del tablero ya se frenaba y el de la mochila no. */
+  if(id==="mate1" || id==="mate2"){
+    if(S.mp >= TUNE.steps)
+      return "Todavía no gastaste ningún paso: el mate te devolvería los mismos dos. Caminá primero.";
+    if(S.matesTurn >= TUNE.matesPerTurn)
+      return "Ya tomaste tres mates en esta ronda.";
+  }
   if(id==="sopapa"){
     const c = S.grid[S.player.y][S.player.x];
     if(c.type!=="banio" && c.type!=="baniojefe")
@@ -2721,7 +2742,7 @@ function useObject(i){
   if(id==="mate1"||id==="mate2"){
     S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
     if(S.diagonal){ S.diagonal=false; say("🥃 Con el mate se te fue el efecto del fernet.","r"); }
-    say("🧉 Mate de la mochila: pasos recuperados.","g");
+    say(`🧉 Mate de la mochila: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`,"g");
     if(S.matesTurn>=TUNE.matesPerTurn){
       say("🧉 Tercer mate del turno… terminás en tu baño.","r");
       S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
@@ -4389,7 +4410,10 @@ function syncUI(){
   const esperando = S.awaitMate;
   if(esperando){
     if(canDrinkHere())
-      pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · volvés a tener los dos pasos"));
+      pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
+    const iMate = mateEnLaMochila();
+    if(iMate >= 0)
+      pistas.push(boton("useObject(" + iMate + ")", "🧉 <b>Mate de la mochila</b> · recuperás los pasos que diste"));
     pistas.push(boton("finishRound()", "<b>Cerrar la ronda</b>"));
   } else if(canDrinkHere()){
     pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
@@ -4452,7 +4476,7 @@ function buildLegend(){
     ["Vitrina",   "Se ve la gema adentro: pasá por encima y te la llevás", g=>drawVitrina(g,{alarm:0,piece:"rombo"})],
     ["Con alarma","Vacía: ya te llevaste la gema",                         g=>drawVitrina(g,{alarm:1,piece:null})],
     ["Cómplice",  "Llevale <b>su</b> pieza y te da un <b>objeto</b>",      g=>drawComplice(g,compCell)],
-    ["Mate",      "Te deja los <b>dos pasos</b> otra vez. Llegá con los dos gastados y rinde el doble: 2 para llegar + 2 de nuevo", g=>drawMate(g)],
+    ["Mate",      "Recuperás los pasos que ya diste. Con los <b>dos gastados</b> caminás cuatro en la ronda; con uno, tres", g=>drawMate(g)],
     ["Planta",    "Terminá el turno acá y <b>no te persigue</b>. Ojo: de la carta <b>¡Se acerca!</b> no te salva", g=>drawPlanta(g)],
     ["Banana",    "Te come un movimiento",                                 g=>drawMojado(g)],
     ["Cámara",    "Barre un cuarto de vuelta por ronda. Si terminás el turno en lo que mira, esa ronda <b>avanza un casillero más</b>", g=>drawCamara(g,null,-1,-1), 2],
