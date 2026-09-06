@@ -517,6 +517,25 @@
     color:var(--brass);letter-spacing:-.02em}
   .menucab .cuenta small{font-size:11px;color:var(--dim);letter-spacing:0}
   .lv .plano{position:relative}
+  /* tres marcas por sala: una por dificultad, la que ganaste se enciende */
+  .lv .sellos{position:absolute;right:-4px;top:-4px;display:flex;gap:2px}
+  .lv .sellos i{width:9px;height:9px;border-radius:50%;background:var(--sunk);
+    border:1px solid var(--line)}
+  .lv .sellos i.d1.ok{background:var(--patina);border-color:var(--patina)}
+  .lv .sellos i.d2.ok{background:var(--brass);border-color:var(--brass)}
+  .lv .sellos i.d3.ok{background:var(--alarm);border-color:var(--alarm)}
+
+  /* el selector de dificultad, arriba de la lista */
+  .difsel{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
+    margin:0 0 14px;padding:11px 13px;background:var(--panel2);border:1px solid var(--line)}
+  .difsel .l{font:500 8.5px/1 "IBM Plex Mono",monospace;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);margin-right:4px}
+  .difsel .dif{appearance:none;cursor:pointer;padding:7px 13px;border-radius:999px;
+    font:700 12.5px/1 "Archivo",sans-serif;background:none;
+    border:1px solid var(--line);color:var(--dim)}
+  .difsel .dif.on{background:var(--brass);border-color:var(--brass);color:var(--bg)}
+  .difsel small{flex-basis:100%;font-size:11.5px;color:var(--dim);line-height:1.4}
+
   .lv .tilde{position:absolute;right:-5px;top:-5px;width:21px;height:21px;
     display:flex;align-items:center;justify-content:center;background:var(--ac);
     color:var(--bg);font:700 12px/1 "Archivo",sans-serif;border-radius:50%}
@@ -590,7 +609,7 @@
 
   .fsalas{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
   @media(min-width:720px){ .fsalas{grid-template-columns:repeat(2,minmax(0,1fr))} }
-  .fsala{display:grid;grid-template-columns:26px minmax(0,1fr) 54px 16px;gap:11px;
+  .fsala{display:grid;grid-template-columns:26px minmax(0,1fr) 54px 34px;gap:11px;
     align-items:center;background:var(--panel2);padding:10px 13px}
   .fsala .fn{font:400 19px/.85 "Archivo Black","Archivo",sans-serif;color:var(--hair);
     letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:center}
@@ -612,6 +631,12 @@
     letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
   .fsala:not(.ok) .fmarca small{color:transparent}
   .fsala .flimpia{font-size:13px;color:var(--patina);text-align:center;font-weight:700}
+  .fsala .fsellos{display:flex;gap:2px;justify-content:flex-end}
+  .fsala .fsellos i{width:7px;height:7px;border-radius:50%;background:var(--sunk);
+    border:1px solid var(--line)}
+  .fsala .fsellos i.d1.ok{background:var(--patina);border-color:var(--patina)}
+  .fsala .fsellos i.d2.ok{background:var(--brass);border-color:var(--brass)}
+  .fsala .fsellos i.d3.ok{background:var(--alarm);border-color:var(--alarm)}
   /* el otro juego, en una línea: dónde vas allá sin salir de esta ficha */
   .fotro{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 16px;
     margin-top:10px;padding:12px 15px;background:var(--panel2);border:1px solid var(--line)}
@@ -825,7 +850,7 @@
     /* la ficha, que es lo que se saca por captura */
     .fichacab{grid-template-columns:1fr}
     .fdato .rango{font-size:24px}
-    .fsala{grid-template-columns:24px minmax(0,1fr) 50px 14px;gap:9px;padding:9px 11px}
+    .fsala{grid-template-columns:24px minmax(0,1fr) 50px 30px;gap:9px;padding:9px 11px}
     .fnota{font-size:12px}
 
     /* las pantallas de final y las listas de la ayuda */
@@ -1650,6 +1675,7 @@ function leerLegajo(){
       clave2    : !!l.clave2,
       diaria    : l.diaria || null,      // el desafio diario y su racha
       novedad   : l.novedad || "",         // que avisos ya viste
+      dif       : l.dif || 1,               // la dificultad elegida
     };
     /* los récords viejos eran uno solo: eran del museo */
     if(l.maraton && !legajo.maratones[1]) legajo.maratones[1] = l.maraton;
@@ -1661,12 +1687,33 @@ function guardarLegajo(l){ try{ localStorage.setItem(legajoKey(), JSON.stringify
 let LEGAJO = {nombre:"", salas:{}};
 
 /* una sala resuelta guarda su mejor marca: menos rondas es mejor */
+/* Cada sala guarda una marca por dificultad. Lo de afuera —hecha, rondas,
+   limpia— sigue siendo la mejor de todas, para que el rango y las fichas
+   viejas no cambien de significado. */
+function marcasDe(salaKey){
+  const m = LEGAJO.salas[salaKey];
+  if(!m) return {};
+  if(!m.porDif){                              // legajos de antes: lo hecho fue en normal
+    m.porDif = m.hecha ? {"1": {rondas: m.rondas, limpia: !!m.limpia}} : {};
+  }
+  return m.porDif;
+}
+function hechaEn(salaKey, dif){ return !!marcasDe(salaKey)[String(dif)]; }
+
 function anotarSala(salaKey, rondas, sinPerder){
-  const previo = LEGAJO.salas[salaKey];
+  const previo = LEGAJO.salas[salaKey] || {};
+  const porDif = marcasDe(salaKey);
+  const clave = String(DIFICULTAD);
+  const antes = porDif[clave];
+  porDif[clave] = {
+    rondas : antes && antes.rondas ? Math.min(antes.rondas, rondas) : rondas,
+    limpia : (antes && antes.limpia) || sinPerder,
+  };
   LEGAJO.salas[salaKey] = {
     hecha  : true,
-    rondas : previo && previo.rondas ? Math.min(previo.rondas, rondas) : rondas,
-    limpia : (previo && previo.limpia) || sinPerder,
+    rondas : previo.rondas ? Math.min(previo.rondas, rondas) : rondas,
+    limpia : !!previo.limpia || sinPerder,
+    porDif : porDif,
   };
   guardarLegajo(LEGAJO);
 }
@@ -2137,6 +2184,7 @@ function pegarAMano(txt, listo){
 
 
 function empezarDiaria(){
+  DIFICULTAD = 1;              // el desafío es el mismo para todos, sin perillas
   const sala = salaDelDia();
   SALAS_DIA.hoy = sala;
   cargarJuego(3);
@@ -2499,12 +2547,44 @@ const PISO_FUGA = {"Pasantía":0, "Mini Pyme":0, "S.R.L.":0, "S.A.":2, "Multinac
                    "Local":0, "Franquicia":0, "Cadena":0, "Corporación":2, "Grupo inversor":2};
 function pisoFuga(){ return PISO_FUGA[S.sala.wing] || 0; }
 
+/* ==========================================================================
+   LAS TRES DIFICULTADES · una sola perilla: cuánto se relaja el antagonista
+
+   La válvula —que la alerta baje cuando una carta lo manda al baño o a su
+   oficina— es lo único que separa un juego jugable del reglamento impreso.
+   Moverla sola da tres juegos distintos sobre los mismos veinte tableros:
+
+     1 · Normal          afloja hasta su piso            bot 50%
+     2 · Duro            nunca baja de alerta 2          bot 20%
+     3 · Como el manual  no afloja nunca, sólo sube      bot 12%
+
+   La tercera no es un invento: es la regla del juego de mesa. Se probaron
+   otras dos perillas para el peldaño del medio —aflojar sólo dos veces por
+   partida y arrancar un punto más arriba— y las dos daban casi lo mismo que
+   normal en la mitad de las salas. Ésta baja parejo en las veinte.
+   ========================================================================== */
+const DIFICULTADES = [
+  {id:1, n:"Normal",         corta:"Normal", d:"El antagonista se relaja cuando una carta lo distrae."},
+  {id:2, n:"Duro",           corta:"Duro",   d:"Se relaja, pero nunca baja de alerta 2: siempre camina al menos dos."},
+  {id:3, n:"Como el manual", corta:"Manual", d:"No se relaja nunca. La alerta sólo sube, como en el juego de mesa."},
+];
+let DIFICULTAD = 1;
+function difActual(){ return DIFICULTADES.find(d => d.id === DIFICULTAD) || DIFICULTADES[0]; }
+function ponerDificultad(n){
+  DIFICULTAD = (n === 2 || n === 3) ? n : 1;
+  LEGAJO.dif = DIFICULTAD;
+  guardarLegajo(LEGAJO);
+  if(typeof menu === "function" && modalAbierto()) menu();
+}
+
 function pisoAlerta(){
-  return Math.max(1, S.foe.piso !== undefined ? S.foe.piso : (S.foe.alert || 1));
+  const base = Math.max(1, S.foe.piso !== undefined ? S.foe.piso : (S.foe.alert || 1));
+  return DIFICULTAD === 2 ? Math.min(TUNE.alertMax, base + 1) : base;
 }
 
 /* se distrae y afloja un nivel, nunca por debajo de su piso */
 function calmar(){
+  if(DIFICULTAD === 3) return;                 // el reglamento impreso: la alerta sólo sube
   if(S.alert <= pisoAlerta()) return;
   if(S.delivered.length >= 3 && S.alert <= pisoFuga()){
     say("😤 Con las tres piezas afuera ya no se relaja del todo.","r");
@@ -3033,14 +3113,17 @@ function cortarMaraton(){ MARATON = null; }
 /* la mejor corrida de este juego: el museo y el shopping llevan la suya */
 function recordMaraton(){
   if(!LEGAJO.maratones) LEGAJO.maratones = {};
-  return LEGAJO.maratones[JUEGO] || null;
+  return LEGAJO.maratones[JUEGO + ":" + DIFICULTAD] || LEGAJO.maratones[JUEGO] || null;
 }
 function anotarMaraton(salas, rondas, completa){
   if(!LEGAJO.maratones) LEGAJO.maratones = {};
-  const m = LEGAJO.maratones[JUEGO] || {salas:0, rondas:0, completa:false};
+  const clave = JUEGO + ":" + DIFICULTAD;
+  if(DIFICULTAD === 1 && LEGAJO.maratones[JUEGO] && !LEGAJO.maratones[clave])
+    LEGAJO.maratones[clave] = LEGAJO.maratones[JUEGO];      // los récords de antes eran en normal
+  const m = LEGAJO.maratones[clave] || {salas:0, rondas:0, completa:false};
   const mejor = salas > m.salas || (salas === m.salas && rondas < (m.rondas || 1e9));
-  if(mejor) LEGAJO.maratones[JUEGO] = {salas, rondas, completa: completa || m.completa};
-  else if(completa && !m.completa) LEGAJO.maratones[JUEGO] = Object.assign({}, m, {completa:true});
+  if(mejor) LEGAJO.maratones[clave] = {salas, rondas, completa: completa || m.completa};
+  else if(completa && !m.completa) LEGAJO.maratones[clave] = Object.assign({}, m, {completa:true});
   guardarLegajo(LEGAJO);
   return mejor;
 }
@@ -4368,7 +4451,8 @@ function syncUI(){
   $("numnivel").textContent = S.sala.num===0 ? "0" : String(S.sala.num);
   $("kicker").textContent = enMaraton()
     ? "Maratón · sala " + (MARATON.i+1) + " de 10 · " + "♥".repeat(MARATON.vidas) + " · " + (MARATON.rondas + S.round) + " rondas"
-    : (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing;
+    : (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing +
+      (DIFICULTAD > 1 ? " · " + difActual().corta : "");
   $("salatitulo").textContent = S.sala.name;
 
   drawRetrato();
@@ -5154,18 +5238,21 @@ function menu(){
   const cuerpo = '<div class="lvls">' + Object.entries(SALAS).map(([k,v]) => {
     const ac = v.ac ? v.ac[0] : "#D9A94F";
     const m = LEGAJO.salas[k];
-    const hecha = !!(m && m.hecha);
+    const hecha = hechaEn(k, DIFICULTAD);
+    const marca = marcasDe(k)[String(DIFICULTAD)];
+    const sellos = DIFICULTADES.map(d =>
+      '<i class="d' + d.id + (hechaEn(k, d.id) ? " ok" : "") + '"></i>').join("");
     return '<button class="lv' + (hecha ? " hecha" : "") + '" style="--ac:'+ac+'" ' +
            'title="'+v.name+'" onclick="startSala(&quot;'+k+'&quot;)">' +
       '<span class="arriba">' +
         '<span class="plano"><canvas width="150" height="150" data-sala="'+k+'"></canvas>' +
-          (hecha ? '<span class="tilde">✓</span>' : '') + '</span>' +
+          '<span class="sellos">' + sellos + '</span></span>' +
         '<span class="txt">' +
           '<span class="ala">'+v.wing+'</span>' +
           '<span class="num">'+(v.num===0?"·":v.num)+'</span>' +
           '<b>'+v.name+'</b>' +
-          (hecha ? '<span class="mejor">' + m.rondas + ' rondas' +
-                   (m.limpia ? ' · limpia' : '') + '</span>' : '') +
+          (marca ? '<span class="mejor">' + marca.rondas + ' rondas' +
+                   (marca.limpia ? ' · limpia' : '') + '</span>' : '') +
         '</span>' +
       '</span>' +
       '<span class="quien">' +
@@ -5182,8 +5269,13 @@ function menu(){
       '<span class="cuenta">' + hechas + '<small>/10 salas</small></span></div>'
     : "";
 
+  const selector = '<div class="difsel"><span class="l">Dificultad</span>' +
+    DIFICULTADES.map(d => '<button class="dif' + (d.id === DIFICULTAD ? " on" : "") + '" ' +
+      'title="' + d.d + '" onclick="ponerDificultad(' + d.id + ')">' + d.n + '</button>').join("") +
+    '<small>' + difActual().d + '</small></div>';
+
   showModal("Las diez salas",
-    cabecera +
+    cabecera + selector +
     '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
     'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
     '<div class="finbotones">' +
@@ -5419,6 +5511,7 @@ function textoDelPie(){
 
 function prepararPortal(){
   LEGAJO = leerLegajo();
+  DIFICULTAD = LEGAJO.dif || 1;
   const inp = document.getElementById("nombre");
   const pie = document.getElementById("portalpie");
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
@@ -5535,6 +5628,7 @@ function irAlDiario(){
 
 function salirDelDiario(aFicha){
   cerrarVuelveAlMuseo = false;
+  DIFICULTAD = LEGAJO.dif || 1;      // en el desafío estaba forzada en normal
   cargarJuego(JUEGO === 3 ? 1 : JUEGO);
   if(aFicha) ficha(); else menu();
 }
@@ -5661,7 +5755,8 @@ function ficha(){
         (hecha ? '<b>' + s.rondas + '</b><small>rondas</small>'
                : '<b class="pend">—</b><small>&nbsp;</small>') +
       '</span>' +
-      '<span class="flimpia">' + (hecha && s.limpia ? "✓" : "") + '</span>' +
+      '<span class="fsellos">' + DIFICULTADES.map(d =>
+        '<i class="d' + d.id + (hechaEn(k, d.id) ? " ok" : "") + '"></i>').join("") + '</span>' +
     '</div>';
   }).join("");
 
@@ -5680,7 +5775,7 @@ function ficha(){
     '</div>' +
 
     '<div class="fsalas">' + filas + '</div>' + tiraOtro + calendarioDiario() +
-    '<p class="fnota">El ✓ es una sala hecha sin que te sacaran ninguna pieza. ' +
+    '<p class="fnota">Las tres bolitas son las tres dificultades: <b>normal</b>, <b>duro</b> y <b>como el manual</b>. Se encienden las que ganaste. ' +
     'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
     '<div class="finbotones">' +
       '<button class="btn" onclick="menu()">Todas las salas</button>' +
