@@ -106,15 +106,15 @@
      tuyo</b>, no en una barra abajo: si no la ves, el juego parece colgado y se
      corta el ritmo, que es lo mejor que tiene. Dos botones grandes, tocás y
      seguís. La barra de abajo sigue estando para el que quiera leer el detalle. */
-  .eleccion{position:absolute;z-index:4;display:flex;gap:10px;
+  .eleccion{position:absolute;z-index:4;display:flex;gap:8px;
     transform:translate(-50%,-50%);pointer-events:auto}
   .eleccion.off{display:none}
   .ele{appearance:none;-webkit-appearance:none;cursor:pointer;
-    width:60px;height:60px;border-radius:50%;font-size:27px;line-height:1;
+    width:44px;height:44px;border-radius:50%;font-size:20px;line-height:1;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 8px 22px #00000066;border:3px solid #fff}
+    box-shadow:0 5px 14px #00000059;border:2px solid #fff}
   .ele.si{background:var(--brass);color:var(--bg)}
-  .ele.no{background:#E0685D;color:#fff;font-size:24px;font-weight:700}
+  .ele.no{background:#E0685D;color:#fff;font-size:18px;font-weight:700}
   .ele:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
   .ele:active{transform:scale(.93)}
   .eleccion:not(.off) .ele{animation:asomar .18s ease-out both}
@@ -322,7 +322,9 @@
   .hintbar{padding:11px 16px;background:var(--brass-soft);border:2px solid var(--brass);
     width:100%;max-width:100%;text-align:center;font-size:15px;line-height:1.45;flex:none;
     color:var(--brass);font-size:13px;display:none;font-weight:600}
-  .hintbar.on{display:block}
+  .hintbar.on{display:flex;flex-wrap:wrap;gap:7px 10px;
+    align-items:center;justify-content:center}
+  .hintbar .p{display:inline-flex;align-items:center;gap:5px}
   /* cuando la ronda espera una decisión tuya, late */
   .hintbar.urgente{animation:pideAccion 1.5s ease-in-out infinite}
   @keyframes pideAccion{
@@ -4473,9 +4475,9 @@ function syncUI(){
         const x0 = cv.offsetLeft, y0 = cv.offsetTop;
         const arriba = S.player.y > H/2;
         const px = x0 + (S.player.x + 0.5) * an / W;
-        const py = y0 + (S.player.y + (arriba ? -0.75 : 1.5)) * al / H;
-        ele.style.left = Math.min(x0 + an - 66, Math.max(x0 + 66, px)) + "px";
-        ele.style.top  = Math.min(y0 + al - 40, Math.max(y0 + 40, py)) + "px";
+        const py = y0 + (S.player.y + (arriba ? -0.55 : 1.6)) * al / H;
+        ele.style.left = Math.min(x0 + an - 52, Math.max(x0 + 52, px)) + "px";
+        ele.style.top  = Math.min(y0 + al - 30, Math.max(y0 + 30, py)) + "px";
       }
     }
   }
@@ -4485,7 +4487,7 @@ function syncUI(){
   const esperando = S.awaitMate;
   if(esperando){
     /* los botones están sobre el tablero: acá alcanza con decir qué pasa */
-    pistas.push("La ronda te espera: <b>tomá el mate</b> o <b>cerrá la ronda</b> con los botones del tablero.");
+    pistas.push("Te toca decidir, arriba en el tablero");
   } else if(canDrinkHere()){
     pistas.push(boton("drinkMate()", "🧉 <b>Tomar el mate</b> · recuperás los pasos que diste"));
   } else {
@@ -4503,10 +4505,11 @@ function syncUI(){
     pistas.push(
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"fixVitrina()\">" +
       "<b>F</b> · traer " + PIE[S.grid[mudanza.origen.y][mudanza.origen.x].piece].name + " acá cerca (−" + mudanza.gana + " casilleros)</button>");
-  if(cel.type==="vitrina" && cel.alarm) pistas.push("Esta vitrina ya está vacía");
-  if(S.hand.length) pistas.push("Llevá " + S.hand.map(id=>PIE[id].sym+" a "+CREW[compOf(id)].n).join(" · "));
+  if(cel.type==="vitrina" && cel.alarm) pistas.push("Vitrina vacía");
+  if(S.hand.length) pistas.push(S.hand.map(id=>PIE[id].sym+" → "+CREW[compOf(id)].n).join(" · "));
   $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
-  $("hint").innerHTML = pistas.join(" &nbsp;·&nbsp; ");
+  $("hint").innerHTML = pistas.map(p =>
+    /^<button/.test(p) ? p : '<span class="p">' + p + '</span>').join("");
 
   renderLog();
   if(typeof syncEditor==="function") syncEditor();
