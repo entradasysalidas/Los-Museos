@@ -60,6 +60,29 @@ está en el manual. Sin esa válvula la alerta sólo sube, el antagonista termin
 juego de mesa es así de duro y esta adaptación eligió ser jugable. Si alguna vez se
 quiere la versión cruda, va como modo aparte, nunca reemplazando a ésta.
 
+## Sellar la versión antes de subir
+
+GitHub Pages sirve la página con `Cache-Control: max-age=600` y no deja cambiar
+esa cabecera, así que el teléfono se queda hasta diez minutos con la copia vieja.
+Agregado a la pantalla de inicio, además, no hay botón de recargar. El `<meta`
+`http-equiv="Cache-Control">` que se suele recomendar **no lo respeta ningún
+navegador**: no sirve.
+
+La página lo resuelve preguntando. Al abrirse pide `version.txt` con la hora
+pegada al final —una dirección que nunca estuvo en la caché— y si no coincide
+con su propia `VERSION` se recarga una sola vez.
+
+Para que eso funcione hay que correr esto **antes de cada commit que toque**
+**`index.html`**:
+
+```
+node scripts/sellar.js
+```
+
+Calcula un resumen del contenido y lo escribe en los dos lugares que tienen que
+coincidir. Si te olvidás no se rompe nada: simplemente esa vez no hay recarga
+automática, como antes.
+
 ## Probar
 
 No hay framework. En `scratchpad/` de la sesión hay un arnés que emula el DOM y el

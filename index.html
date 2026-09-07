@@ -7,11 +7,6 @@
 <link rel="icon" href="caja.jpg">
 <link rel="apple-touch-icon" href="caja.jpg">
 <link rel="manifest" href="manifest.json">
-<!-- Mientras el juego se sigue tocando, que el telefono no se quede con una
-     copia vieja: GitHub Pages la manda con diez minutos de cache y agregado a
-     la pantalla de inicio no hay boton de recargar. Con esto pregunta si hay
-     algo nuevo cada vez que se abre. Cuando dejemos de cambiarlo, se saca. -->
-<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <!-- Agregado a la pantalla de inicio, el juego abre sin barra de direcciones ni
      barra de abajo: son unos 100px más de alto, que en el teléfono es la
      diferencia entre entrar en una pantalla o no. Desde adentro del navegador
@@ -5659,7 +5654,41 @@ function verResultadoDeHoy(){
 
 addEventListener("keydown", e=>{
   if(!yaEntre && e.key === "Enter"){ e.preventDefault(); entrar(); }
-});
+});/* ---------- ¿quedó vieja esta copia? ----------
+   GitHub Pages manda la página con diez minutos de caché y no deja cambiar
+   esa cabecera; el <meta> que se suele recomendar para esto no lo respeta
+   ningún navegador. Agregado a la pantalla de inicio, además, no hay botón
+   de recargar. Resultado: se veían arreglos ya subidos como si no lo
+   estuvieran, y no había manera de saberlo desde adentro.
+
+   Así que se pregunta: version.txt se pide con la hora pegada al final, que
+   es una dirección que nunca estuvo en la caché, y si no coincide con la de
+   esta copia se recarga una sola vez con la versión nueva en la dirección.
+   El candado de sessionStorage evita cualquier vuelta en círculo si las dos
+   quedaran desincronizadas.
+
+   VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
+   mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
+   no hay recarga automática esa vez. */
+const VERSION = "278177efb0";
+(function mirarSiHayNueva(){
+  if(typeof window === "undefined" || !window.fetch) return;
+  if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
+  let yaRecargue = false;
+  try{ yaRecargue = sessionStorage.getItem("museos.recarga") === VERSION; }catch(e){}
+  if(yaRecargue) return;
+  fetch("version.txt?t=" + Date.now(), {cache:"no-store"})
+    .then(r => r.ok ? r.text() : null)
+    .then(t => {
+      const nueva = (t || "").trim();
+      if(!nueva || nueva === VERSION) return;
+      try{ sessionStorage.setItem("museos.recarga", nueva); }catch(e){}
+      location.replace(location.pathname + "?v=" + encodeURIComponent(nueva));
+    })
+    .catch(() => {});                      // sin señal, se juega con lo que hay
+})();
+
+
 prepararPortal();
 if(/[?&]editor\b/.test(location.search)){   // editando no hace falta la tapa
   LEGAJO.nombre = LEGAJO.nombre || "Editor";
