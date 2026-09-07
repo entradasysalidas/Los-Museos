@@ -617,6 +617,24 @@
     text-transform:uppercase;color:var(--dim)}
   .fintapa .pie b{color:var(--ac);font-weight:600}
 
+  /* ---------- el ropero ---------- */
+  .ropero{display:grid;gap:8px;margin:12px 0;
+    grid-template-columns:repeat(auto-fill,minmax(126px,1fr))}
+  .disf{position:relative;background:var(--panel2);border:1px solid var(--line);
+    padding:8px 6px 10px;text-align:center;cursor:pointer;color:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:2px;transition:.12s}
+  .disf canvas{width:78px;height:78px;display:block;background:transparent;cursor:pointer}
+  .disf b{font:400 12px/1.15 "Archivo Black","Archivo",sans-serif;
+    text-transform:uppercase;letter-spacing:-.01em;color:var(--ink)}
+  .disf small{font:500 8.5px/1.35 "IBM Plex Mono",monospace;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim)}
+  .disf:not(.cerrado):hover{border-color:var(--brass)}
+  .disf.puesto{border-color:var(--brass);background:var(--brass-soft)}
+  .disf.puesto small{color:var(--brass)}
+  .disf.cerrado{cursor:default;opacity:.55}
+  .disf.cerrado canvas{filter:grayscale(1);opacity:.35}
+  .disf .candado{position:absolute;top:6px;right:8px;font-size:12px;opacity:.7}
+
   /* ---------- la ficha: es lo que se comparte, va prolija ---------- */
   .fichacab{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
     margin-bottom:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -697,6 +715,9 @@
     /* con lamina arriba el plano va mas chico, para que los botones de
        abajo entren sin scrollear tanto */
     .fintapa + .final .finplano canvas{max-width:165px}
+    .ropero{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+    .disf canvas{width:64px;height:64px}
+    .disf b{font-size:11px}
     .fintapa .pie{font-size:9px;letter-spacing:.1em;padding:8px 10px}
     .fsalas,.fichacab{grid-template-columns:1fr;display:grid}
   }
@@ -1298,6 +1319,91 @@ const POWERS = {
   negro :{n:"Oficio",           d:"Ya conoce el edificio: ves el alcance del antagonista antes de moverte."},
 };
 
+
+/* ---------- el ropero ----------
+   Un disfraz es ropa y nada mas: no toca una sola regla. Es la unica
+   recompensa que se puede repartir sin romper nada, porque los nueve comparan
+   marcas y el desafio diario tiene que ser el mismo para todos.
+
+   Se ganan de dos maneras, con dos tonos distintos:
+   - las nueve salas numeradas de cada juego, al ganarlas en las TRES
+     dificultades, dan la ropa de su antagonista;
+   - el desafio diario da los graciosos, por racha.
+
+   No se guarda nada nuevo: tener un disfraz se deduce de las marcas que ya
+   estan en el legajo. Lo unico que se anota es cual llevas puesto.
+
+   Regla de dibujo: cambian ropa y color, nunca la silueta, y ninguno usa la
+   paleta del antagonista de su propia sala. En el tablero cada casillero es
+   chico y tenes que reconocerte de un vistazo. */
+const DISFRACES = {
+  /* --- museo: la ropa del antagonista --- */
+  overolEnc :{n:"El overol del Encargado", de:"n1", torso:"tiras",  cabeza:"gorra",    c1:"#4E6B84", c2:"#3C556B", shirt:"#7A9BB8"},
+  sacoCur   :{n:"El saco del Curador",     de:"n2", torso:"saco",   cabeza:"canas",    c1:"#6E6146", c2:"#C9CDD4", shirt:"#B9A177"},
+  trajeDir  :{n:"El traje del Director",   de:"n3", torso:"corbata",cabeza:"pelado",   c1:"#D4534A", c2:"#8D939E", shirt:"#4A5468"},
+  uniSeg    :{n:"El uniforme de Seguridad",de:"n4", torso:"cinto",  cabeza:"quepis",   c1:"#D2A24C", c2:"#22375A", shirt:"#4E7AAE"},
+  lentesPro :{n:"Los lentes del Procurador",de:"n5",torso:"",       cabeza:"anteojos", c1:"#15151A", c2:"#1B1B20", shirt:"#4A4A57"},
+  orejasPer :{n:"Las orejas del Perro",    de:"n6", torso:"",       cabeza:"orejas",   c1:"#7A5A3A", c2:"#5A4028", shirt:"#8A6B4A"},
+  guardaRes :{n:"El guardapolvo del Restaurador", de:"n7", torso:"guarda", cabeza:"barbijo", c1:"#A9A69E", c2:"#DCE6E4", shirt:"#F0EEE7"},
+  gabaIns   :{n:"La gabardina del Inspector",de:"n8",torso:"saco",  cabeza:"sombrero", c1:"#5F5340", c2:"#4E4536", shirt:"#A89476"},
+  galaGen   :{n:"La gala del Director General", de:"n9", torso:"corbata", cabeza:"canas", c1:"#C0A063", c2:"#C9CDD4", shirt:"#4E3E68"},
+
+  /* --- shopping: idem, con la gente del shopping --- */
+  overolBec :{n:"El overol del Becario",   de:"s1", juego:2, torso:"tiras",  cabeza:"gorra",  c1:"#4E6B84", c2:"#3C556B", shirt:"#7A9BB8"},
+  sacoEnca  :{n:"El saco de la Encargada", de:"s2", juego:2, torso:"saco",   cabeza:"canas",  c1:"#6E6146", c2:"#B9A98C", shirt:"#B9A177"},
+  trajeGer  :{n:"El traje del Gerente",    de:"s3", juego:2, torso:"corbata",cabeza:"pelado", c1:"#4A7FC0", c2:"#8D939E", shirt:"#4A5468"},
+  uniSeg2   :{n:"El uniforme del de Seguridad", de:"s4", juego:2, torso:"cinto", cabeza:"quepis", c1:"#D2A24C", c2:"#22375A", shirt:"#4E7AAE"},
+  sacoProm  :{n:"El saco de la Promotora", de:"s5", juego:2, torso:"saco",   cabeza:"vincha", c1:"#8A5E7A", c2:"#D46FA0", shirt:"#C79CB6"},
+  overolLim :{n:"El overol de Limpieza",   de:"s6", juego:2, torso:"tiras",  cabeza:"gorra",  c1:"#3E7A5E", c2:"#2E5C46", shirt:"#6FB08D"},
+  guardaRep :{n:"El guardapolvo del Repositor", de:"s7", juego:2, torso:"guarda", cabeza:"barbijo", c1:"#A9A69E", c2:"#DCE6E4", shirt:"#F0EEE7"},
+  gabaAud   :{n:"La gabardina del Auditor",de:"s8", juego:2, torso:"saco",   cabeza:"sombrero", c1:"#5F5340", c2:"#4E4536", shirt:"#A89476"},
+  galaDue   :{n:"La gala del Dueño",       de:"s9", juego:2, torso:"corbata",cabeza:"canas", c1:"#C0A063", c2:"#C9CDD4", shirt:"#4E3E68"},
+
+  /* --- el desafio diario: los graciosos, por racha --- */
+  payaso    :{n:"Payaso",        racha:3,  torso:"lunares", cabeza:"payaso",   c1:"#E0685D", c2:"#F2C14E", shirt:"#E8E4DA"},
+  dino      :{n:"Dinosaurio",    racha:7,  torso:"panza",   cabeza:"dino",     c1:"#5FA05C", c2:"#3E7A4A", shirt:"#5FA05C"},
+  mate      :{n:"Mate gigante",  racha:15, torso:"bombilla",cabeza:"mate",     c1:"#8A6B31", c2:"#C9CDD4", shirt:"#6E5326"},
+};
+
+/* La sala de la que sale cada disfraz, ya con el juego que corresponde. */
+function disfrazDeSala(salaKey){
+  for(const id in DISFRACES){
+    const d = DISFRACES[id];
+    if(d.de === salaKey && (d.juego || 1) === JUEGO) return id;
+  }
+  return null;
+}
+
+/* Ganada en las tres dificultades. Es la misma cuenta que pinta el tilde. */
+function salaEntera(salaKey){ return DIFICULTADES.every(d => hechaEn(salaKey, d.id)); }
+
+/* Tenerlo no se guarda: se deduce de lo que ya esta en el legajo. */
+function tengoDisfraz(id){
+  const d = DISFRACES[id];
+  if(!d) return false;
+  if(d.racha) return (leerDiaria().mejor || 0) >= d.racha;
+  return (d.juego || 1) === JUEGO && salaEntera(d.de);
+}
+
+function disfrazPuesto(){
+  const id = LEGAJO.puesto;
+  return id && DISFRACES[id] && tengoDisfraz(id) ? id : "";
+}
+
+/* El look que se dibuja: el personaje con la ropa encima. El nombre estampado
+   se mantiene siempre, que es como te reconoces en el tablero. */
+function conDisfraz(look){
+  const id = disfrazPuesto();
+  if(!id || !look) return look;
+  const d = DISFRACES[id];
+  return Object.assign({}, look, {
+    shirt : d.shirt || look.shirt,
+    hair  : d.pelo  || look.hair,
+    viste : d,
+  });
+}
+
+
 const PIECES = [
   {id:"rombo",     sym:"◆", name:"Rombo azul",      color:"#3F7FD6"},
   {id:"triangulo", sym:"▲", name:"Triángulo rojo",  color:"#D4534A"},
@@ -1490,7 +1596,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = CREW[sala.hero], power = POWERS[sala.hero];
+  const hero = conDisfraz(CREW[sala.hero]), power = POWERS[sala.hero];
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -3284,12 +3390,20 @@ let MARATON_ULTIMA = 0;
 let cerrarVuelveAlMuseo = false;
 
 function finalDiaria(gano, motivo){
+  const mejorAntes = leerDiaria().mejor || 0;
   const d = anotarDiaria(gano, S.round);
+  /* Los disfraces del diario salen por racha: se avisa el que cruzaste hoy. */
+  const ropaNueva = Object.keys(DISFRACES).find(id => {
+    const r = DISFRACES[id].racha;
+    return r && mejorAntes < r && (d.mejor || 0) >= r;
+  });
   cerrarVuelveAlMuseo = true;
   const racha = d.racha > 0
     ? "Racha de <b>" + d.racha + " día" + (d.racha > 1 ? "s" : "") + "</b>."
     : "Se te cortó la racha.";
-  const cuenta = " Llevás <b>" + d.ganadas + " de " + d.jugadas + "</b> desafíos.";
+  const cuenta = " Llevás <b>" + d.ganadas + " de " + d.jugadas + "</b> desafíos." +
+    (ropaNueva ? " Con esa racha te ganaste el disfraz de <b>" +
+      DISFRACES[ropaNueva].n + "</b>: está en el ropero." : "");
   pantallaFinal(gano, gano ? "¡Ganaste!" : "Te agarraron",
     (gano ? "Tres piezas entregadas y afuera. " : motivo + " ") + racha + cuenta,
     "hoy",
@@ -3305,15 +3419,21 @@ function gameWin(){
   float(S.exit.x, S.exit.y, "¡AFUERA!", "#79AE9E");
   if(enDiaria()) return finalDiaria(true);
   const primeraVez = !(LEGAJO.salas[S.salaKey] && LEGAJO.salas[S.salaKey].hecha);
+  const eraEntera = salaEntera(S.salaKey);
   anotarSala(S.salaKey, S.round, S.taken === 0);
   if(enMaraton()) return siguienteDelMaraton();
+  /* Con esta quedaron las tres dificultades: te llevás la ropa del antagonista.
+     No se guarda nada: tenerla se deduce de las marcas. */
+  const ropaNueva = (!eraEntera && salaEntera(S.salaKey)) ? disfrazDeSala(S.salaKey) : null;
   const hechas = salasHechas();
   pantallaFinal(true, "¡Ganaste!",
     "Tres piezas entregadas y la puerta de emergencia atrás. <b>" + S.foe.n +
     "</b> se quedó con la alerta en " + S.alert + "." +
-    (primeraVez ? " Van <b>" + hechas + " de 10</b> salas: sos <b>" + rangoActual() + "</b>." : ""),
+    (primeraVez ? " Van <b>" + hechas + " de 10</b> salas: sos <b>" + rangoActual() + "</b>." : "") +
+    (ropaNueva ? " Y con las <b>tres dificultades</b> hechas te quedaste con <b>" +
+      DISFRACES[ropaNueva].n + "</b>: está en el ropero." : ""),
     S.salaKey,
-    "Se escapó " + S.hero.n);
+    ropaNueva ? "Le robaste hasta la ropa" : "Se escapó " + S.hero.n);
 }
 
 function gameLose(reason){
@@ -4134,6 +4254,7 @@ function drawPerson(g, look, bob, alpha){
   drawHairBack(g, look, bob);                                                  // melena, detrás de todo
   g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();                 // remera
   g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+  if(look.viste) vestirCuerpo(g, look.viste, bob);   // debajo del nombre, nunca encima
   if(look.tag){                                                                // nombre estampado
     g.save();
     g.font='700 5.2px "Archivo",system-ui,sans-serif';
@@ -4154,8 +4275,108 @@ function drawPerson(g, look, bob, alpha){
   g.fillStyle="#1C1F26";
   g.beginPath(); g.arc(-2.9,-14.8+bob,1.15,0,7); g.fill();
   g.beginPath(); g.arc(2.9,-14.8+bob,1.15,0,7); g.fill();
+  if(look.viste) vestirCabeza(g, look.viste, bob);
   g.globalAlpha=1;
   g.restore();
+}
+
+/* La ropa de los disfraces, al tamaño de una persona: el torso mide 19 de
+   ancho y la cara es un circulo de radio 8 centrado en -14.5. Nada de esto
+   cambia la silueta, para que en el tablero te sigas reconociendo. */
+function vestirCuerpo(g, d, bob){
+  switch(d.torso){
+    case "saco":                                        // solapa y camisa
+      g.fillStyle=d.c1; g.fillRect(-1.8,-8+bob,3.6,13);
+      g.fillStyle="#EFE8D8"; g.fillRect(-1,-8+bob,2,7.5); break;
+    case "corbata":
+      g.fillStyle="#F5F5F7";
+      g.beginPath(); g.moveTo(-3.3,-8+bob); g.lineTo(3.3,-8+bob);
+      g.lineTo(1.7,2+bob); g.lineTo(-1.7,2+bob); g.fill();
+      g.fillStyle=d.c1;
+      g.beginPath(); g.moveTo(0,-7+bob); g.lineTo(2.4,-3.5+bob);
+      g.lineTo(0,4+bob); g.lineTo(-2.4,-3.5+bob); g.fill(); break;
+    case "cinto":                                       // cinturon y placa
+      g.fillStyle=d.c1; g.fillRect(-9.5,3+bob,19,2);
+      g.fillStyle="#E8E4DA"; g.fillRect(-8,-6.6+bob,3.4,2.6); break;
+    case "tiras":                                       // tiras del overol
+      g.fillStyle=d.c2; g.fillRect(-6.4,-8+bob,2.4,7); g.fillRect(4,-8+bob,2.4,7);
+      g.fillStyle="#00000026"; g.fillRect(-9.5,4+bob,19,3); break;
+    case "guarda":                                      // guardapolvo abierto
+      g.strokeStyle=d.c1; g.lineWidth=.9;
+      g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(0,7+bob); g.stroke();
+      g.fillStyle="#8FA88F"; g.fillRect(3.4,-4.5+bob,3.2,4); break;
+    case "lunares":
+      g.fillStyle=d.c1;
+      [[-5.5,-4.5],[4.5,-5],[-3,3],[5,2.5],[0,5]].forEach(p=>{
+        g.beginPath(); g.arc(p[0],p[1]+bob,1.7,0,7); g.fill(); });
+      g.fillStyle=d.c2; g.beginPath(); g.arc(0,-6.5+bob,2.2,0,7); g.fill(); break;
+    case "panza":                                       // panza clara del dino
+      g.fillStyle="#CFE3C0"; rr(g,-5,-3+bob,10,9,3); g.fill();
+      g.fillStyle=d.c2;
+      [[-8,-6],[-4,-7.5],[0,-8],[4,-7.5],[8,-6]].forEach(p=>{
+        g.beginPath(); g.moveTo(p[0]-1.6,p[1]+bob+2); g.lineTo(p[0],p[1]+bob-1.6);
+        g.lineTo(p[0]+1.6,p[1]+bob+2); g.fill(); }); break;
+    case "bombilla":                                    // la bombilla del mate
+      g.strokeStyle=d.c2; g.lineWidth=1.6; g.lineCap="round";
+      g.beginPath(); g.moveTo(4,-6+bob); g.lineTo(9,-15+bob); g.stroke();
+      g.fillStyle="#00000022"; rr(g,-9.5,-2+bob,19,4,2); g.fill(); break;
+  }
+}
+
+function vestirCabeza(g, d, bob){
+  const y = -14.5+bob;                                   // centro de la cara
+  switch(d.cabeza){
+    case "gorra":                                       // gorra de trabajo
+      g.fillStyle=d.c2;
+      g.beginPath(); g.arc(0,y-1.4,8,Math.PI,0); g.fill();
+      g.fillRect(-8,y-1.9,16,2.4); g.fillRect(-11.4,y-2.3,8,2.2); break;
+    case "quepis":                                      // gorra de uniforme
+      g.fillStyle=d.c2;
+      g.beginPath(); g.arc(0,y-2,8.1,Math.PI,0); g.fill();
+      g.fillRect(-8.1,y-2.5,16.2,2.8); g.fillRect(-11.8,y-3,8.4,2.4);
+      g.fillStyle=d.c1; g.fillRect(-1.7,y-5.4,3.4,2.6); break;
+    case "sombrero":                                    // gabardina: sombrero
+      g.fillStyle=d.c2;
+      g.fillRect(-10.2,y-2.6,20.4,2.4);
+      g.beginPath(); g.arc(0,y-3,6.2,Math.PI,0); g.fill();
+      g.fillRect(-6.2,y-3.4,12.4,1.8); break;
+    case "canas":                                       // pelo peinado, no casco
+      g.fillStyle=d.c2;
+      g.beginPath(); g.arc(0,y-.6,7.7,Math.PI*1.06,-.06*Math.PI); g.fill(); break;
+    case "pelado":                                      // dos mechones de canas
+      g.fillStyle=d.c2;
+      g.beginPath(); g.arc(-6.4,y-.4,3,0,7); g.fill();
+      g.beginPath(); g.arc(6.4,y-.4,3,0,7); g.fill(); break;
+    case "anteojos":
+      g.fillStyle=d.c1; g.fillRect(-6.6,y-1.2,13.2,3.4); break;
+    case "barbijo":
+      g.fillStyle=d.c2; rr(g,-5.6,y+.6,11.2,6,2); g.fill(); break;
+    case "orejas":
+      g.fillStyle=d.c2;
+      g.beginPath(); g.ellipse(-7.2,y-2.4,2.6,4.4,-.42,0,7); g.fill();
+      g.beginPath(); g.ellipse( 7.2,y-2.4,2.6,4.4, .42,0,7); g.fill(); break;
+    case "vincha":
+      g.fillStyle=d.c2; g.fillRect(-8,y-3.4,16,2.2);
+      g.beginPath(); g.arc(-7.4,y-4.6,2,0,7); g.fill(); break;
+    case "payaso":                                      // pelo colorado y nariz
+      g.fillStyle=d.c1;
+      g.beginPath(); g.arc(-7.6,y-1.4,3.6,0,7); g.fill();
+      g.beginPath(); g.arc(7.6,y-1.4,3.6,0,7); g.fill();
+      g.fillStyle=d.c2; g.beginPath(); g.arc(0,y-6.6,2.4,0,7); g.fill();
+      g.fillStyle="#E0685D"; g.beginPath(); g.arc(0,y-12.5+11,2.1,0,7); g.fill(); break;
+    case "dino":                                        // capucha con cresta
+      g.fillStyle=d.c1;
+      g.beginPath(); g.arc(0,y-1,8.6,Math.PI,0); g.fill();
+      g.fillRect(-8.6,y-1.4,17.2,2.4);
+      g.fillStyle=d.c2;
+      [[-4,-9.5],[0,-10.6],[4,-9.5]].forEach(p=>{
+        g.beginPath(); g.moveTo(p[0]-1.8,y+p[1]+2.4); g.lineTo(p[0],y+p[1]-1.4);
+        g.lineTo(p[0]+1.8,y+p[1]+2.4); g.fill(); }); break;
+    case "mate":                                        // una calabaza por sombrero
+      g.fillStyle=d.c1; g.beginPath(); g.arc(0,y-5.6,5.4,0,7); g.fill();
+      g.fillStyle="#3E7A4A"; g.beginPath(); g.arc(0,y-7.4,3.4,Math.PI,0); g.fill();
+      break;
+  }
 }
 
 /* La melena va DETRÁS de la cara. Si se dibuja encima, tapa los ojos y el
@@ -4873,14 +5094,22 @@ function dibujarPlano(el, salaKey){
 }
 
 /* la cara del amigo que juega la sala */
-function dibujarCara(el, heroKey){
+function dibujarCara(el, heroKey, disfrazId){
   if(!el || !el.getContext) return;
   const g = el.getContext("2d");
   g.clearRect(0,0,el.width,el.height);
   g.save();
   g.translate(el.width/2, el.height*0.82);
   g.scale(1.35,1.35);
-  drawPerson(g, CREW[heroKey], 0);
+  /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
+     mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
+  let look = CREW[heroKey];
+  if(disfrazId === undefined) look = conDisfraz(look);
+  else if(disfrazId && DISFRACES[disfrazId]){
+    const d = DISFRACES[disfrazId];
+    look = Object.assign({}, look, {shirt:d.shirt||look.shirt, hair:d.pelo||look.hair, viste:d});
+  }
+  drawPerson(g, look, 0);
   g.restore();
 }
 
@@ -5373,13 +5602,16 @@ function menu(){
       '<button class="btn alt" onclick="irAlDiario()">Desafío diario</button>' +
       '<button class="btn alt" onclick="ayuda()">Cómo se juega</button>' +
       '<button class="btn alt" onclick="ficha()">Mi ficha</button>' +
+      '<button class="btn alt" onclick="ropero()">El ropero</button>' +
       '<button class="btn alt" onclick="volverAlPortal()">Portada</button>' +
     '</div>', !!S);
 
   const raiz = $("modal");
   if(raiz && raiz.querySelectorAll){
     raiz.querySelectorAll("canvas[data-sala]").forEach(c => dibujarPlano(c, c.dataset.sala));
-    raiz.querySelectorAll("canvas[data-hero]").forEach(c => dibujarCara(c, c.dataset.hero));
+    /* En la lista de salas cada uno va como es: ahi se lee quien juega cada
+       sala, no que ropa llevas vos. El disfraz se ve en el tablero. */
+    raiz.querySelectorAll("canvas[data-hero]").forEach(c => dibujarCara(c, c.dataset.hero, ""));
   }
 }
 
@@ -5786,7 +6018,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "43e467f3b3";
+const VERSION = "aeea97b3be";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
@@ -5872,6 +6104,69 @@ function calendarioDiario(){
   '</div>';
 }
 
+/* ---------- el ropero ----------
+   Se ven todos, tengas o no cada uno: los que faltan muestran qué hay que
+   hacer para sacarlos. Un disfraz cerrado que no se ve no invita a nada. */
+function comoSeSaca(d){
+  if(d.racha) return "Racha de " + d.racha + " días en el desafío diario";
+  const sala = (JUEGOS[d.juego || 1].salas || {})[d.de];
+  return "Ganá " + (sala ? sala.name : d.de) + " en las tres dificultades";
+}
+
+function ropero(){
+  const puesto = disfrazPuesto();
+  const heroe = (S && S.heroKey) || "damian";
+
+  const carta = (id) => {
+    const d = DISFRACES[id];
+    const tengo = tengoDisfraz(id);
+    return '<button class="disf' + (tengo ? "" : " cerrado") + (puesto === id ? " puesto" : "") + '"' +
+      (tengo ? ' onclick="ponerDisfraz(&quot;' + id + '&quot;)"' : ' disabled') + '>' +
+      '<canvas width="120" height="120" data-disf="' + id + '"></canvas>' +
+      '<b>' + d.n + '</b>' +
+      '<small>' + (tengo ? (puesto === id ? "puesto" : "toca para ponértelo") : comoSeSaca(d)) + '</small>' +
+      (tengo ? "" : '<span class="candado">🔒</span>') +
+    '</button>';
+  };
+
+  const delJuego = Object.keys(DISFRACES).filter(id => !DISFRACES[id].racha &&
+                     (DISFRACES[id].juego || 1) === JUEGO);
+  const delDiario = Object.keys(DISFRACES).filter(id => DISFRACES[id].racha);
+  /* Sólo lo que se ve en esta pantalla: la ropa del otro juego se cuenta
+     allá. Decir «4 de 21» cuando hay doce a la vista confunde. */
+  const aLaVista = delJuego.concat(delDiario);
+  const tengo = aLaVista.filter(tengoDisfraz).length;
+
+  showModal("El ropero",
+    '<p class="lead">La ropa no cambia ninguna regla: es sólo para que te vean. ' +
+    'Llevás <b>' + tengo + ' de ' + aLaVista.length + '</b> en ' + NOMBRE_JUEGO[JUEGO] + '.</p>' +
+    '<div class="ropero">' +
+      '<button class="disf' + (puesto ? "" : " puesto") + '" onclick="ponerDisfraz(&quot;&quot;)">' +
+        '<canvas width="120" height="120" data-disf=""></canvas>' +
+        '<b>Sin disfraz</b><small>' + (puesto ? "toca para sacártelo" : "puesto") + '</small></button>' +
+      delJuego.map(carta).join("") +
+    '</div>' +
+    '<p class="fnota">Del <b>desafío diario</b>, por racha:</p>' +
+    '<div class="ropero">' + delDiario.map(carta).join("") + '</div>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="ficha()">Mi ficha</button>' +
+      '<button class="btn alt" onclick="menu()">Todas las salas</button>' +
+    '</div>', !!S);
+
+  const raiz = $("modal");
+  if(raiz && raiz.querySelectorAll)
+    raiz.querySelectorAll("canvas[data-disf]").forEach(c => dibujarCara(c, heroe, c.dataset.disf));
+}
+
+function ponerDisfraz(id){
+  if(id && !tengoDisfraz(id)) return;
+  LEGAJO.puesto = id || "";
+  guardarLegajo(LEGAJO);
+  if(S && S.heroKey) S.hero = conDisfraz(CREW[S.heroKey]);   // se ve al toque en el tablero
+  if(typeof pintar === "function") pintar();
+  ropero();
+}
+
 function ficha(){
   const hechas = salasHechas();
   const total  = Object.keys(SALAS).length;
@@ -5933,6 +6228,7 @@ function ficha(){
     'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
     '<div class="finbotones">' +
       '<button class="btn" onclick="menu()">Todas las salas</button>' +
+      '<button class="btn alt" onclick="ropero()">El ropero</button>' +
       '<button class="btn alt" onclick="empezarMaraton()">Correr el maratón</button>' +
       '<button class="btn alt" onclick="volverAlPortal()">Portada</button>' +
       '<button class="btn alt" onclick="olvidarLegajo()">Cambiar de nombre</button>' +
