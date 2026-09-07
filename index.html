@@ -1571,13 +1571,13 @@ let SALAS = {
          T.A...
          M..C.D`), w:["v:1:2","v:2:2","h:3:2","h:1:4","v:1:5","v:3:5","v:5:5","v:5:2","h:5:1","h:3:1","h:4:1"] },
   n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris", ac:["#2A5CA8","#91B2DE","#E6EDF8"],
-    hero:"lamber", foe:"director", comps:["matxi","hippie","damian"],
+    hero:"kzk", foe:"director", comps:["matxi","hippie","damian"],
     e:L(`.AD.MP
          .C....
          ......
          P.TMPA`), w:["v:3:5","h:4:4","v:4:5","v:5:5","v:5:2","v:3:2","h:1:2","v:1:5","h:5:1","h:4:1"] },
   n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris", ac:["#A81E6E","#DE8FBC","#FAE6F1"],
-    hero:"kzk", foe:"seguridad", comps:["tomy","marian","chupa"],
+    hero:"lamber", foe:"seguridad", comps:["tomy","marian","chupa"],
     e:L(`...DP.
          P...M.
          .M..A.
@@ -1998,8 +1998,8 @@ let CONSEJOS = {
   tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
   n1:"Tu poder te esconde también en la casilla de al lado de una planta, y a vos ni la carta ¡Se acerca! te encuentra escondido. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
   n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
-  n3:"El Director no tiene trucos, pero es constante. Con <b>F</b> cualquier cómplice te acepta cualquier pieza: no gastes pasos buscando al que la pide.",
-  n4:"No termines el turno en línea recta con La Seguridad si no hay pared en el medio, porque avanza un casillero extra. Guardá tu arreglo de vitrina para cuando te cierre el camino.",
+  n3:"El Director no tiene trucos, pero es constante. Guardá el <b>F</b> para cuando te quede una sola pieza y esté lejos: acá traerla a una vitrina ya vacía es lo que más pasos te ahorra de todo el museo.",
+  n4:"No termines el turno en línea recta con La Seguridad si no hay pared en el medio, porque avanza un casillero extra. Con <b>F</b> cualquier cómplice te acepta cualquier pieza: en esta sala los cómplices están lejos de la vitrina que les toca, así que te ahorra muchos pasos.",
   n5:"Cada vitrina que abrís hace avanzar al Procurador al instante. Abrí primero la más lejana, y guardá tus cuatro pasos para la fuga final.",
   n6:"Al Perro no lo engañan las plantas: te huele igual. Tu termo es tu ventaja, usalo para cruzar la sala de una sola vez.",
   n7:"El Restaurador te deshace una entrega, una vez por partida, y la pieza vuelve a la vitrina más cercana a él. No es todo malo: al reentregarla el cómplice te da el objeto de nuevo. Y tu primera captura no te cuesta nada, usala como escudo.",
@@ -6234,7 +6234,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "b99d376325";
+const VERSION = "a3a63f6ec9";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
