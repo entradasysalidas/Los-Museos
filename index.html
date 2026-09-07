@@ -1180,7 +1180,9 @@
   </div>
 </div>
 
-<div id="overlay" onclick="fondoCierra(event)"><div class="modal">
+<!-- nace cerrado: sin la clase off arrancaba abierto y vacio, y se veia
+     un modal en blanco titulado "Los Museos" al entrar a la primera sala -->
+<div id="overlay" class="off" onclick="fondoCierra(event)"><div class="modal">
   <h2 id="modaltit">Los Museos</h2>
   <button class="cerrar" id="cerrarmodal" onclick="closeModal()" title="Cerrar (Esc)">×</button>
   <div class="modalbody" id="modal"></div></div></div>
@@ -2245,6 +2247,15 @@ function claveDelDia(fecha){
 }
 
 /* La sala entera del día: tablero, quién juega, quién persigue y la luz. */
+/* La dificultad también es del día. Sale de la misma semilla, así que a los
+   nueve les toca la misma: no es una perilla que elegís, es parte de la sala
+   de hoy. La mayoría de los días son duros; alguno sale liviano y cada tanto
+   toca la del manual impreso, que no perdona. */
+function dificultadDelDia(semilla){
+  const r = rngDia(semilla ^ 0x00C0FFEE)();
+  return r < 0.20 ? 1 : r < 0.80 ? 2 : 3;
+}
+
 function salaDelDia(fecha){
   const f = fecha || new Date();
   const n = numeroDeDia(f);
@@ -2311,7 +2322,7 @@ function textoParaCompartir(){
   const marca = d.gano ? "🏃 " + d.rondas + " rondas" : "💼 me agarraron";
   const limpio = d.gano && S.taken === 0 ? " · sin que me sacaran ninguna" : "";
   const racha = d.racha > 1 ? "\nRacha: " + d.racha + " días" : "";
-  return "LOS MUSEOS · desafío diario\n" + s.name + "\n" +
+  return "LOS MUSEOS · desafío diario\n" + s.name + " · " + nombreDificultad() + "\n" +
          CREW[s.hero].n + " vs " + S.foe.n + "\n" + marca + limpio + racha +
          "\nentradasysalidas.github.io/Los-Museos/";
 }
@@ -2333,8 +2344,8 @@ function pegarAMano(txt, listo){
 
 
 function empezarDiaria(){
-  DIFICULTAD = 1;              // el desafío es el mismo para todos, sin perillas
   const sala = salaDelDia();
+  DIFICULTAD = dificultadDelDia(sala.semilla);   // la de hoy, igual para los nueve
   SALAS_DIA.hoy = sala;
   cargarJuego(3);
   AZAR = rngDia(sala.semilla ^ 0x9E3779B9);
@@ -2392,13 +2403,24 @@ function passThrough(x,y){
   const c=S.grid[y][x];
   if(c.type==="vitrina" && !c.alarm && c.piece){ takePiece(c); return; }
   if(c.type==="complice"){
-    const wanted = S.hand.includes(c.want) ? c.want : null;
-    if(wanted && !S.delivered.includes(c.want)) deliver(c, wanted);
+    if(c.recibio) return;                       // a cada uno, una sola pieza
+    if(S.hand.includes(c.want)) deliver(c, c.want);
+    else if(S.hand.length && !canOfferHere())
+      say(`🙅 ${CREW[compOf(c.want)].n} quiere ${PIE[c.want].sym} <b>${PIE[c.want].name}</b>, no lo que llevás.`, "y");
     return;
   }
   if(c.type==="banana"){
-    if(S.mp>0){ S.mp-=TUNE.bananaCost; float(x,y,"¡RESBALÓN!","#E0685D");
-                say("🍌 Pisaste una cáscara: perdés un movimiento."); }
+    /* Pisarla con el último paso salía gratis: se descontaba de los pasos
+       que ya no quedaban. Ahora, si no queda de dónde sacarlo, lo paga la
+       ronda que viene, que es lo que la cáscara promete. */
+    float(x,y,"¡RESBALÓN!","#E0685D");
+    if(S.mp > 0){
+      S.mp -= TUNE.bananaCost;
+      say("🍌 Pisaste una cáscara: perdés un movimiento.");
+    }else{
+      S.resbalon = TUNE.bananaCost;
+      say("🍌 Pisaste una cáscara con el último paso: arrancás la ronda que viene con <b>uno menos</b>.");
+    }
     return;
   }
   if(c.type==="salida" && S.delivered.length>=3) return gameWin();
@@ -2410,7 +2432,8 @@ function deliver(c, id){
     S.reloj = null;
   }
   S.hand.splice(S.hand.indexOf(id),1);
-  S.delivered.push(c.want);
+  S.delivered.push(id);       // lo que le diste de verdad
+  c.recibio = id;             // y este cómplice ya está servido
   const obj=S.under[id];
   if(obj) S.objects.push(obj);
   float(c.x!==undefined?c.x:S.player.x, S.player.y, "✓ "+CREW[compOf(c.want)].n, "#79AE9E");
@@ -2455,7 +2478,7 @@ const compOf = want => (S.sala.comps[["rombo","triangulo","circulo"].indexOf(wan
 function canOfferHere(){
   if(S.heroKey!=="lamber" || !S.hand.length) return false;
   const c=S.grid[S.player.y][S.player.x];
-  return c.type==="complice" && !S.delivered.includes(c.want);
+  return c.type==="complice" && !c.recibio;
 }
 function offerDelivery(){
   if(!S||S.over||S.busy||!canOfferHere()) return;
@@ -2520,7 +2543,10 @@ function endMovement(){
       const x=S.player.x+dx, y=S.player.y+dy, n=cellAt(x,y);
       return n && n.type==="planta" && canStep(S.player.x,S.player.y,x,y);   // no a través de una pared
     })));
-  S.vistoPorCamara = (typeof teVeLaCamara==="function") && teVeLaCamara();
+  /* Si además quedaste escondido, chasePhase() se va por la rama de la
+     planta y el jefe no se mueve: la cámara no cobra nada. Anunciarlo
+     igual era mentir. */
+  S.vistoPorCamara = (typeof teVeLaCamara==="function") && teVeLaCamara() && !hidden;
   if(S.vistoPorCamara){
     fx.shake = TUNE.shakeMs * .5;
     float(S.player.x, S.player.y, "📹", "#E0685D");
@@ -2803,6 +2829,10 @@ function restaurarUna(){
                        (d[key(b.x,b.y)] < 0 ? 1e9 : d[key(b.x,b.y)]));
   const v = vacias[0];
   S.delivered.splice(S.delivered.indexOf(id), 1);
+  for(const m of S.marks.comps){              // liberar al que la había recibido
+    const cc = S.grid[m.y][m.x];
+    if(cc.recibio === id){ cc.recibio = null; break; }
+  }
   S.pile.push(id);
   S.grid[v.y][v.x].piece = id;
   S.grid[v.y][v.x].alarm = 0;
@@ -2916,7 +2946,9 @@ function nextRound(){
       say(`⏱️ Quedan <b>${S.reloj.quedan} rondas</b> para entregar ${PIE[S.reloj.id].name}.`,"y");
     }
   }
-  S.mp=TUNE.steps; S.matesTurn=0; S.drunk.clear();
+  S.mp = TUNE.steps - (S.resbalon || 0);   // la cáscara de la ronda pasada
+  S.resbalon = 0;
+  S.matesTurn=0; S.drunk.clear();
   S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
   syncUI();
 }
@@ -3265,11 +3297,10 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable,
         '<canvas id="finlienzo" width="300" height="300"></canvas>' +
         '<div class="finsala"><b>' + s.name + '</b>' +
           '<small>' + (s.num===0 ? "Tutorial" : "Nivel " + s.num) + ' · ' + s.wing + '</small>' +
-          /* En el desafío diario no se elige, va siempre normal: decirlo ahí
-             es ruido. En las salas sueltas es justo lo que querés saber. */
-          (enDiaria() ? "" :
-            '<span class="findif d' + DIFICULTAD + '">' +
-            (gano ? "" : "en ") + nombreDificultad() + '</span>') +
+          /* En el diario también: la dificultad es del día, sale de la semilla
+             y es la misma para los nueve. Es lo primero que se cuenta. */
+          '<span class="findif d' + DIFICULTAD + '">' +
+          (gano ? "" : "en ") + nombreDificultad() + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="findatos">' +
@@ -4269,7 +4300,7 @@ function drawBanio(g){
 
 function drawComplice(g,c){
   const who = CREW[compOf(c.want)], piece = PIE[c.want];
-  const done = S.delivered.includes(c.want);
+  const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
   g.fillStyle="#454C59"; rr(g,11,17,26,20,4); g.fill();                 // escritorio/silla
   g.save(); g.translate(24,26); g.scale(.86,.86);
@@ -5265,7 +5296,7 @@ addEventListener("keydown", e=>{
   if(k===" "){ e.preventDefault(); drinkMate(); return; }
   if(k==="Enter"){ e.preventDefault(); finishRound(); return; }
   if(k==="f" || k==="e"){ usarPoder(); return; }
-  if(/^[123]$/.test(k)) useObject(+k-1);
+  if(/^[1-5]$/.test(k)) useObject(+k-1);   // Chupa y Tomy llegan a cinco
 });
 
 function canvasPos(e){
@@ -6085,7 +6116,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "e314fdb728";
+const VERSION = "a5a686ea88";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
