@@ -490,11 +490,34 @@
     box-shadow:0 16px 32px #00000040}
   .lv:hover::after{opacity:.18}
 
+  /* La medalla: va sola, arriba a la derecha de la tarjeta, en el hueco que
+     queda al lado del nombre. No reemplaza al tilde —el tilde dice QUE la
+     ganaste en las tres, la medalla dice QUÉ TAN BIEN—. Adentro, grabado, lo
+     que te costó: las rondas de las tres dificultades sumadas. */
+  .medalla{position:absolute;right:12px;top:11px;width:56px;text-align:center;
+    pointer-events:none;z-index:2;--m1:#F2DC9B;--m2:#D9B65A;--m3:#8A6A22;--mt:#3B2C08}
+  .medalla .disco{width:38px;height:38px;margin:0 auto;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-style:normal;
+    font:400 14px/1 "Archivo Black","Archivo",sans-serif;letter-spacing:-.03em;
+    color:var(--mt);font-variant-numeric:tabular-nums;
+    background:radial-gradient(circle at 34% 26%, var(--m1), var(--m2) 52%, var(--m3));
+    box-shadow:0 3px 8px #00000059, inset 0 0 0 1px #FFFFFF66,
+               inset 0 0 0 4px #00000016, inset 0 -3px 5px #00000033}
+  .medalla b{display:block;margin-top:4px;white-space:nowrap;
+    font:500 7px/1 "IBM Plex Mono",monospace;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--m2);text-shadow:0 1px 2px #0009}
+  .medalla.plata {--m1:#F4F6F8;--m2:#C2C9D2;--m3:#79828E;--mt:#2A2F36}
+  .medalla.bronce{--m1:#EEC199;--m2:#C58248;--m3:#7C4A22;--mt:#331D0C}
+  /* la chiquita de la ficha: sólo el disco, sin leyenda */
+  .medalla.chica{position:static;width:auto}
+  .medalla.chica .disco{width:26px;height:26px;font-size:10.5px;
+    box-shadow:0 1px 3px #00000047, inset 0 0 0 1px #FFFFFF59, inset 0 0 0 3px #00000014}
+
   .lv .arriba{display:flex;gap:12px;align-items:flex-start;min-width:0}
   .lv .plano{flex:none}
   .lv .plano canvas{width:92px;height:92px;display:block;background:var(--sunk)}
 
-  .lv .txt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .lv .txt{flex:1;min-width:0;display:flex;flex-direction:column;padding-right:62px}
   .lv .ala{font:500 8px/1 "IBM Plex Mono",monospace;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);margin-bottom:5px}
   .lv .num{font:400 24px/.8 "Archivo Black","Archivo",sans-serif;color:var(--ac);
@@ -663,8 +686,9 @@
 
   .fsalas{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
   @media(min-width:720px){ .fsalas{grid-template-columns:repeat(2,minmax(0,1fr))} }
-  .fsala{display:grid;grid-template-columns:26px minmax(0,1fr) 54px 34px;gap:11px;
+  .fsala{display:grid;grid-template-columns:26px minmax(0,1fr) 54px 34px 28px;gap:11px;
     align-items:center;background:var(--panel2);padding:10px 13px}
+  .fsala .fmed{display:flex;justify-content:center}
   .fsala .fn{font:400 19px/.85 "Archivo Black","Archivo",sans-serif;color:var(--hair);
     letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:center}
   .fsala.ok .fn{color:var(--ac)}
@@ -724,6 +748,9 @@
     /* con lamina arriba el plano va mas chico, para que los botones de
        abajo entren sin scrollear tanto */
     .fintapa + .final .finplano canvas{max-width:165px}
+    .medalla{right:9px;top:9px;width:52px}
+    .medalla .disco{width:33px;height:33px;font-size:12.5px}
+    .lv .txt{padding-right:56px}
     .ropero{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
     .disf canvas{width:64px;height:64px}
     .disf b{font-size:11px}
@@ -911,7 +938,7 @@
     /* la ficha, que es lo que se saca por captura */
     .fichacab{grid-template-columns:1fr}
     .fdato .rango{font-size:24px}
-    .fsala{grid-template-columns:24px minmax(0,1fr) 50px 30px;gap:9px;padding:9px 11px}
+    .fsala{grid-template-columns:24px minmax(0,1fr) 50px 30px 26px;gap:8px;padding:9px 11px}
     .fnota{font-size:12px}
 
     /* las pantallas de final y las listas de la ayuda */
@@ -1868,6 +1895,43 @@ function anotarSala(salaKey, rondas, sinPerder){
   };
   guardarLegajo(LEGAJO);
 }
+/* ---------- la medalla de cada sala ----------
+   Sale de lo que te costó ganarla en las TRES dificultades sumadas, medido
+   contra el recorrido mínimo de ese tablero. El mínimo no lo sacó un bot
+   —el bot es peor que cualquiera de ustedes y el oro salía regalado—: es
+   geometría, la ruta más corta que roba las tres piezas, las entrega y sale,
+   sin nadie persiguiéndote. Está en pasos, dividido por los dos de una ronda,
+   y es la mediana sobre los repartos de piezas, que cambian de partida en
+   partida. Si algún día se toca un tablero, hay que recalcular su número. */
+const PAR_SALA = {
+  tutorial:11, n1:15, n2:14, n3:15, n4:17, n5:18, n6:16, n7:16, n8:18, n9:20,
+  s0:13, s1:13, s2:13, s3:15, s4:16, s5:15, s6:16, s7:14, s8:11, s9:13,
+};
+const MEDALLAS = [
+  {id:"oro",    n:"Oro",    hasta:1.20},
+  {id:"plata",  n:"Plata",  hasta:1.60},
+  {id:"bronce", n:"Bronce", hasta:Infinity},
+];
+
+function medallaDe(salaKey){
+  if(!DIFICULTADES.every(d => hechaEn(salaKey, d.id))) return null;
+  const marcas = marcasDe(salaKey);
+  const total = DIFICULTADES.reduce((a,d) => a + marcas[String(d.id)].rondas, 0);
+  const par = (PAR_SALA[salaKey] || 15) * DIFICULTADES.length;
+  const m = MEDALLAS.find(x => total <= par * x.hasta) || MEDALLAS[MEDALLAS.length - 1];
+  return {id:m.id, n:m.n, total:total, par:par};
+}
+
+function medallaHTML(salaKey, chica){
+  const m = medallaDe(salaKey);
+  if(!m) return "";
+  const tit = m.n + " · " + m.total + " rondas sumando las tres dificultades. " +
+    "El recorrido más corto de esta sala son " + m.par + ".";
+  return '<span class="medalla ' + m.id + (chica ? ' chica' : '') + '" title="' + tit + '">' +
+    '<i class="disco">' + m.total + '</i>' +
+    (chica ? '' : '<b>' + m.n + '</b>') + '</span>';
+}
+
 function salasHechas(){
   return Object.keys(SALAS).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
 }
@@ -5674,6 +5738,7 @@ function menu(){
     const entera = DIFICULTADES.every(d => hechaEn(k, d.id));
     return '<button class="lv' + (hecha ? " hecha" : "") + '" style="--ac:'+ac+'" ' +
            'title="'+v.name+'" onclick="startSala(&quot;'+k+'&quot;)">' +
+      medallaHTML(k) +
       '<span class="arriba">' +
         '<span class="plano"><canvas width="150" height="150" data-sala="'+k+'"></canvas>' +
           (entera ? '<span class="tilde" title="Ganada en las tres dificultades">✓</span>' : '') +
@@ -6132,7 +6197,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "8e0dff3a58";
+const VERSION = "eb06d6a3ea";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
@@ -6322,6 +6387,7 @@ function ficha(){
       '</span>' +
       '<span class="fsellos">' + DIFICULTADES.map(d =>
         '<i class="d' + d.id + (hechaEn(k, d.id) ? " ok" : "") + '"></i>').join("") + '</span>' +
+      '<span class="fmed">' + medallaHTML(k, true) + '</span>' +
     '</div>';
   }).join("");
 
@@ -6341,6 +6407,7 @@ function ficha(){
 
     '<div class="fsalas">' + filas + '</div>' + tiraOtro + calendarioDiario() +
     '<p class="fnota">Las tres bolitas son las tres dificultades: <b>normal</b>, <b>duro</b> y <b>como el manual</b>. Se encienden las que ganaste. ' +
+    'Cuando tenés las tres aparece la <b>medalla</b>, y adentro va lo que te costó: las rondas de las tres sumadas. Cuanto más cerca del recorrido más corto de esa sala, mejor el metal. ' +
     'Sacale una captura y tirala al grupo: las marcas se guardan en este dispositivo.</p>' +
     '<div class="finbotones">' +
       '<button class="btn" onclick="menu()">Todas las salas</button>' +
