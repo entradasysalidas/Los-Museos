@@ -1504,7 +1504,7 @@ function newGame(salaKey){
     objects:[], objUsed:[],
     alert: FOES[sala.foe].alert || 1,
     ruta:[], celular:null, guantes:false, anotados:0, puertas, vidrios, reloj:null,
-    deck:shuffle(DECK.slice()), played:[], lastCard:null, peek:null,
+    deck:shuffle(DECK.slice()), played:[], lastCard:null, cartaVista:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
     over:null, busy:false, phase:"vos", cardPending:false, log:[],
@@ -2635,8 +2635,13 @@ function actionPhase(){
   const card=S.deck.pop();
   S.played.push(card);
   S.lastCard=card; S.phase="accion"; S.cardPending=true;
-  banner(`${S.foe.n}: ${card.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
-  say(`<span class="ico">${iconoDeCarta(card)}</span><span><b>${card.n}</b> — ${card.d}</span>`, "carta");
+  /* Lo que se anuncia es lo que va a pasar, no lo que dice el cartón: tres
+     antagonistas desvían las cartas de escritorio a las vitrinas. Se calcula
+     ahora, antes de moverlo, y se guarda para que el panel muestre lo mismo. */
+  const vista = cartaHonesta(card);
+  S.cartaVista = vista;
+  banner(`${S.foe.n}: ${vista.n}`, card.k==="rush" ? "#E0685D" : acentoSala());
+  say(`<span class="ico">${iconoDeCarta(vista)}</span><span><b>${vista.n}</b> — ${vista.d}</span>`, "carta");
   syncUI();
   luego(()=>applyCard(card), TUNE.cardMs);
 }
@@ -2690,23 +2695,18 @@ function applyCard(card){
         reordenarVidriera();
       }
       else if(S.foe.twist==="vitrinas" || S.foe.twist==="vitrinaCerca"){
-        const live=S.marks.vitrinas.filter(v=>!S.grid[v.y][v.x].alarm);
-        const lista = live.length ? live : S.marks.vitrinas.slice();
+        const {lista, suya} = vitrinaDeLaCarta(card);
         if(S.foe.twist==="vitrinaCerca"){
           const d = bfsFrom({x:S.player.x, y:S.player.y});
           const dist = v => { const n = d[key(v.x,v.y)]; return n<0 ? 1e9 : n; };
           put(lista.slice().sort((a,b)=>dist(a)-dist(b))[0]);
-          say(`<span class="ico">🖼</span><span><b>${S.foe.n}</b> aparece en la vidriera <b>más cercana a vos</b>.</span>`,"carta r");
         } else {
-          /* A la vitrina de la pieza que nombra la carta, no a una cualquiera.
-             Antes era al azar y el ◆ o el ▲ de la carta no querían decir nada:
-             anunciaba «el triángulo» y aparecía donde estaba el rombo. Si esa
-             pieza ya no está en su vitrina, cae en cualquiera de las que quedan. */
-          const suya = lista.find(v => S.grid[v.y][v.x].piece === card.t);
+          /* A la vitrina de la pieza que nombra la carta, no a una cualquiera:
+             antes era al azar y el símbolo de la carta no quería decir nada.
+             Si esa pieza ya no está expuesta cae en otra vitrina, porque a los
+             escritorios no va nunca: en eso consiste su manía. El anuncio lo
+             dice, y sale al dar vuelta la carta, en actionPhase, no acá. */
           put(suya || shuffle(lista)[0]);
-          say(suya
-            ? `<span class="ico">🖼</span><span>Pero <b>${S.foe.n}</b> no va al escritorio: va a la <b>vitrina</b> de ${PIE[card.t].sym} ${PIE[card.t].name}.</span>`
-            : `<span class="ico">🖼</span><span>Esa pieza ya no está en su vitrina: <b>${S.foe.n}</b> aparece en otra.</span>`,"carta r");
         }
       }else put(S.marks.comps.find(c=>c.want===card.t));
       if(S.foe.twist==="reponeCerca") restaurarUna();
@@ -2849,16 +2849,29 @@ function porQueNoEsteObjeto(id){
    El Dueño a la más cercana a vos. Anunciar «va al escritorio del rombo» y
    despues irse a una vitrina es mentirle al que está decidiendo su jugada.
    Todo lo que muestre una carta por adelantado pasa por acá. */
+/* Las vitrinas que están en juego y, si la hay, la que guarda la pieza que
+   nombra la carta. La usan el que mueve al antagonista y el que anuncia la
+   carta, para que los dos digan exactamente lo mismo. */
+function vitrinaDeLaCarta(card){
+  const live  = S.marks.vitrinas.filter(v => !S.grid[v.y][v.x].alarm);
+  const lista = live.length ? live : S.marks.vitrinas.slice();
+  return { lista, suya: lista.find(v => S.grid[v.y][v.x].piece === card.t) || null };
+}
+
 function cartaHonesta(card){
   if(!card) return card;
   if(card.k !== "desk" || !S || !S.foe) return card;
   const cual = JUEGO === 2 ? "vidriera" : "vitrina";   // en el shopping se llaman así
   if(S.foe.twist === "vitrinas"){
-    const viva = S.marks.vitrinas.some(v => S.grid[v.y][v.x].piece === card.t && !S.grid[v.y][v.x].alarm);
-    return viva
+    /* Si la pieza sigue expuesta se nombra su vitrina, que es donde va a ir.
+       Si ya no está, lo único honesto es decir que cae en cualquier otra. */
+    const suya = vitrinaDeLaCarta(card).suya;
+    return suya
       ? {n:"Va a la " + cual + " de " + PIE[card.t].name,
-         d:"No al escritorio: va a la " + cual + " donde está esa pieza.", ic:PIE[card.t].sym, k:card.k}
-      : {n:"Va a una " + cual, d:"Esa pieza ya no está en su " + cual + ": aparece en otra.",
+         d:"No al escritorio: va a la " + cual + " donde está esa pieza.",
+         ic:PIE[card.t].sym, k:card.k, t:card.t}
+      : {n:"Va a una " + cual + " cualquiera",
+         d:"Esa pieza ya no está expuesta, así que aparece en otra.",
          ic:"🖼", k:card.k};
   }
   if(S.foe.twist === "vitrinaCerca")
@@ -4525,7 +4538,7 @@ function syncUI(){
   $("pasosval").innerHTML = sp+"<small> casillero"+(sp>1?"s":"")+"</small>";
 
   // el mazo: se ve solo la última carta, con el resto apilado detrás
-  const c=S.lastCard, atras=Math.min(2, S.deck.length);
+  const c=S.cartaVista || S.lastCard, atras=Math.min(2, S.deck.length);
   $("deckwrap").innerHTML =
     Array.from({length:atras},()=>'<div class="deckback"></div>').join("") +
     (c ? '<div class="deckcard '+(c.k==="rush"?"rush":"")+'">'+
@@ -5724,7 +5737,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "407ddefad0";
+const VERSION = "0a177fc064";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
