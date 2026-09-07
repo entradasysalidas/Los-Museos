@@ -1383,7 +1383,7 @@ Object.values(CREW).forEach(c=>{ c.tag = c.n.replace(/^El /,"").toUpperCase(); }
 const POWERS = {
   hippie:{n:"Buena onda",       d:"Te escondés también en la casilla de al lado de una planta, y escondido no te agarra ni «¡Se acerca!»."},
   damian:{n:"Madrugador",       d:"Arrancás con una pieza ya en la mano."},
-  lamber:{n:"Agenda llena",     d:"Con F convencés a cualquier cómplice de aceptar cualquier pieza."},
+  lamber:{n:"Agenda llena",     d:"Con F cualquier cómplice te acepta cualquier pieza, y te la acepta desde la casilla de al lado."},
   kzk   :{n:"Manos de técnico", d:"Con F, una vez por partida, traés la pieza más lejana a la vitrina vacía más cercana."},
   chuna :{n:"Piernas",          d:"Con F estirás las piernas: 4 casilleros en vez de 2, una vez por partida."},
   tomy  :{n:"Termo propio",     d:"Arrancás con un mate en la mochila, y los del tablero los podés repetir."},
@@ -2589,14 +2589,32 @@ function aQuienLlevar(id){
 }
 
 /* Agenda llena (Lamber): entrega flexible, pero la decide él */
-function canOfferHere(){
-  if(S.heroKey!=="lamber" || !S.hand.length) return false;
-  const c=S.grid[S.player.y][S.player.x];
-  return c.type==="complice" && !c.recibio;
+/* A quién le puede dejar la pieza Lamber desde donde está parado: al que tiene
+ debajo, y si no, al de la casilla de al lado.
+   El alcance no estaba y por eso el poder era flojo: convencer a cualquiera de
+   aceptar cualquier pieza sólo ahorra pasos si el cómplice quedó lejos de la
+   vitrina que le toca, y en la mitad de los tableros no queda lejos. Medido
+   sobre el recorrido mínimo, valía 1.2 pasos en el museo y 1.0 en el shopping,
+   y CERO en ocho de las veinte salas. Con el alcance pasa a 5.4 y 3.9, y vale
+   algo en diecinueve de veinte. Además te deja entregar sin pisar la casilla,
+   que cuando el jefe está al lado no es poco. */
+function complicesAlAlcance(){
+  if(!S || S.heroKey!=="lamber" || !S.hand.length) return [];
+  const px=S.player.x, py=S.player.y, sirve=[];
+  const mirar=(x,y)=>{
+    const c = S.grid[y] && S.grid[y][x];
+    if(c && c.type==="complice" && !c.recibio) sirve.push(c);
+  };
+  mirar(px,py);                                   // el de abajo primero
+  for(const [dx,dy] of DIRS)
+    if(canStep(px,py,px+dx,py+dy)) mirar(px+dx,py+dy);   // sin pasar paredes
+  return sirve;
 }
+function canOfferHere(){ return complicesAlAlcance().length > 0; }
 function offerDelivery(){
-  if(!S||S.over||S.busy||!canOfferHere()) return;
-  const c=S.grid[S.player.y][S.player.x];
+  if(!S||S.over||S.busy) return;
+  const c = complicesAlAlcance()[0];
+  if(!c) return;
   deliver(c, S.hand[0]);
   syncUI();
 }
@@ -5084,8 +5102,10 @@ function syncUI(){
     const porque = porQueNoElMate();
     if(porque) pistas.push("🧉 " + porque);
   }
-  if(canOfferHere()) pistas.push(
-    "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\"><b>F</b> · convencerlo de aceptar esta pieza</button>");
+  const aMano = complicesAlAlcance()[0];
+  if(aMano) pistas.push(
+    "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"offerDelivery()\">" +
+    "<b>F</b> · que " + CREW[compOf(aMano.want)].n + " te acepte " + PIE[S.hand[0]].name + "</button>");
   if(typeof puedeCorrer==="function" && puedeCorrer())
     pistas.push(
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"correr()\">" +
@@ -6234,7 +6254,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "a3a63f6ec9";
+const VERSION = "e1c5a81a97";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
