@@ -1,347 +1,336 @@
 # Auditoría de Los Museos · código y jugabilidad
 
-Fecha: 4 de septiembre de 2026 · sobre `index.html` (4679 líneas, motor + arte + UI en
-un solo archivo).
+**Segunda pasada · 7 de septiembre de 2026.** Reemplaza a la del 4 de septiembre.
+Sobre `index.html`, 6273 líneas, versión sellada `93a9aa195d`.
 
-**Este informe no cambia nada.** Ningún bug de los que siguen está arreglado: es una
-lista para decidir qué tocar y qué no.
+Entre las dos auditorías entraron **62 commits**: las tres dificultades, el desafío
+diario, el ropero, las láminas del final, la versión instalable y el chequeo de copia
+vieja. El archivo pasó de 4679 a 6273 líneas.
+
+**Este informe no cambia nada.** Ningún bug de los que siguen está arreglado.
 
 ## Cómo se hizo
 
-Lectura completa del archivo más un arnés en memoria (stubs de `document`, `canvas` y
-`localStorage`, `setTimeout` encolado y drenado a mano, `Math.random` sembrado) corrido
-por stdin con node. No se escribió ningún archivo ni se tocó el repositorio durante las
-pruebas. Cada punto marcado **[verificado]** se reprodujo corriendo el juego real; el
-resto sale de lectura.
+Lectura del diff completo y del código nuevo, más un arnés en memoria (stubs de
+`document`, `canvas`, `localStorage` y `fetch`; `setTimeout` encolado y drenado a mano)
+que carga el `index.html` de verdad. Sobre eso corrieron cuatro cosas: chequeo
+estructural de las 20 salas fijas y de las 365 semillas del diario; un bot codicioso
+para la curva; un fuzz de 6000 partidas al azar usando objetos y poderes; y pruebas
+puntuales para cada hallazgo. Nada se escribió en la carpeta del juego salvo este
+archivo.
+
+**Nota:** el `index.html` cambió mientras se auditaba (commit `b03d3e3`, la chapita de
+dificultad en la tarjeta del final). Es cosmético y no toca la lógica; las mediciones se
+revalidaron contra la versión actual.
 
 ---
 
-## 1 · Bugs confirmados corriendo el juego
+## 1 · Lo que se arregló del informe anterior
 
-### 1.1 Los timers de la partida anterior siguen vivos y pisan la nueva **[verificado]**
-`index.html:1613`, `1747`, `1882`, `1936`, `2009`, `2029`, `4148`
+Trece de los veintiséis. Los cinco primeros se volvieron a probar corriendo el juego.
 
-Todas las fases encadenan con `setTimeout` y ninguna se cancela. `newGame()` arma un
-`S` nuevo, pero los callbacks pendientes leen el `S` global, no el viejo: se despiertan
-y le corren una ronda entera a la partida recién empezada.
+| # anterior | Qué era | Cómo quedó |
+|---|---|---|
+| 1.1 | Los timers viejos le corrían una ronda entera a la partida nueva | **Arreglado y verificado.** `EPOCA` + `luego()` (`index.html:1688`): cada temporizador anota su número de partida y se calla si al despertar ya no es el suyo. Probado: reiniciar en mitad de la persecución ahora deja ronda 1, jefe quieto, cero cartas jugadas. Quedan 3 `setTimeout` crudos y los tres son inofensivos |
+| 1.2 | `picking` dejaba el juego muerto hasta recargar | **Arreglado.** `reiniciarBanderas()` (`index.html:5197`), llamado desde `newGame()` |
+| 1.3 | El shopping sin las tres paredes del marco | **Arreglado y verificado.** `MARCO_BASE` con valor por defecto y claves `dia`/`noche` (`index.html:1270`). Medido: `marco 3/3` en las 20 salas y en las 365 del diario |
+| 1.4 | Mirar la agenda le subía la alerta | **Arreglado.** Ahora baraja sin cobrar |
+| 1.5 | La condición del celular estaba al revés del texto | **Arreglado.** `S.alert >= TUNE.alertMax` |
+| 2.1 | El poder de Marian no se veía en ningún lado | **Arreglado.** El ojo de halcón se dibuja en el panel del mazo (`index.html:4782`), y encima muestra la carta *honesta* |
+| 2.2 | La ayuda nunca mostraba el mazo | **Arreglado.** `cartasDelMazo()` se llama (`index.html:5682`) |
+| 2.4 | La puerta con lector se cerraba justo en la fuga final | **Arreglado.** Abre también con las tres entregadas (`index.html:1678`), y se repartió de 3 salas a 7 |
+| 2.7 | El resaltado invisible en el shopping de día | **Arreglado.** `!S.th.oscuro` en lugar de `piso==="gris"` |
+| 2.8 | «El Inspector» y «El Restaurador» cableados en el shopping | **Arreglado.** Sale `S.foe.n` |
+| 2.9 | El sello «🔒 Cerrado» quedaba viejo al abrir | **Arreglado.** `sellarTapaDos()` dentro de `prepararPortal()` |
+| — | (mejora sugerida) la linterna del guardia era la única amenaza invisible | **Hecha.** `casillasAlumbradas()` la pinta como el cono de la cámara |
+| — | (mejora sugerida) `document.execCommand` deprecado | **Hecha a medias.** `copiarResultado()` usa `navigator.clipboard` con respaldo; el editor sigue con `execCommand` |
 
-Reproducción (tecla **R** en mitad de la persecución, sala n3):
+## 2 · Lo que sigue abierto del informe anterior
 
-```
-timers en cola tras mover: 1 · ronda 1 · busy true
-reiniciada: ronda 1, jefe en 5,0, mp 2
-tras drenar los timers viejos -> ronda 2 · jefe en 2,0 · cartas jugadas 1 · mp 2
-```
-
-O sea: arrancás una sala "nueva" y el jefe ya se movió tres casilleros, ya jugó una
-carta y estás en la ronda 2. Pasa con **R**, con "Seguir: <sala>" de la pantalla final
-y con cualquier sala elegida del menú mientras algo está animando.
-
-### 1.2 `picking` no se limpia: el juego queda muerto
-`index.html:4252`, `4264`, `3964`
-
-`askWhichPiece()` pone `picking = true` y sólo `pickPiece()` lo baja. La tecla **R**
-se atiende *antes* del guard (`index.html:3964`) y hace `newGame()` + `closeModal(true)`
-sin tocar `picking`. Después de eso, tanto el teclado (`index.html:3974`) como el clic
-en el lienzo (`index.html:4111`) salen por el `return` y **no se puede jugar más hasta
-recargar la página**. Lo mismo vale para `walking`, que tampoco se resetea.
-
-### 1.3 El shopping se quedó sin las tres paredes del marco **[verificado]**
-`index.html:936-939`, `1170`, `1583`, `3815`
-
-`FRAME_WALLS` está indexado por `gris` / `madera`. Los pisos del juego 2 son `dia` y
-`noche`, así que `FRAME_WALLS[sala.piso]` da `undefined` y cae en `|| []`.
+### 2.1 La banana es gratis si terminás el movimiento encima **[verificado hoy]**
+`index.html:2394`
 
 ```
-JUEGO 1: todas las salas -> marco[3/3]
-JUEGO 2: todas las salas -> marco[0/3]
+con mp=1 (último paso): mp 1 -> 0   (no cobró: la banana salió gratis)
+con mp=2 (queda uno):   mp 2 -> 0   (cobró el resbalón)
 ```
 
-Consecuencia concreta: en las diez salas del shopping no existe la pared `v:3:7` entre
-tu baño y tu puesto, ni `v:2:0`/`v:3:0` en el pasillo de arriba. La empanada y el tercer
-mate te dejan pegado a tu escritorio, y la salida queda pared con pared con el baño del
-jefe. `dibujarPlano()` arrastra el mismo error, así que el mapita del menú también los
-dibuja mal (al menos es consistente con lo que se juega).
+`if(S.mp>0)` saltea el castigo justo cuando ya no quedan pasos. Pisarla último no cuesta
+nada, y en la ronda siguiente `S.mp` vuelve a 2.
 
-Se midió el impacto en dificultad parcheando las tres paredes: **es chico** (±3 puntos
-por sala, ver §3). Es un bug de corrección y de fidelidad al tablero, no de balance.
+### 2.2 Los objetos 4º y 5º prometen una tecla que no existe **[verificado hoy]**
+`index.html:4859` contra `5238`
 
-### 1.4 Mirar la agenda le sube la alerta al jefe **[verificado]**
-`index.html:2117-2119`
+Con Chupa y con Tomy se llega a **4 objetos**; la ficha del cuarto dice «tecla 4» y el
+teclado sólo atiende `/^[123]$/`. Ahora hay botones en pantalla para el mate y para el
+poder, pero no para el cuarto objeto: sigue siendo sólo mouse.
 
-`mirarAgenda()` llama `refillDeck()` si el mazo quedó vacío, y `refillDeck()` sube la
-alerta como efecto secundario. Usar un objeto pasivo, que sólo debería *mirar*, le sube
-un nivel de velocidad al antagonista una ronda antes de tiempo.
+### 2.3 El poder de El Negro es lo que ya tiene todo el mundo
+`index.html:1328` contra `4673`
+
+«Oficio · ves el alcance del antagonista antes de moverte». `drawOverlays()` pinta ese
+alcance siempre, para todos. Es el único de los diez poderes que no hace nada. El de
+Marian ya se arregló; éste quedó.
+
+### 2.4 Si terminás escondido, la cámara miente
+`index.html:2518` contra `2650`
+
+`endMovement()` escribe «📹 Te agarró la cámara: esta ronda avanza un casillero más». Si
+además quedaste detrás de una planta, `chasePhase()` sale por el `if(hidden)` y el jefe
+no se mueve nada. El relato anuncia un castigo que no ocurre.
+
+### 2.5 Lamber deja el panel de piezas mintiendo
+`index.html:2405`
+
+`deliver()` sigue haciendo `S.delivered.push(c.want)` — lo que el cómplice *pedía*, no lo
+que le diste. Con Lamber, la pieza que entregaste figura «en la vitrina» y la que no
+tocaste figura «entregada».
+
+### 2.6 Una pieza puede desaparecer del tablero
+`index.html:2921`
+
+Si `losePiece()` no encuentra vitrina vacía alcanzable, `pick` queda `null` y la pieza
+sale de la mano sin volver a ninguna casilla: partida imposible sin aviso. **No se
+disparó en las 6000 partidas del fuzz**, así que con los tableros actuales —incluidos los
+365 del diario— no ocurre. Sigue siendo una bomba para salas nuevas del editor.
+
+### 2.7 Después de una captura la ronda avanza sin cobrar el temporizador
+`index.html:2934`
+
+`resetPositions()` sube `S.round` pero no descuenta `S.reloj.quedan`. (La parte del peek
+de Marian se resolvió sola: ahora se recalcula en `syncUI()`.)
+
+### 2.8 Corrección al informe anterior: el alcance rojo y la puerta
+
+El 4 dije que `drawOverlays()` y `elFoeEstaCerca()` calculan el alcance del jefe con
+`COMO="vos"` y que por eso «la información que el juego te da para decidir es falsa».
+**La inconsistencia de código es real; el efecto que le atribuí, no.** Lo medí en las
+tres salas con puerta:
 
 ```
-alerta antes 1 -> despues 2 | mazo rearmado a 10 cartas
+s3: casillas que el overlay pinta y el jefe no alcanza: 0
+s7: 0     s9: 0
 ```
 
-### 1.5 La condición del celular está al revés del texto que imprime **[verificado]**
-`index.html:1913-1916`
+El jefe siempre puede rodear la puerta, y dentro de los tres casilleros del alcance los
+dos cálculos dan lo mismo. Queda como deuda de prolijidad, no como bug visible.
 
-```js
-if(S.celular && S.alert < TUNE.alertMax){ S.celular = null;
-  say("📱 Con la alerta arriba ya no le importa el celular.","r"); }
-```
-
-Dice "con la alerta arriba" pero se ejecuta cuando la alerta **no** llegó al máximo.
-Verificado: con alerta 3 el señuelo sobrevive para siempre; con alerta 1 se borra.
-Justo al revés de lo que promete el mensaje y de lo que dice la ayuda del objeto.
-
----
-
-## 2 · Bugs y errores de lógica por lectura
-
-### 2.1 Dos poderes no hacen absolutamente nada
-
-- **Marian · "Ojo de halcón"** (`index.html:981`, `1214`, `2054`). `S.peek` se calcula
-  al empezar y en cada `nextRound()`, y **nunca se lee en ningún lado**. Ni `syncUI()`
-  ni el panel del mazo lo muestran. Marian protagoniza el nivel 9 y la sala s9, las dos
-  más duras, con un poder inexistente.
-- **El Negro · "Oficio"** (`index.html:982`). Promete "ves el alcance del antagonista
-  antes de moverte", pero `drawOverlays()` (`index.html:3512-3517`) pinta ese alcance
-  **siempre, para todos los personajes**. El poder del tutorial es lo que ya tiene todo
-  el mundo.
-
-### 2.2 La ayuda nunca muestra el mazo, y etiqueta mal lo que sí muestra
-`index.html:4371` (definida), `4409-4413` (donde debería usarse)
-
-`cartasDelMazo()` está escrita, comentada y **jamás se llama**. Bajo el título
-`Las 10 cartas del jefe` la ayuda imprime `objetosRecompensa()`, o sea la lista de
-objetos. Resultado: el jugador nunca ve el mazo del antagonista —que es la información
-táctica central del juego— y en cambio lee "mate, fernet, empanada…" bajo un título que
-dice "cartas del jefe". Los objetos, además, se quedaron sin encabezado propio.
-
-### 2.3 La banana es gratis si terminás el movimiento encima
-`index.html:1627-1630`
-
-```js
-if(c.type==="banana"){ if(S.mp>0){ S.mp-=TUNE.bananaCost; … } return; }
-```
-
-Si pisás la cáscara como **último** paso del turno, `S.mp` ya es 0 y el castigo se
-saltea entero: no pierde nada y en la ronda siguiente `S.mp` vuelve a 2. La banana sólo
-duele si la pisás a mitad de camino, cosa que el jugador aprende a evitar enseguida.
-
-### 2.4 La puerta con lector no puede ser el refugio que promete
-`index.html:1242`, `1252`, consejo en `1555`
-
-`puertaAbierta()` devuelve `COMO==="vos" && S.hand.length > 0`. Para ganar hay que
-entregar las tres piezas, y entregar deja la mano vacía: **durante la corrida final la
-puerta está siempre cerrada para vos**. El consejo de s3 dice literalmente "Guardala
-como refugio para la corrida final".
-
-Además se verificó que la puerta **nunca aísla nada**: con `COMO="jefe"` el antagonista
-alcanza todas las casillas jugables de s3, s7 y s9 rodeándola. No hay refugio posible,
-ni con pieza ni sin ella. Es un atajo, no un escondite.
-
-### 2.5 El alcance rojo del jefe cruza la puerta; el jefe no
-`index.html:3512` y `3403` vs `1761`
-
-`chaseStep()` fija `COMO="jefe"` antes de llamar a `bfsFrom()`. Pero `drawOverlays()`
-(el sombreado rojo de "hasta acá llega") y `elFoeEstaCerca()` (el globito "!") llaman a
-`bfsFrom()` con `COMO="vos"`. Si llevás una pieza, la interfaz te muestra al jefe
-llegando a casillas que en realidad no puede alcanzar. La información que el juego te
-da para decidir es falsa en las tres salas con puerta.
-
-### 2.6 Si terminás escondido, la cámara miente
-`index.html:1737-1742` vs `1844-1848`
-
-`endMovement()` evalúa la cámara y escribe *"📹 Te agarró la cámara: esta ronda avanza
-un casillero más"*. Si además quedaste detrás de una planta, `chasePhase()` sale por el
-`if(hidden)` y el jefe **no se mueve nada**. El relato anuncia un castigo que no ocurre.
-
-### 2.7 El resaltado de casillas alcanzables casi no se ve en el shopping de día
-`index.html:3535` (y el mismo síntoma en `2778`)
-
-```js
-ctx.fillStyle = S.sala.piso==="gris" ? `rgba(255,255,255,${.30+p*.14})`
-                                     : `rgba(255,255,255,${.09+p*.06})`;
-```
-
-La condición pregunta por el nombre del piso, no por si es claro u oscuro. Los pisos
-`dia` del shopping son claros y reciben el relleno del 9 % pensado para el parquet
-oscuro: el indicador de a dónde podés llegar queda prácticamente invisible en s0, s1,
-s4 y s5. `S.th.oscuro` ya existe y es la pregunta correcta.
-
-### 2.8 Textos cableados con el nombre del antagonista equivocado
-`index.html:1958`, `2187`, `2191`
-
-En el shopping, El Repositor deshace tu entrega y el relato dice *"**El Restaurador**
-deshizo tu entrega"*; El Auditor anota tus objetos y el relato dice *"**El Inspector**
-lleva la cuenta"*. `S.foe.n` está a mano en las tres líneas.
-
-### 2.9 El sello "🔒 Cerrado" queda viejo al abrir la página
-`index.html:4472-4475` vs `4501-4508`
-
-`elegirJuego()` recalcula el sello de la tapa 2, pero sólo corre **al hacer clic en una
-tapa**. `prepararPortal()`, que es lo que corre al cargar, llama a `textoDelPie()` y no
-al sello. El que ya pasó las diez salas abre el juego y ve "🔒 Cerrado" sobre la caja
-que tiene ganada, hasta que toque una tapa.
-
-### 2.10 Los objetos 4º y 5º prometen una tecla que no existe
-`index.html:3651` vs `3980`
-
-La ficha del objeto dice `"tecla " + (i+1)`, pero el teclado sólo atiende `/^[123]$/`.
-Chupa ("Bolsillos grandes") y Tomy ("Termo propio") arrancan con un objeto extra, así
-que con las tres entregas llegan a 4 o 5 objetos: los últimos dicen "tecla 4" / "tecla
-5" y esas teclas no hacen nada. Sólo se pueden usar con el mouse.
-
-### 2.11 Lamber deja el panel de piezas mintiendo
-`index.html:1687-1692` y `1635-1647`
-
-`offerDelivery()` entrega `S.hand[0]` al cómplice que esté abajo, pero `deliver()` hace
-`S.delivered.push(c.want)` — el símbolo que el cómplice *pedía*, no el que le diste.
-Si le das el rombo al que pide el triángulo: el triángulo figura "entregada" aunque siga
-en su vitrina, y el rombo figura "en la vitrina" aunque ya no exista. La partida sigue
-siendo ganable (tres entregas son tres entregas), pero el panel lateral y el mapa dicen
-cualquier cosa.
-
-### 2.12 Una pieza puede desaparecer del tablero
-`index.html:2080-2087`
-
-`losePiece()` busca la vitrina vacía **alcanzable** más lejana. Si el `for` no encuentra
-ninguna (`pick` queda en `null`), la pieza ya salió de `S.hand`, se empujó a `S.pile`
-—que después de `newGame()` no lo lee nadie— y no se coloca en ninguna casilla. Queda
-una partida imposible de ganar sin ningún aviso. Con los niveles fijos actuales no se
-dispara, pero es una bomba para cualquier sala nueva hecha con el editor.
-
-### 2.13 Después de una captura la ronda avanza sin cobrar el temporizador
-`index.html:2093-2100`
-
-`resetPositions()` duplica el cierre de ronda de `nextRound()` pero se olvida de tres
-cosas: no descuenta `S.reloj.quedan`, no refresca el peek de Marian y no limpia
-`S.escondido` / `S.vistoPorCamara`. Si te agarran con la pieza del temporizador puesto
-y te sacan **otra**, esa ronda es gratis para el reloj.
-
-### 2.14 Cosas muertas o rotas de bajo impacto
+### 2.9 Cosas muertas o rotas de bajo impacto, todas todavía ahí
 
 | Dónde | Qué |
 |---|---|
-| `index.html:3094` | `const corriendo = !!(S.reloj && !c.alarm === false);` — precedencia rara y la variable no se usa nunca |
-| `index.html:1644` | `c.x!==undefined?c.x:S.player.x` — las celdas de `buildBoard()` no guardan `x`/`y`, así que la rama nunca se toma |
-| `index.html:1192`, `1851`, `2004`, `2095` | todo el soporte de "más de un antagonista" (`FOES[...].count`) es código muerto: ningún foe define `count` |
-| `index.html:1697` | `canDrinkHere()` chequea `matesTurn>=3`, pero el tercer mate ya te manda al baño: rama inalcanzable |
-| `index.html:4194-4199` | `clearWalls()` vacía `S.walls` (marco incluido) pero sólo persiste las del nivel: las del marco vuelven en el próximo `newGame()` |
-| `index.html:2143-2151` | `useObject()` marca el objeto como usado *antes* de `mirarAgenda()`, y como esa rama hace `return`, la agenda nunca cuenta como "objeto ruidoso" para el Inspector/Auditor |
-| `index.html:2372-2380` | `anotarMaraton()`: la primera corrida perdida en la sala 1 (0 salas, 0 rondas) da `mejor = true` y la pantalla anuncia "Récord nuevo" |
-| `index.html:3964` | la tecla **R** se atiende siempre, también mientras escribís el nombre en el portal después de "Cambiar de nombre" (ahí `S` ya existe) |
-| `index.html:3815` | `dibujarPlano()` ignora `sala.v` (vidrios), `sala.p` (puertas) y las paredes editadas: el mapita del menú no coincide con el tablero |
-| `index.html:253-255` | `.hintbar` declara `font-size` dos veces (15px y 13px) |
-| `index.html:300-316` | `.cajadibujada` es CSS muerto desde que existe `caja2.jpg` |
+| `index.html:4162` | `const corriendo = !!(S.reloj && !c.alarm === false);` — precedencia rara, variable sin usar |
+| `index.html:2411` | `c.x!==undefined?c.x:S.player.x` — las celdas no guardan `x`/`y`: la rama nunca se toma |
+| `index.html:2478` | `canDrinkHere()` chequea `matesTurn>=3`, rama inalcanzable |
+| `index.html:5432` | `clearWalls()` no persiste el borrado de las paredes del marco |
+| `index.html:3325` | `anotarMaraton()`: la primera corrida perdida (0 salas) sigue anunciando «Récord nuevo» |
+| `index.html:3038` | `useObject()` marca el objeto como usado antes de `mirarAgenda()`, y la agenda nunca cuenta como objeto ruidoso para el Inspector/Auditor |
+| varios | el soporte de más de un antagonista (`FOES[...].count`) sigue siendo código muerto |
 
-### 2.15 Riesgo de trabarse sin salida
-`index.html:1723-1727`
+### 2.10 Sin salida de emergencia para cerrar la ronda
+`index.html:2508`
 
-`finishRound()` exige `S.awaitMate`, y `awaitMate` sólo se enciende si te quedás sin
-pasos parado sobre un mate. Si alguna vez terminás en una casilla sin ninguna salida
-legal y con `S.mp > 0`, no hay forma de cerrar la ronda: ni tecla, ni clic. Hoy no pasa
-—ninguna casilla queda sellada— pero llegar por teletransporte (empanada, sopapa, tercer
-mate, escalera) a una casilla que el editor selló lo produce. Un "cerrar ronda" siempre
-disponible cuando no hay movimientos posibles lo cubriría.
+`finishRound()` sigue exigiendo `S.awaitMate`. Con los tableros actuales no se dispara
+—el fuzz no encontró ni una casilla sin salidas—, pero el desafío diario ahora **genera
+tableros**, así que la superficie creció: hoy depende de que `generarTableroDia()` nunca
+selle una casilla, no de que alguien lo haya mirado.
 
 ---
 
-## 3 · Jugabilidad: la curva medida
+## 3 · Hallazgos nuevos
 
-Bot codicioso (va siempre a la pieza/cómplice/salida más cercano por BFS, **sin usar
-objetos, sin poderes activos y sin esconderse**), 300 partidas por sala, semilla fija.
-Los números absolutos son bajos porque el bot juega mal a propósito; lo que importa es
-la forma de la curva.
+### 3.1 «Duro» no es un peldaño intermedio: es casi igual a «Como el manual» **[medido]**
 
-| Museo | % victorias | | Shopping | % victorias |
-|---|---|---|---|---|
-| tutorial | 25 | | s0 | 24 |
-| n1 | 38 | | s1 | 48 |
-| **n2** | **4** | | **s2** | **12** |
-| n3 | 9 | | s3 | 7 |
-| n4 | 11 | | s4 | **0** |
-| n5 | 20 | | s5 | 12 |
-| n6 | 16 | | s6 | 4 |
-| n7 | 19 | | s7 | 8 |
-| n8 | 3 | | s8 | 8 |
-| n9 | 1 | | s9 | 1 |
-| **total** | **15,3 %** | | **total** | **7,0 %** |
+El comentario del código (`index.html:2700`) anuncia la escalera `bot 50% · 20% · 12%`.
+Medido con el mismo bot en las tres, 800 partidas por celda:
 
-Tres lecturas:
+```
+sala        normal      duro     manual
+tutorial  30.3%±1.6  29.1%±1.6  30.5%±1.6
+n1        36.6%±1.7  20.5%±1.4  21.4%±1.4
+n5        23.3%±1.5   5.5%±0.8   4.8%±0.8
+s1        43.3%±1.8  36.9%±1.7  40.5%±1.7
+```
 
-1. **El nivel 2 es un pozo.** Va de 38 % a 4 % y después *sube* a 9 %, 11 %, 20 %. El
-   Curador (se teletransporta a las vitrinas con cada carta de escritorio) es el primer
-   antagonista con truco y aparece justo después de la sala más fácil del juego. La
-   curva se recompone recién en n5. El mismo escalón está en s2.
-2. **n8/n9 y s4/s9 son casi imposibles sin objetos.** Es coherente con el diseño (los
-   consejos de esas salas hablan de guardar los objetos para la fuga), pero significa
-   que el juego pasa de "se puede improvisar" a "hay que planificar" sin transición.
-3. **El shopping es más duro que el museo de punta a punta** (7 % vs 15,3 %) con el
-   mismo bot, y arranca en s0 más difícil que el tutorial del museo. Si la idea es que
-   sea la segunda mitad de una progresión, está bien; si la idea era que fuera
-   equivalente, hay medio juego de diferencia.
+Duro y Manual son **estadísticamente indistinguibles** en las cuatro. Y en el tutorial
+las tres dificultades dan lo mismo: elegir ahí no cambia nada.
 
-Nota: parchear las tres paredes del marco que faltan (§1.3) mueve estos números ±3
-puntos por sala, sin cambiar la forma de la curva.
+El mecanismo se ve en el código y se confirma midiendo. `calmar()` sólo actúa si
+`S.alert > pisoAlerta()`. En Duro el piso es 2, así que la válvula **sólo puede actuar
+con la alerta en 3**. Y la alerta llega a 3 recién cuando el mazo se agota por segunda
+vez, sobre la ronda 21:
+
+```
+dif 1 (Normal) · rondas medias 14.1 · partidas que terminan en alerta 3:  3%
+dif 2 (Duro  ) · rondas medias 13.4 · partidas que terminan en alerta 3:  7%
+dif 3 (Manual) · rondas medias 13.2 · partidas que terminan en alerta 3: 11%
+```
+
+En el **93 %** de las partidas la alerta nunca llega a 3, y en ésas Duro y Manual son el
+mismo juego, línea por línea. La escalera real tiene dos escalones, no tres.
+
+Por construcción, además, Duro nunca puede ser más difícil que Manual: su alerta es
+siempre menor o igual. Cualquier lectura que diga lo contrario es ruido de medición.
+
+### 3.2 El reparto de antagonistas del desafío diario está roto **[medido]**
+
+Sobre las 365 semillas, contando cada una una vez:
+
+```
+perro       34   #####################
+seguridad2  32   ####################
+auditor     26   ################
+limpieza    25   ################
+...
+gerente     14   #########
+repositor   14   #########
+becario      1   #
+general      0   <<< NUNCA SALE
+chi² = 68 con 18 grados de libertad   (al azar daría ~18)
+```
+
+**El Director General no aparece ni un solo día del año**, y El Becario aparece una vez.
+El Perro y El de Seguridad salen casi el doble de lo que les tocaría. El reparto de
+protagonistas, en cambio, está bien (chi² 11.8 con 9 gl, normal).
+
+La causa más probable no es el generador sino el filtro: las semillas se curaron
+corriendo el bot y quedándose con las que caen en cierta banda de dificultad, y la
+dificultad depende justamente de qué antagonista salió. El Director General arranca en
+alerta 2 y se teletransporta a las vitrinas: sus semillas no pasaron el filtro. El filtro
+de dificultad se comió dos antagonistas enteros sin que se notara.
+
+### 3.3 El desafío diario se repite exacto cada 365 días
+`index.html:2252`
+
+`SEMILLAS_DIA[((n % cuantas) + cuantas) % cuantas]` con 365 semillas: el 1 de septiembre
+de 2027 vuelve el tablero del 1 de septiembre de 2026, con el mismo protagonista, el
+mismo antagonista y el mismo orden del mazo. Falta un año, pero está.
+
+### 3.4 «Un intento por día» se saltea con Escape **[verificado]**
+
+La tecla **R** está bloqueada en el desafío (`index.html:5215`) y la pantalla final
+vuelve al museo. Pero **Escape** en mitad del desafío abre el menú, y ahí está la
+tarjeta del día:
+
+```
+el menú que abre Escape con JUEGO=3:
+  tarjetas de sala: 1 · botones: ["startSala(&quot;hoy&quot;)"]
+después de tocar la tarjeta:
+  ronda -> 1 · anotado hoy? false
+  ==> el desafío del día se REINICIA sin gastar el intento
+```
+
+Como el intento se anota recién al ganar o perder, se puede reiniciar todas las veces que
+quieras mientras no termines. La racha, que es lo que le da sentido al modo, se puede
+inflar así.
+
+### 3.5 Escape en el desafío deja los menús del museo con `JUEGO = 3` **[verificado]**
+
+El mismo camino tiene otro efecto. `salirDelDiario()` devuelve el juego a 1, pero Escape
+no pasa por ahí, así que el ropero y la ficha se dibujan con `JUEGO = 3`, y no hay
+entrada 3 en `NOMBRE_JUEGO` ni en `RANGO_MAXIMO`:
+
+```
+ropero() -> "Llevás 0 de 3 en undefined."
+ficha()  -> "Rango · undefined"
+menu()   -> "Las diez salas" con una sola tarjeta, y el botón de maratón
+            (que correría un maratón de una sala rotulado "de 10")
+```
+
+### 3.6 El ropero se vacía al cambiar de juego **[verificado]**
+`index.html:1394`
+
+```js
+function tengoDisfraz(id){
+  ...
+  return (d.juego || 1) === JUEGO && salaEntera(d.de);
+}
+```
+
+Probado: gané `n1` en las tres dificultades y
+
+```
+JUEGO=1 -> salaEntera(n1)=true · tengoDisfraz(overolEnc)=true
+JUEGO=2 -> salaEntera(n1)=true · tengoDisfraz(overolEnc)=false
+JUEGO=3 -> salaEntera(n1)=true · tengoDisfraz(overolEnc)=false
+```
+
+Si te ponés el overol del Encargado y te vas al shopping, `disfrazPuesto()` devuelve
+vacío y el disfraz se te cae solo, sin decir nada. Las claves de sala no se pisan entre
+juegos (`n1` contra `s1`), así que la condición `=== JUEGO` no hace falta para
+desambiguar: sobra. Que el ropero **muestre** sólo la ropa del juego en curso está bien y
+está comentado; que **dejes de tenerla** es otra cosa.
+
+### 3.7 El diario es bastante más duro que las salas fijas, y la banda no es angosta
+
+El comentario dice que las semillas se filtraron para que «ninguna sala del día salga
+regalada ni imposible». Como el tablero del día es fijo y mi bot es determinista, para
+medirlo hay que variar al jugador, no al tablero: 60 días × 120 jugadores con desempate
+al azar sobre el mismo tablero.
+
+```
+min 0% · p25 0% · mediana 0% · p75 3% · max 100%
+en 0%: 44 de 60      ·      arriba de 80%: 1 de 60
+```
+
+Contra un promedio de 15 % en las salas fijas del museo con el mismo bot. Dos salvedades
+honestas: mi bot no usa objetos ni poderes y es flojo, así que los absolutos no valen; y
+el jugador con ruido no es un jugador humano. Pero el **rango** —de 0 % a 100 % entre
+días— es demasiado ancho para llamarlo banda, y el conjunto es claramente más duro que
+las salas hechas a mano.
 
 ---
 
-## 4 · Mejoras posibles (ninguna aplicada)
+## 4 · Lo que está sólido
 
-**Robustez**
-- Un `epoch` (número de partida) en `S`, capturado por cada `setTimeout` y comparado al
-  despertar. Resuelve §1.1 de raíz, que es de lejos el bug más grave.
-- Una sola función `reiniciarBanderas()` que baje `walking`, `picking`, `busy` y
-  `awaitMate`, llamada desde `newGame()`. Resuelve §1.2.
-- `nextRound()` y `resetPositions()` comparten el 80 %: unificar el cierre de ronda
-  elimina §2.13 y evita que se vuelvan a desincronizar.
+No todo es hallazgo. Vale decir lo que aguantó:
 
-**Corrección**
-- `FRAME_WALLS` por juego (o indexado por los pisos reales de cada uno), §1.3.
-- Cambiar `S.sala.piso==="gris"` por `!S.th.oscuro` en `index.html:2778` y `3535`, §2.7.
-- Fijar `COMO="jefe"` también en `drawOverlays()` y `elFoeEstaCerca()`, §2.5.
-- `S.foe.n` en lugar de los nombres cableados, §2.8.
-
-**Jugabilidad**
-- Mostrar el peek de Marian en el panel del mazo (la carta boca arriba con un rótulo
-  "próxima") y darle a El Negro algo que no tenga el resto, §2.1.
-- Llamar a `cartasDelMazo()` en la ayuda y ponerle su propio título a los objetos, §2.2.
-- Cobrar la banana aunque termines encima (o decidir que es intencional y decirlo), §2.3.
-- Repensar la puerta con lector: hoy se cierra justo cuando el consejo dice que la uses,
-  §2.4. Alternativas: que lea también las piezas ya entregadas, o que el consejo cuente
-  lo que la puerta hace de verdad (atajo mientras cargás mercadería).
-- Suavizar el escalón del nivel 2 / s2, §3.
-- Teclas 4 y 5, o no prometerlas en la ficha del objeto, §2.10.
-
-**Accesibilidad y rendimiento**
-- El modal no tiene `role="dialog"`, no atrapa el foco ni lo devuelve al cerrar.
-- El `<canvas>` no tiene alternativa textual: el juego es inaccesible con lector de
-  pantalla, y las casillas de objeto son `<div onclick>` sin foco por teclado.
-- `@media (prefers-reduced-motion)` apaga las animaciones CSS pero no el bob, el
-  temblor ni el latido dibujados en el lienzo.
-- `frame()` corre a 60 fps con el portal o un modal tapando todo; y `drawOverlays()`
-  hace un `bfsFrom()` completo por frame (memoizable como ya se hizo en `memoCerca`).
-
-**Repositorio**
-- `caja.png` y `caja2.png` suman ~6 MB versionados y no los sirve la página (sólo los
-  `.jpg`). Si son los originales, un repo aparte o Git LFS.
-- `lunes-oficina.html` (53 KB), `museos.html` (un redirect de 4 líneas) y
-  `recordatorioivan` (10 bytes) están versionados sin cumplir ninguna función.
-- El editor copia con `document.execCommand("copy")`, deprecado; `navigator.clipboard`
-  con fallback sería más sano.
+- **Fuzz de 6000 partidas** —las 20 salas fijas × 3 dificultades + 40 días del desafío—
+  jugando al azar y usando objetos y poderes a lo loco: **cero errores de ejecución y
+  cero invariantes rotas**. Se controlaba en cada turno que las tres piezas siempre estén
+  en algún lado, que la alerta no se salga de 1..3, que los pasos no se vayan a negativo,
+  que no haya entregas repetidas y que nadie termine fuera del tablero o en una casilla
+  no jugable.
+- **Estructura**: las 20 salas fijas y las **365** del desafío diario pasan todos los
+  chequeos —3 vitrinas, un cómplice de cada símbolo, escaleras siempre en pares, todo
+  alcanzable desde tu puesto, las tres paredes del marco puestas, un solo antagonista—.
+  Ninguna sala generada quedó rota en 365 intentos, que para un generador es un buen
+  número.
+- El **sellado de versión** (`scripts/sellar.js`) es correcto: recalcula el hash sin
+  contar la propia línea, y `VERSION` y `version.txt` coinciden.
+- La **carta honesta** (`cartaHonesta()` + `vitrinaDeLaCarta()`) es consistente con lo que
+  después hace `applyCard()`: lo que se anuncia es lo que pasa.
+- El **escape del nombre del jugador** hacia HTML sigue cubierto en los tres lugares
+  donde va a `innerHTML`.
 
 ---
 
-## 5 · Si después se decide arreglarlo, este orden
+## 5 · Orden sugerido
 
-1. §1.1 timers viejos y §1.2 `picking` — son los dos que rompen partidas de verdad.
-2. §1.3 paredes del marco del shopping — es fidelidad al tablero.
-3. §2.1 y §2.2 — dos poderes y el mazo entero que el jugador nunca ve.
-4. §1.4, §1.5, §2.5, §2.6, §2.7, §2.8 — lógica y textos que hoy mienten.
-5. El resto, por gusto.
+1. **§3.4 y §3.5** — Escape durante el desafío: reinicia el intento del día y deja los
+   menús en `undefined`. Es un solo camino y arregla las dos cosas.
+2. **§3.1** — decidir qué es «Duro». Hoy el peldaño del medio es un no-op en el 93 % de
+   las partidas. Una perilla que sí muerda temprano: alerta inicial 2, o que la válvula
+   afloje de a medio nivel, o un tope de veces por partida.
+3. **§3.2** — el filtro de semillas se comió dos antagonistas. Filtrar por dificultad
+   *dentro de cada antagonista* en vez de sobre el total.
+4. **§3.6** — sacar `=== JUEGO` de `tengoDisfraz()`: una línea.
+5. **§2.1, §2.2, §2.3, §2.4** — banana gratis, tecla 4, el poder de El Negro y la cámara
+   que miente. Todos chicos y todos visibles.
+6. **§2.10** — un «cerrar ronda» de emergencia, ahora que el diario genera tableros.
+7. El resto, por gusto.
 
-## Cómo reproducir las pruebas
+## Cómo reproducir
 
-El arnés es el que describe `CLAUDE.md`: extraer el JS de `index.html`, stubs de
-`document` / `canvas` / `localStorage`, `setTimeout` encolado y drenado a mano,
-`Math.random` sembrado. Los tres bloques que se corrieron fueron: estructura de las 20
-salas (vitrinas, cómplices, escaleras, alcanzabilidad, paredes del marco), demostración
-puntual de §1.1 / §1.4 / §1.5, y 300 partidas por sala con el bot codicioso para §3.
-Ninguno escribió en disco.
+Arnés en memoria, como el que describe `CLAUDE.md`: se corta el JS de `index.html`, se
+levanta con stubs de `document`, `canvas`, `localStorage` y `fetch`, y se reemplaza
+`setTimeout` por una cola que se drena a mano. Los bloques que se corrieron:
+
+- **estructura** — 20 salas fijas + las 365 semillas del diario.
+- **curva** — bot codicioso, 150 partidas por sala y dificultad; y 800 por celda en las
+  cuatro salas de §3.1.
+- **fuzz** — 6000 partidas al azar con objetos y poderes, controlando invariantes.
+- **puntuales** — un chequeo por hallazgo: la banana, los cuatro objetos, el alcance del
+  jefe contra la puerta, el ropero al cambiar de juego, el reinicio del desafío.
+
+Ninguno escribe en la carpeta del juego.

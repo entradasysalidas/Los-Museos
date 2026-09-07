@@ -1391,7 +1391,12 @@ function tengoDisfraz(id){
   const d = DISFRACES[id];
   if(!d) return false;
   if(d.racha) return (leerDiaria().mejor || 0) >= d.racha;
-  return (d.juego || 1) === JUEGO && salaEntera(d.de);
+  /* Tenerlo no depende de en qué juego estés parado: las claves de sala no
+     se pisan entre juegos (n1 contra s1), así que salaEntera() ya alcanza.
+     Con el === JUEGO, irte al shopping te sacaba el disfraz puesto sin
+     avisar. Que el ropero MUESTRE sólo el juego en curso es otra cosa, y
+     se hace al listar. */
+  return salaEntera(d.de);
 }
 
 function disfrazPuesto(){
@@ -5586,7 +5591,29 @@ function startSala(k, deMaraton){
   closeModal(true);
 }
 
+/* El desafío del día es un intento por día, y salir al menú del museo rompía
+   eso por dos lados: la tarjeta de «hoy» reiniciaba la partida sin gastar el
+   intento —la racha se podía inflar sola— y el ropero, la ficha y el menú
+   quedaban dibujados con JUEGO=3, que no tiene ni nombre ni rango. Todas las
+   salidas pasan por acá: la tecla Escape y el botón «Salas». */
+function pausaDiaria(){
+  showModal("El desafío de hoy",
+    '<p class="lead">Es <b>un intento por día</b>. Si salís ahora, el de hoy queda ' +
+    '<b>jugado y perdido</b> y se te corta la racha. Mañana hay una sala nueva.</p>' +
+    '<div class="finbotones">' +
+      '<button class="btn" onclick="closeModal(true)">Seguir jugando</button>' +
+      '<button class="btn alt" onclick="abandonarDiaria()">Salir igual</button>' +
+    '</div>', true);
+}
+
+function abandonarDiaria(){
+  if(enDiaria() && S && !S.over){ S.over = "lose"; anotarDiaria(false, S.round); }
+  closeModal(true);
+  salirDelDiario();
+}
+
 function menu(){
+  if(enDiaria()) return (S && !S.over) ? pausaDiaria() : salirDelDiario();
   /* Las diez de una, sin scroll. Arriba el plano con el nombre al lado, y
      abajo, a todo el ancho, quién la juega y contra quién. Las resueltas
      llevan su mejor marca. */
@@ -6058,7 +6085,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "f69a0d8fad";
+const VERSION = "e314fdb728";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
@@ -6154,6 +6181,7 @@ function comoSeSaca(d){
 }
 
 function ropero(){
+  if(enDiaria()) return salirDelDiario();
   const puesto = disfrazPuesto();
   const heroe = (S && S.heroKey) || "damian";
 
@@ -6208,6 +6236,7 @@ function ponerDisfraz(id){
 }
 
 function ficha(){
+  if(enDiaria()) return salirDelDiario(true);
   const hechas = salasHechas();
   const total  = Object.keys(SALAS).length;
   const m = recordMaraton();
