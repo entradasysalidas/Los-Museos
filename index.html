@@ -2456,8 +2456,9 @@ function takePiece(cell, silent){
   S.hand.push(id);
   if(!silent){
     float(S.player.x,S.player.y,"PIEZA "+PIE[id].sym,PIE[id].color);
-    banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${CREW[compOf(id)].n}`, PIE[id].color);
-    say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${CREW[compOf(id)].n}</b>: <b>ahí</b> te dan el objeto.`,"y");
+    const destino = aQuienLlevar(id);
+    banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${destino}`, PIE[id].color);
+    say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${destino}</b>: <b>ahí</b> te dan el objeto.`,"y");
     if(S.guantes){
       S.guantes = false;
       say("🧤 Con los guantes puestos la vitrina no hizo ni un ruido.","g");
@@ -2473,6 +2474,18 @@ function takePiece(cell, silent){
   return id;
 }
 const compOf = want => (S.sala.comps[["rombo","triangulo","circulo"].indexOf(want)]);
+
+/* A quién llevarle esta pieza. Casi siempre al que la pide, pero con la
+   agenda de Lamber las piezas se cruzan: si le diste el círculo al del
+   triángulo, el triángulo ya no tiene dónde ir salvo al que quedó libre. El
+   cartel seguía mandando al de siempre, que ya estaba servido, y parecía que
+   el juego no te dejaba entregar. */
+function aQuienLlevar(id){
+  const suyo = S.marks.comps.find(c => c.want === id);
+  if(suyo && !S.grid[suyo.y][suyo.x].recibio) return CREW[compOf(id)].n;
+  const libre = S.marks.comps.find(c => !S.grid[c.y][c.x].recibio);
+  return libre ? CREW[compOf(libre.want)].n : null;
+}
 
 /* Agenda llena (Lamber): entrega flexible, pero la decide él */
 function canOfferHere(){
@@ -4982,7 +4995,10 @@ function syncUI(){
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"fixVitrina()\">" +
       "<b>F</b> · traer " + PIE[S.grid[mudanza.origen.y][mudanza.origen.x].piece].name + " acá cerca (−" + mudanza.gana + " casilleros)</button>");
   if(cel.type==="vitrina" && cel.alarm) pistas.push("Vitrina vacía");
-  if(S.hand.length) pistas.push(S.hand.map(id=>PIE[id].sym+" → "+CREW[compOf(id)].n).join(" · "));
+  if(S.hand.length) pistas.push(S.hand.map(id => {
+    const quien = aQuienLlevar(id);
+    return PIE[id].sym + " → " + (quien || "ya no queda cómplice libre");
+  }).join(" · "));
   $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
   $("hint").innerHTML = pistas.map(p =>
     /^<button/.test(p) ? p : '<span class="p">' + p + '</span>').join("");
@@ -6116,7 +6132,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "a5a686ea88";
+const VERSION = "bcba709c29";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
