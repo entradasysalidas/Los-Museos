@@ -609,10 +609,9 @@
      porque pasa diez veces por juego y ahi el plano del recorrido dice mas.
      La lamina es la misma para todos; el pie, en monoespaciada, es lo unico
      que cambia de un jugador a otro. */
-  .fintapa{--ac:var(--brass);margin:0 0 16px;border:1px solid var(--line);
-    background:var(--sunk);overflow:hidden}
-  .fintapa img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;
-    object-position:50% 45%}
+  .fintapa{--ac:var(--brass);max-width:660px;margin:0 auto 16px;
+    border:1px solid var(--line);background:var(--sunk);overflow:hidden}
+  .fintapa img{display:block;width:100%;height:auto}
   .fintapa .pie{padding:9px 12px;border-top:1px solid var(--line);background:var(--panel2);
     font:500 10px/1.5 "IBM Plex Mono",monospace;letter-spacing:.12em;
     text-transform:uppercase;color:var(--dim)}
@@ -695,7 +694,9 @@
   @media(max-width:760px){
     .final{flex-direction:column;align-items:stretch}
     .finplano canvas{width:100%;height:auto;max-width:280px;margin:0 auto}
-    .fintapa img{aspect-ratio:16/9}
+    /* con lamina arriba el plano va mas chico, para que los botones de
+       abajo entren sin scrollear tanto */
+    .fintapa + .final .finplano canvas{max-width:165px}
     .fintapa .pie{font-size:9px;letter-spacing:.1em;padding:8px 10px}
     .fsalas,.fichacab{grid-template-columns:1fr;display:grid}
   }
@@ -3121,9 +3122,11 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable)
 
   /* El unico caso con lamina por aca es el desafio diario ganado. El plano
      del recorrido se queda: la sala del dia es nueva y vale mirarla. */
+  const rachaHoy = enDiaria() ? (leerDiaria().racha || 0) : 0;
   const tapa = (gano && enDiaria())
-    ? lamina(s.name + " · <b>" + S.round + " rondas</b>" +
-             (S.taken === 0 ? " · sin que te sacaran ninguna" : ""),
+    ? lamina("<b>" + S.round + " rondas</b>" +
+             (S.taken === 0 ? " · sin que te sacaran ninguna" : "") +
+             (rachaHoy > 1 ? " · racha de " + rachaHoy + " días" : ""),
              "Desafío diario: misión cumplida")
     : "";
 
@@ -5783,7 +5786,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "f3ed6e61d6";
+const VERSION = "43e467f3b3";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
