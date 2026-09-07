@@ -865,9 +865,25 @@
        conserva su tamaño —es lo que se toca— y todo lo demás se aplana en
        franjas de una línea alrededor. El registro se va: lo que importa ya
        lo canta el cartel arriba del tablero. */
-    #stage{display:flex;flex-direction:column;gap:6px}
-    #boardwrap{order:1;width:100%;margin:0}
-    aside{order:2}
+    /* ---- que entre en una pantalla, no en una pantalla y monedas ----
+       El tablero es cuadrado y su alto salía del ancho, así que en un Android
+       —más angosto y con la barra de Chrome comiendo arriba— la página se
+       pasaba unos cien píxeles y había que scrollear. Ahora la columna mide lo
+       que la pantalla y el tablero se queda con lo que sobra: si hay lugar se
+       ve igual de grande que antes, y si no, se achica en vez de empujar. El
+       piso de 220px es para que en una pantalla muy baja no quede un sello: en
+       ese caso vuelve a scrollear, que es preferible a no poder jugar. */
+    #app{height:100dvh;display:flex;flex-direction:column}
+    #stage{display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:0}
+    #boardwrap{order:1;width:100%;margin:0;flex:1 1 auto;min-height:220px;
+      display:flex;align-items:center;justify-content:center}
+    /* flex:none es la clave. Si el lienzo es un item flexible, el flex le fija
+       primero el ancho y despues max-height le recorta el alto: queda
+       aplastado. Sin flexionar, el par max-width/max-height se resuelve sobre
+       la imagen misma y el cuadrado se mantiene. */
+    #boardwrap canvas{flex:0 0 auto;max-width:100%;max-height:100%;
+      width:auto;height:auto}
+    aside{order:2;flex:none}
     #relato{display:none}
     /* El cartel de avisos sale del flujo: reservaba una franja fija debajo del
        tablero y en el teléfono ese alto es lo que hacía que la carta del jefe
@@ -6218,7 +6234,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "6a0943216c";
+const VERSION = "b99d376325";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
