@@ -496,28 +496,48 @@
      que te costó: las rondas de las tres dificultades sumadas. */
   .medalla{position:absolute;right:12px;top:11px;width:56px;text-align:center;
     pointer-events:none;z-index:2;--m1:#F2DC9B;--m2:#D9B65A;--m3:#8A6A22;--mt:#3B2C08}
-  .medalla .disco{width:38px;height:38px;margin:0 auto;border-radius:50%;
+  .medalla .cinta{position:absolute;left:0;right:0;top:22px;height:30px;z-index:0;
+    pointer-events:none}
+  .medalla .cinta::before,.medalla .cinta::after{content:"";position:absolute;top:0;
+    width:14px;height:29px;background:linear-gradient(170deg,#D2453C,#8E211B);
+    clip-path:polygon(0 0,100% 0,100% 100%,50% 74%,0 100%);
+    filter:drop-shadow(0 2px 3px #00000066)}
+  .medalla .cinta::before{left:calc(50% - 16px);transform:rotate(13deg);
+    transform-origin:50% 0}
+  .medalla .cinta::after{left:calc(50% + 2px);transform:rotate(-13deg);
+    transform-origin:50% 0;background:linear-gradient(190deg,#C03A32,#7C1B16)}
+  /* el borde dentado, como el de las medallas de verdad */
+  /* El disco: la cara lisa va en la caja de contenido y los dientes en el
+     borde, las dos como capas de fondo. Con un ::before detrás no alcanzaba:
+     el z-index del disco crea su propio contexto y el pseudo-elemento le
+     tapaba la cara en vez de quedar abajo. */
+  .medalla .disco{position:relative;width:44px;height:44px;margin:0 auto;
+    box-sizing:border-box;padding:4px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;font-style:normal;
     font:400 14px/1 "Archivo Black","Archivo",sans-serif;letter-spacing:-.03em;
     color:var(--mt);font-variant-numeric:tabular-nums;
-    background:radial-gradient(circle at 34% 26%, var(--m1), var(--m2) 52%, var(--m3));
-    box-shadow:0 3px 8px #00000059, inset 0 0 0 1px #FFFFFF66,
-               inset 0 0 0 4px #00000016, inset 0 -3px 5px #00000033}
-  .medalla b{display:block;margin-top:4px;white-space:nowrap;
+    background:
+      radial-gradient(circle at 34% 26%, var(--m1), var(--m2) 54%, var(--m3)) content-box,
+      repeating-conic-gradient(from 3deg, var(--m2) 0deg 9deg,
+        color-mix(in srgb, var(--m3) 65%, var(--m2)) 9deg 18deg) border-box;
+    box-shadow:0 3px 8px #00000059, inset 0 0 0 1px #FFFFFF4D,
+               inset 0 -3px 5px #00000026}
+  .medalla b{display:block;margin-top:20px;white-space:nowrap;position:relative;z-index:1;
     font:500 7px/1 "IBM Plex Mono",monospace;letter-spacing:.13em;
     text-transform:uppercase;color:var(--m2);text-shadow:0 1px 2px #0009}
   .medalla.plata {--m1:#F4F6F8;--m2:#C2C9D2;--m3:#79828E;--mt:#2A2F36}
   .medalla.bronce{--m1:#EEC199;--m2:#C58248;--m3:#7C4A22;--mt:#331D0C}
   /* la chiquita de la ficha: sólo el disco, sin leyenda */
   .medalla.chica{position:static;width:auto}
-  .medalla.chica .disco{width:26px;height:26px;font-size:10.5px;
-    box-shadow:0 1px 3px #00000047, inset 0 0 0 1px #FFFFFF59, inset 0 0 0 3px #00000014}
+  .medalla.chica .cinta{display:none}
+  .medalla.chica .disco{width:30px;height:30px;padding:3px;font-size:10.5px;
+    box-shadow:0 1px 3px #00000047, inset 0 0 0 1px #FFFFFF4D}
 
   .lv .arriba{display:flex;gap:12px;align-items:flex-start;min-width:0}
   .lv .plano{flex:none}
   .lv .plano canvas{width:92px;height:92px;display:block;background:var(--sunk)}
 
-  .lv .txt{flex:1;min-width:0;display:flex;flex-direction:column;padding-right:62px}
+  .lv .txt{flex:1;min-width:0;display:flex;flex-direction:column;padding-right:64px}
   .lv .ala{font:500 8px/1 "IBM Plex Mono",monospace;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);margin-bottom:5px}
   .lv .num{font:400 24px/.8 "Archivo Black","Archivo",sans-serif;color:var(--ac);
@@ -1928,6 +1948,7 @@ function medallaHTML(salaKey, chica){
   const tit = m.n + " · " + m.total + " rondas sumando las tres dificultades. " +
     "El recorrido más corto de esta sala son " + m.par + ".";
   return '<span class="medalla ' + m.id + (chica ? ' chica' : '') + '" title="' + tit + '">' +
+    '<i class="cinta"></i>' +
     '<i class="disco">' + m.total + '</i>' +
     (chica ? '' : '<b>' + m.n + '</b>') + '</span>';
 }
@@ -6197,7 +6218,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "eb06d6a3ea";
+const VERSION = "6a0943216c";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
