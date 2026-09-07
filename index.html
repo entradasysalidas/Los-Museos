@@ -585,6 +585,15 @@
   .finsala small{display:block;margin-top:3px;font:500 9px/1 "IBM Plex Mono",monospace;
     letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 
+  /* En qué dificultad la ganaste. Usa los mismos tres colores que las bolitas
+     de la lista de salas, para que se lea sin tener que leerlo. */
+  .findif{display:inline-block;margin-top:6px;padding:3px 9px;border:1px solid;
+    font:500 8.5px/1.35 "IBM Plex Mono",monospace;letter-spacing:.16em;
+    text-transform:uppercase}
+  .findif.d1{color:var(--patina);border-color:var(--patina);background:color-mix(in srgb,var(--patina) 12%,transparent)}
+  .findif.d2{color:var(--duro);border-color:var(--duro);background:color-mix(in srgb,var(--duro) 12%,transparent)}
+  .findif.d3{color:var(--alarm);border-color:var(--alarm);background:color-mix(in srgb,var(--alarm) 12%,transparent)}
+
   .findatos{flex:1;min-width:0}
   .datos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
   .dato{background:var(--panel2);border-left:3px solid var(--line);padding:9px 11px}
@@ -2712,6 +2721,13 @@ function ponerDificultad(n){
   if(typeof menu === "function" && modalAbierto()) menu();
 }
 
+/* El nombre de la dificultad en curso. Estaba repetido en tres lugares con
+   tres formas distintas de sacarlo. */
+function nombreDificultad(dif){
+  const d = DIFICULTADES.find(x => x.id === (dif || DIFICULTAD));
+  return d ? d.n : "";
+}
+
 function pisoAlerta(){
   const base = Math.max(1, S.foe.piso !== undefined ? S.foe.piso : (S.foe.alert || 1));
   return DIFICULTAD === 2 ? Math.min(TUNE.alertMax, base + 1) : base;
@@ -3241,7 +3257,13 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable)
       '<div class="finplano">' +
         '<canvas id="finlienzo" width="300" height="300"></canvas>' +
         '<div class="finsala"><b>' + s.name + '</b>' +
-          '<small>' + (s.num===0 ? "Tutorial" : "Nivel " + s.num) + ' · ' + s.wing + '</small></div>' +
+          '<small>' + (s.num===0 ? "Tutorial" : "Nivel " + s.num) + ' · ' + s.wing + '</small>' +
+          /* En el desafío diario no se elige, va siempre normal: decirlo ahí
+             es ruido. En las salas sueltas es justo lo que querés saber. */
+          (enDiaria() ? "" :
+            '<span class="findif d' + DIFICULTAD + '">' +
+            (gano ? "" : "en ") + nombreDificultad() + '</span>') +
+        '</div>' +
       '</div>' +
       '<div class="findatos">' +
         (remate ? '<p class="finremate">' + remate + '</p>' : '') +
@@ -3321,7 +3343,7 @@ function pantallaMaraton(gano, salas, rondas){
 
   /* El titulo decia siempre "museo", tambien al terminar el shopping. */
   const salida = JUEGO === 2 ? "Salieron del shopping" : "Salieron del museo";
-  const dif = (DIFICULTADES.find(d => d.id === DIFICULTAD) || {}).n || "";
+  const dif = nombreDificultad();
   const tapa = gano
     ? lamina(salas + " de " + salasEnOrden().length + " · <b>" + rondas + " rondas</b> · " + dif +
              (record ? " · récord nuevo" : ""),
@@ -6018,7 +6040,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "aeea97b3be";
+const VERSION = "93a9aa195d";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
