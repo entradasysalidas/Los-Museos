@@ -604,6 +604,20 @@
     text-transform:uppercase;letter-spacing:-.01em;color:var(--ac)}
   .finbotones{display:flex;flex-wrap:wrap;gap:0}
 
+  /* La lamina del final. Va en los dos finales grandes nada mas: el maraton
+     completo y el desafio diario ganado. Ganar una sala suelta no la lleva,
+     porque pasa diez veces por juego y ahi el plano del recorrido dice mas.
+     La lamina es la misma para todos; el pie, en monoespaciada, es lo unico
+     que cambia de un jugador a otro. */
+  .fintapa{--ac:var(--brass);margin:0 0 16px;border:1px solid var(--line);
+    background:var(--sunk);overflow:hidden}
+  .fintapa img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;
+    object-position:50% 45%}
+  .fintapa .pie{padding:9px 12px;border-top:1px solid var(--line);background:var(--panel2);
+    font:500 10px/1.5 "IBM Plex Mono",monospace;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim)}
+  .fintapa .pie b{color:var(--ac);font-weight:600}
+
   /* ---------- la ficha: es lo que se comparte, va prolija ---------- */
   .fichacab{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
     margin-bottom:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -681,6 +695,8 @@
   @media(max-width:760px){
     .final{flex-direction:column;align-items:stretch}
     .finplano canvas{width:100%;height:auto;max-width:280px;margin:0 auto}
+    .fintapa img{aspect-ratio:16/9}
+    .fintapa .pie{font-size:9px;letter-spacing:.1em;padding:8px 10px}
     .fsalas,.fichacab{grid-template-columns:1fr;display:grid}
   }
 
@@ -3073,6 +3089,19 @@ function aislados(){
 /* ---------- las pantallas del final ----------
    Antes eran un cartel de texto. Ahora muestran la sala con tu recorrido, la
    marca que quedó y en qué anda tu legajo. */
+/* Las tres laminas del final. Se muestran solo al ganar, y solo en los dos
+   finales grandes: la lamina es el premio, perder deja la pantalla de
+   siempre. El pie lleva lo que hizo este jugador, que es lo unico que las
+   distingue: las imagenes dicen las tres "MISION CUMPLIDA". */
+const LAMINAS = {1:"fin.jpg", 2:"fin2.jpg", 3:"findiario.jpg"};
+function lamina(pie, alt){
+  const src = LAMINAS[JUEGO];
+  if(!src) return "";
+  return '<div class="fintapa" style="--ac:' + acentoSala() + '">' +
+    '<img src="' + src + '" alt="' + alt + '">' +
+    (pie ? '<div class="pie">' + pie + '</div>' : "") + '</div>';
+}
+
 function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable){
   const s = SALAS[salaKey];
   const ac = s.ac ? s.ac[0] : "#D9A94F";
@@ -3090,7 +3119,15 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable)
            PIE[id].sym + '</span>';
   }).join("");
 
-  showModal(titulo,
+  /* El unico caso con lamina por aca es el desafio diario ganado. El plano
+     del recorrido se queda: la sala del dia es nueva y vale mirarla. */
+  const tapa = (gano && enDiaria())
+    ? lamina(s.name + " · <b>" + S.round + " rondas</b>" +
+             (S.taken === 0 ? " · sin que te sacaran ninguna" : ""),
+             "Desafío diario: misión cumplida")
+    : "";
+
+  showModal(titulo, tapa +
     '<div class="final" style="--ac:' + ac + '">' +
       '<div class="finplano">' +
         '<canvas id="finlienzo" width="300" height="300"></canvas>' +
@@ -3173,7 +3210,16 @@ function pantallaMaraton(gano, salas, rondas){
   const dato = (l,v,f) => '<div class="dato' + (f ? " fuerte" : "") + '">' +
     '<span class="l">' + l + '</span><span class="v">' + v + '</span></div>';
 
-  showModal(gano ? "Salieron del museo" : "Se cortó la corrida",
+  /* El titulo decia siempre "museo", tambien al terminar el shopping. */
+  const salida = JUEGO === 2 ? "Salieron del shopping" : "Salieron del museo";
+  const dif = (DIFICULTADES.find(d => d.id === DIFICULTAD) || {}).n || "";
+  const tapa = gano
+    ? lamina(salas + " de " + salasEnOrden().length + " · <b>" + rondas + " rondas</b> · " + dif +
+             (record ? " · récord nuevo" : ""),
+             salida + ": misión cumplida")
+    : "";
+
+  showModal(gano ? salida : "Se cortó la corrida", tapa +
     '<p class="lead">' + (gano
       ? "Las <b>diez salas</b> de una sola corrida. Eso no lo hace cualquiera."
       : "Llegaste hasta <b>" + SALAS[salasEnOrden()[MARATON_ULTIMA]].name +
@@ -5737,7 +5783,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "0a177fc064";
+const VERSION = "f3ed6e61d6";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
