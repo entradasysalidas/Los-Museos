@@ -875,8 +875,12 @@
        ese caso vuelve a scrollear, que es preferible a no poder jugar. */
     #app{height:100dvh;display:flex;flex-direction:column}
     #stage{display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:0}
+    /* en columna: el tablero arriba y lo que lo acompaña abajo, todo pegado
+       y el sobrante repartido. En fila, con el juego agregado a la pantalla
+       de inicio -donde el cartel va en el flujo y no flotando- el aviso
+       quedaba suelto abajo, lejos del tablero. */
     #boardwrap{order:1;width:100%;margin:0;flex:1 1 auto;min-height:220px;
-      display:flex;align-items:center;justify-content:center}
+      display:flex;flex-direction:column;align-items:center;justify-content:center}
     /* flex:none es la clave. Si el lienzo es un item flexible, el flex le fija
        primero el ancho y despues max-height le recorta el alto: queda
        aplastado. Sin flexionar, el par max-width/max-height se resuelve sobre
@@ -1033,9 +1037,13 @@
      ven ningún cambio.
      Sólo en vertical: apaisado tiene su propio reparto más abajo. */
   @media (max-width:860px) and (orientation:portrait) and (display-mode:standalone){
-    /* el aviso deja de taparle la fila de abajo al tablero */
-    #cartel{position:static;min-height:30px;padding:5px 12px;
-      background:none;box-shadow:none;border-radius:0}
+    /* Acá el aviso salía del tablero y se plantaba abajo, en su propio
+       renglón. Quedaba distinto que en el navegador -donde flota sobre el
+       borde de abajo del tablero- y encima despegado, como un cartel suelto
+       en el medio de la nada. Que se vea igual en los dos lados: agregar el
+       juego a la pantalla de inicio no debería cambiar dónde aparecen las
+       cosas. Sólo se le baja un poco el tamaño, que acá hay menos aire. */
+    #cartel{padding:7px 12px;font-size:13px}
     .hintbar{padding:6px 10px;font-size:12.5px}
 
     /* y la carta del jefe vuelve a explicar qué hace */
@@ -1390,7 +1398,7 @@ const POWERS = {
   matxi :{n:"Cara de piedra",   d:"La primera captura no te saca ninguna pieza."},
   chupa :{n:"Bolsillos grandes",d:"Empezás con un objeto extra."},
   marian:{n:"Ojo de halcón",    d:"Ves la próxima acción del antagonista antes de moverte."},
-  negro :{n:"Oficio",           d:"Ya conoce el edificio: ves el alcance del antagonista antes de moverte."},
+  negro :{n:"Siempre con el fernet", d:"Arrancás con un fernet en la mochila: por un turno te movés también en diagonal."},
 };
 
 
@@ -1719,6 +1727,7 @@ function newGame(salaKey){
   }
   if(sala.hero==="chupa") S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
   if(sala.hero==="tomy")  S.objects.push("mate1");   // el termo va con él
+  if(sala.hero==="negro") S.objects.push("fernet");  // nunca anda sin uno
   if(sala.hero==="matxi") S.freeCatch = true;
 
   fx.floats.length=0; fx.shake=0; fx.banner=null;
@@ -1995,7 +2004,7 @@ function rangoActual(){
    Cada antagonista hace una trampa distinta y no siempre se deduce jugando.
    El consejo aparece en el relato al empezar. */
 let CONSEJOS = {
-  tutorial:"El Encargado camina y nada más. Aprovechá para practicar los mates: parado encima, con <b>Espacio</b> recuperás los pasos y podés encadenar dos o tres en un mismo turno.",
+  tutorial:"El Encargado camina y nada más, así que es el lugar para probar. Arrancás con un <b>fernet</b> en la mochila: tocalo y ese turno cortás en diagonal, que en una esquina te ahorra un paso. Y los <b>mates</b> del piso te devuelven los pasos que ya diste: parado encima, con <b>Espacio</b>, y podés encadenar dos o tres en el mismo turno.",
   n1:"Tu poder te esconde también en la casilla de al lado de una planta, y a vos ni la carta ¡Se acerca! te encuentra escondido. Terminá el turno pegado a una y El Encargado no te persigue esa ronda.",
   n2:"Ojo: las cartas de escritorio no llevan al Curador a los cómplices, lo llevan a las vitrinas. Robá primero la que tengas más cerca.",
   n3:"El Director no tiene trucos, pero es constante. Guardá el <b>F</b> para cuando te quede una sola pieza y esté lejos: acá traerla a una vitrina ya vacía es lo que más pasos te ahorra de todo el museo.",
@@ -2807,7 +2816,9 @@ function chasePhase(hidden){
   if(S.over) return;
   S.phase="persecucion";
   if(hidden){
-    banner("Escondido detrás de la planta: no te persigue","#79AE9E");
+    banner(S.heroKey === "hippie"
+      ? "Escondido: no te persigue, ni con ¡Se acerca!"
+      : "Escondido: no te persigue… salvo que saque ¡Se acerca!", "#79AE9E");
     syncUI();
     return luego(actionPhase, 1200);
   }
@@ -3041,7 +3052,10 @@ function rushSteps(n){
     syncUI();
     return luego(nextRound, 620);
   }
-  if(S.escondido) say("🪴 La planta no te salva de ésta: viene igual.","r");
+  if(S.escondido){
+    banner("La planta no te salva de ésta: viene igual","#E0685D");
+    say("🪴 La planta no te salva de ésta: viene igual.","r");
+  }
   const señuelo = S.celular;
   if(señuelo) say("📱 El celular suena y lo llama: va para allá en vez de venir a vos.","g");
   let i=0;
@@ -6296,7 +6310,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "a7558806b3";
+const VERSION = "2d52eb52f7";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
