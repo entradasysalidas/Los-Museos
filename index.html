@@ -337,7 +337,12 @@
   @keyframes portalSale{to{opacity:0}}
 
   /* las dos cajas, para elegir a cuál entrar */
-  .tapas{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  /* Las cuatro del mismo tamaño: tres juegos y el desafío diario. Antes el
+     diario era una franja aparte y la tercera tapa caía sola en la segunda
+     fila; con la grilla quedan dos y dos, o cuatro en fila en la compu. */
+  .tapas{display:grid;gap:20px;justify-content:center;
+    grid-template-columns:repeat(2,minmax(0,min(38vw,270px)))}
+  @media(min-width:900px){ .tapas{grid-template-columns:repeat(4,minmax(0,220px))} }
 
   /* El desafío diario no es una tercera caja: es otra forma de jugar, así
      que entra por una franja aparte debajo de las dos tapas. */
@@ -370,24 +375,14 @@
   .novedad .muestra .bol.d3{background:var(--alarm);border-color:var(--alarm)}
   .novedad .btn{margin:0;align-self:flex-start}
 
-  .diaria{appearance:none;-webkit-appearance:none;cursor:pointer;
-    display:flex;align-items:center;gap:14px;text-align:left;
-    width:min(100%,420px);margin:26px auto 0;padding:10px 16px 10px 10px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    color:inherit;transition:transform .15s ease, border-color .15s ease}
-  .diaria:hover{transform:translateY(-2px);border-color:var(--brass)}
-  .diaria:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
-  .diaria img{width:56px;height:56px;flex:none;border-radius:8px;object-fit:cover}
-  .diaria .txt{min-width:0}
-  .diaria b{display:block;font:400 15px/1.15 "Archivo Black","Archivo",sans-serif;
-    text-transform:uppercase;letter-spacing:-.01em;color:var(--ink)}
-  .diaria small{display:block;margin-top:4px;font:500 10px/1.35 "IBM Plex Mono",monospace;
-    letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-  .diaria.hecho{border-color:var(--patina)}
-  .diaria.hecho small{color:var(--patina)}
+  /* el diario es una tapa más, pero la suya no se elige: se entra directo */
+  .diaria img{object-fit:cover}
+  .diaria .rotulo b{color:var(--ink)}
+  .diaria.hecho .rotulo small{color:var(--patina)}
+  .diaria.hecho img{outline:3px solid var(--patina);outline-offset:4px}
   .tapa{background:none;border:0;padding:0;cursor:pointer;color:inherit;
     display:flex;flex-direction:column;gap:11px;align-items:center;
-    width:min(38vw,270px);transition:.16s ease}
+    width:100%;min-width:0;transition:.16s ease}
   .tapa img,.tapa .cajadibujada{display:block;width:100%;aspect-ratio:1;
     box-shadow:0 20px 44px #00000060;transition:.16s ease}
   .tapa:hover{transform:translateY(-4px)}
@@ -546,6 +541,7 @@
     text-transform:uppercase;letter-spacing:-.01em;overflow-wrap:break-word}
 
   /* quién la juega y contra quién: a todo el ancho, para que el nombre entre */
+  .lv .quien .cara{background:transparent}
   .lv .quien{display:flex;gap:8px;align-items:center;min-width:0;
     border-top:1px solid var(--line);padding-top:9px;margin-top:auto}
   .lv .cara{width:30px;height:30px;flex:none;display:block}
@@ -999,7 +995,9 @@
     .hintbar{padding:9px 11px;font-size:13.5px}
 
     .tapas{gap:12px}
-    .tapa{width:min(43vw,190px);gap:8px}
+    /* el ancho lo manda la grilla, no la tapa: fijandolo aca se salian de
+       su celda y se pisaban entre ellas */
+    .tapa{width:100%;gap:8px}
     .tapa .rotulo b{font-size:12.5px}
     .tapa .rotulo small{font-size:8px}
     .modal{max-height:calc(100vh - 20px)}
@@ -1079,6 +1077,33 @@
      El museo es institucional: esquinas vivas, todo recto, tipografía seria.
      Un shopping es lo contrario, así que el 2 redondea, agranda y le pone
      etiqueta de precio al número de la sala. */
+  /* ---------- Los Museos de Vacaciones: arena, mar y sol ----------
+     El museo y el shopping pasan de noche y por eso son oscuros. Éste es a
+     las tres de la tarde, así que se lleva su propia paleta puesta, y pisa
+     al tema claro/oscuro del jugador: acá no hay noche. */
+  body.juego3{
+    --bg:#DFC69A; --panel:#FFFBF2; --panel2:#F6ECD8; --sunk:#EADFC4;
+    --line:#DDCBA6; --hair:#C4AE83;
+    --ink:#20303A; --body:#3E5361; --dim:#6E8794;
+    --brass:#0E7C9B; --brass-dim:#7FBBCE; --brass-soft:#DFF1F7;
+    --alarm:#D4533F; --patina:#2E8A6B; --duro:#D69A1E;
+    --shadow:0 16px 36px #6b512a26;
+  }
+  /* el cielo detrás de todo, que es lo que la hace veraniega de verdad */
+  body.juego3{background:linear-gradient(180deg,#7FC9E4 0%,#BFE3EF 34%,#DFC69A 34%,#E7D2AA 100%);
+    background-attachment:fixed}
+  body.juego3 header{border-radius:0 0 18px 18px;border-top-width:5px;
+    border-top-color:#0E7C9B}
+  body.juego3 .card,
+  body.juego3 #boardwrap,
+  body.juego3 .modal,
+  body.juego3 .lv,
+  body.juego3 .tapa img{border-radius:16px}
+  /* las tarjetas de sala, como toallas al sol */
+  body.juego3 .lv{background:var(--panel);box-shadow:0 6px 18px #6b512a1f}
+  body.juego3 .lv .plano canvas{background:#F3E7CC}
+  body.juego3 .modal h2{color:#0E5C74}
+
   body.juego2 header{border-radius:0 0 18px 18px;border-top-width:5px}
   body.juego2 .card,
   body.juego2 #boardwrap,
@@ -1239,11 +1264,11 @@
       <span class="sello" id="sello3">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 3</b><small>Vacaciones en la playa</small></span>
     </button>
+    <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
+      <img src="diario.jpg" alt="Desafío diario">
+      <span class="rotulo"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
+    </button>
   </div>
-  <button class="diaria" id="botondiaria" onclick="entrarDiaria()">
-    <img src="diario.jpg" alt="Desafío diario">
-    <span class="txt"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
-  </button>
 
   <div class="novedades off" id="novedad"></div>
 
@@ -2666,6 +2691,12 @@ function cargarJuego(n){
   FRAME_DEF = j.frameDef; FRAME_WALLS = j.frameWalls; CONSEJOS = j.consejos;
   FRAME_MAP = null;            // se rearma con el marco del juego nuevo
   JUEGO = n;
+  /* la piel del juego. Va acá y no en syncUI porque el menú de las salas se
+     ve antes de que exista ninguna partida. */
+  if(typeof document !== "undefined" && document.body && document.body.classList){
+    document.body.classList.toggle("juego2", n === 2);
+    document.body.classList.toggle("juego3", n === 3);
+  }
   return true;
 }
 
@@ -5184,7 +5215,6 @@ function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
   document.body.classList.toggle("claro", !S.th.oscuro);
-  document.body.classList.toggle("juego2", JUEGO === 2);
   // y cada sala pinta su propio acento, según su temática
   /* El acento va en el body, no en :root. La paleta clara define sus colores
      en body.claro, que es hijo de :root: escribiendolo arriba, el body lo
@@ -6060,6 +6090,18 @@ function abandonarDiaria(){
   salirDelDiario();
 }
 
+/* La consigna del juego, que no es la misma en la playa que en el museo. */
+function LaConsigna(){
+  if(JUEGO === 3)
+    return 'Levantá las <b>tres heladeritas</b> de abajo de las sombrillas, ' +
+           'llevásela a cada uno a su toalla y llegá al <b>puesto</b> antes de que te agarren.';
+  if(JUEGO === 2)
+    return 'Robá <b>tres piezas</b> de las vidrieras, pasáselas a los cómplices que ' +
+           'las piden y salí antes de que te agarren con las manos vacías.';
+  return 'Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
+         'las piden y salí antes de que te agarren con las manos vacías.';
+}
+
 function menu(){
   if(enDiaria()) return (S && !S.over) ? pausaDiaria() : salirDelDiario();
   /* Las diez de una, sin scroll. Arriba el plano con el nombre al lado, y
@@ -6113,8 +6155,7 @@ function menu(){
 
   showModal("Las diez salas",
     cabecera + selector +
-    '<p class="lead">Robá <b>tres piezas</b> de las vitrinas, pasáselas a los cómplices que ' +
-    'las piden y salí antes de que te agarren con las manos vacías.</p>' + cuerpo +
+    '<p class="lead">' + LaConsigna() + '</p>' + cuerpo +
     '<div class="finbotones">' +
       '<button class="btn" onclick="empezarMaraton()">Modo maratón · las diez seguidas</button>' +
       '<button class="btn alt" onclick="irAlDiario()">Desafío diario</button>' +
@@ -6327,6 +6368,15 @@ function cerrarNovedad(id){
   pintarNovedad();
 }
 
+/* Lo que falta para la sala de mañana, en horas y minutos. */
+function faltaParaMañana(){
+  const ahora = new Date();
+  const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1);
+  const min = Math.max(0, Math.round((manana - ahora) / 60000));
+  const h = Math.floor(min / 60), m = min % 60;
+  return h > 0 ? h + " h " + (m < 10 ? "0" : "") + m + "m" : m + " min";
+}
+
 function pintarFranjaDiaria(){
   const b = document.getElementById("botondiaria");
   const p = document.getElementById("diariapie");
@@ -6335,8 +6385,12 @@ function pintarFranjaDiaria(){
   const hecho = d.ultimo === claveDelDia();
   if(b.classList) b.classList.toggle("hecho", hecho);
   const racha = d.racha > 1 ? " · racha " + d.racha : "";
+  /* Cuando ya lo jugaste, lo único que querés saber es cuándo vuelve. La sala
+     cambia a la medianoche de tu teléfono, que es la misma cuenta que usa
+     claveDelDia() para saber qué día es. */
   p.textContent = hecho
-    ? (d.gano ? "Hecho hoy en " + d.rondas + " rondas" : "Hoy te agarraron") + racha
+    ? (d.gano ? "Hecho en " + d.rondas + " rondas" : "Hoy te agarraron") + racha +
+      " · vuelve en " + faltaParaMañana()
     : "Una sala nueva, la misma para todos" + racha;
 }
 
@@ -6562,7 +6616,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "16dbcfd34b";
+const VERSION = "8924d1d1ec";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
