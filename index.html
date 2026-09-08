@@ -888,15 +888,17 @@
        no entraba, y como estaba centrado se derramaba para arriba y tapaba el
        encabezado. --pista la mide syncUI y la pone aca. */
     #boardwrap canvas{flex:0 0 auto;max-width:100%;width:auto;height:auto;
-      max-height:calc(100% - var(--pista,0px) - var(--aviso,0px))}
+      max-height:calc(100% - var(--pista,0px))}
     aside{order:2;flex:none}
     #relato{display:none}
-    /* El cartel de avisos sale del flujo: reservaba una franja fija debajo del
-       tablero y en el teléfono ese alto es lo que hacía que la carta del jefe
-       quedara cortada. Pasa a flotar sobre el borde de abajo del tablero, que
-       es el lado seguro: la puerta de salida está arriba y nunca se tapa. */
+    /* El cartel de avisos sale del flujo y cuelga por debajo de la caja del
+       tablero, encima de la tarjeta de abajo. Adentro tenía dos formas de
+       molestar: si flotaba sobre el mapa lo tapaba, y si se le reservaba una
+       franja el lienzo -que es cuadrado y acá lo limita el alto- perdía ese
+       alto por los dos lados. Afuera no cuesta nada: dura 2,8 segundos y lo
+       que queda debajo es información fija, que se puede esperar. */
     #boardwrap{position:relative}
-    #cartel{position:absolute;left:8px;right:8px;bottom:8px;z-index:3;
+    #cartel{position:absolute;left:8px;right:8px;top:calc(100% + 6px);z-index:5;
       min-height:0;padding:8px 14px;font-size:14px;pointer-events:none;
       background:var(--panel);border-radius:9px;box-shadow:0 8px 24px #00000055}
 
@@ -1671,29 +1673,10 @@ const fx = { floats:[], shake:0, banner:null };
    entra el cartel, no una cómoda.
    Se llama al mostrarlo y no sólo desde syncUI: el aviso aparece por su
    cuenta y si no quedaba un cuadro colocado donde estaba el anterior. */
-function acomodarCartel(){
-  const cart = typeof $ === "function" ? $("cartel") : null;
-  if(!cart || !cart.style || !cart.offsetParent) return;
-  /* La franja es fija y no la que mide el cartel de esta ronda: si dependiera
-     del cartel, el tablero cambiaría de tamaño cada vez que aparece uno. */
-  const caja = cart.offsetParent;
-  if(caja.style && caja.style.setProperty)
-    caja.style.setProperty("--aviso", ALTO_AVISO + "px");
-  if(typeof cv === "undefined" || !cv || !cv.getBoundingClientRect) return;
-  const rm = cart.offsetParent.getBoundingClientRect();
-  const rc = cv.getBoundingClientRect();
-  if(!rm.height || !rc.height) return;
-  const hueco = Math.round(rm.bottom - rc.bottom);      // lo que queda bajo el tablero
-  const alto  = cart.offsetHeight || 40;
-  cart.style.bottom = (hueco >= alto
-    ? Math.round((hueco - alto) / 2)                    // entra abajo: centrado en el hueco
-    : Math.max(6, hueco + 6)) + "px";                   // no entra: sobre el borde
-}
 
 function banner(txt,color){
   fx.banner={txt, color:color||"#EAE8E2", t:0};
   if(typeof pintarCartel==="function") pintarCartel(txt, color);
-  acomodarCartel();
 }
 
 const CH2TYPE = {P:"vitrina", Q:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara", E:"escalera",
@@ -2595,7 +2578,8 @@ const SALAS_3 = {
          ..K.A.
          T.PAQP
          ..C..D`),
-    w:["v:4:3","h:2:2","v:3:3","v:5:3","v:2:4","h:6:3","h:5:4","h:4:1","h:5:1","h:4:5"] },
+    w:["v:3:3","v:5:3","h:6:3","h:5:4","h:4:1","h:5:1","h:4:5"],
+    v:["v:4:3","h:2:2","v:2:4"] },
   v1:{ num:1, name:"Barraca 12", wing:"Recién llegados", piso:"sol", afuera:"mar",
     ac:["#E0774F","#F0B292","#FDEDE4"],
     hero:"hippie", foe:"globo", comps:["lamber","chupa","damian"],
@@ -2603,7 +2587,8 @@ const SALAS_3 = {
          P.M...
          .P.Q.L
          .DC.AT`),
-    w:["v:3:2","h:6:3","v:3:4","h:2:2","v:3:5","v:5:3","h:5:1","h:2:1","h:4:5"] },
+    w:["v:3:4","h:2:2","v:5:3","h:5:1","h:2:1","h:4:5"],
+    v:["v:3:2","h:6:3","v:3:5"] },
   v2:{ num:2, name:"La orilla", wing:"Media mañana", piso:"sol", afuera:"mar",
     ac:["#2FA88C","#8CDCC9","#E4F7F2"],
     hero:"damian", foe:"barraca", comps:["matxi","hippie","chuna"],
@@ -2611,7 +2596,8 @@ const SALAS_3 = {
          ...CP.
          D.K..P
          A..M..`),
-    w:["v:4:2","v:1:5","h:3:2","h:4:2","v:1:2","h:5:2","h:3:1","h:5:1","h:3:5"] },
+    w:["h:3:2","h:4:2","h:5:2","h:3:1","h:5:1","h:3:5"],
+    v:["v:4:2","v:1:5","v:1:2"] },
   v3:{ num:3, name:"Los médanos", wing:"Media mañana", piso:"sol", afuera:"mar",
     ac:["#D8A93C","#EDD08A","#FBF3DE"],
     hero:"kzk", foe:"perro", comps:["negro","chuna","chupa"],
@@ -2619,7 +2605,8 @@ const SALAS_3 = {
          .P..Q.
          P.M...
          .A.KCA`),
-    w:["v:4:5","v:2:4","v:2:3","v:4:3","v:5:2","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"] },
+    w:["v:2:4","v:4:3","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"],
+    v:["v:4:5","v:2:3","v:5:2"] },
   v4:{ num:4, name:"El parador", wing:"Mediodía", piso:"sol", afuera:"mar",
     ac:["#C7563F","#E8A08C","#FBE8E2"],
     hero:"lamber", foe:"fiscal", comps:["kzk","chupa","hippie"],
@@ -2627,7 +2614,8 @@ const SALAS_3 = {
          ...P..
          AT...P
          ...PC.`),
-    w:["v:3:2","v:4:3","h:3:4","v:3:5","h:6:3","h:5:3","h:6:2","h:2:1","h:5:1"] },
+    w:["v:4:3","v:3:5","h:5:3","h:6:2","h:2:1","h:5:1"],
+    v:["v:3:2","h:6:3","h:3:4"] },
   v5:{ num:5, name:"La feirinha", wing:"Mediodía", piso:"sol", afuera:"mar",
     ac:["#8A5FC4","#C0A3E4","#F1EAFA"],
     hero:"chuna", foe:"reposeras", comps:["matxi","hippie","lamber"],
@@ -2635,7 +2623,8 @@ const SALAS_3 = {
          .P..A.
          .Q...P
          .M..T.`),
-    w:["v:1:4","h:6:4","v:4:3","v:2:3","v:3:2","h:1:3","h:5:1","h:2:1"] },
+    w:["v:4:3","v:2:3","h:1:3","h:5:1","h:2:1"],
+    v:["v:1:4","h:6:4","v:3:2"] },
   v6:{ num:6, name:"El muelle", wing:"Siesta", piso:"tarde", afuera:"mar",
     ac:["#3F7FD6","#9CBFEC","#EAF1FB"],
     hero:"tomy", foe:"enojado", comps:["negro","lamber","chupa"],
@@ -2643,7 +2632,8 @@ const SALAS_3 = {
          ...P..
          ..AM.L
          ..P..C`),
-    w:["h:3:4","h:5:4","v:5:4","h:2:2","h:6:2","h:5:2","h:4:1","h:3:1","h:3:5"] },
+    w:["h:5:4","v:5:4","h:5:2","h:4:1","h:3:1","h:3:5"],
+    v:["h:3:4","h:6:2","h:2:2"] },
   v7:{ num:7, name:"Praia Grande", wing:"Siesta", piso:"tarde", afuera:"mar",
     ac:["#D8547F","#EFA3BC","#FCEAF1"],
     hero:"matxi", foe:"guardavidas", comps:["kzk","chupa","hippie"],
@@ -2651,7 +2641,8 @@ const SALAS_3 = {
          .P...P
          ..LATP
          .C.A..`),
-    w:["h:6:2","v:4:5","h:1:2","v:5:5","h:2:2","h:3:4","v:3:5","h:5:1","h:4:1","h:3:5"] },
+    w:["v:4:5","v:5:5","h:2:2","h:3:4","h:5:1","h:4:1","h:3:5"],
+    v:["h:6:2","h:1:2","v:3:5"] },
   v8:{ num:8, name:"La playa de las carpas", wing:"Atardecer", piso:"tarde", afuera:"mar",
     ac:["#4FA85F","#A6D8AE","#EBF7ED"],
     hero:"chupa", foe:"sorvete", comps:["tomy","hippie","lamber"],
@@ -2659,7 +2650,8 @@ const SALAS_3 = {
          ..K...
          .A....
          PDPLTA`),
-    w:["v:3:2","h:4:4","h:3:3","h:4:2","v:2:2","h:2:3","h:4:1","h:5:1","h:3:5"] },
+    w:["h:3:3","h:4:2","v:2:2","h:4:1","h:5:1","h:3:5"],
+    v:["v:3:2","h:4:4","h:2:3"] },
   v9:{ num:9, name:"El último parador", wing:"Atardecer", piso:"tarde", afuera:"mar",
     ac:["#E0553F","#F0A091","#2A1512"],
     hero:"marian", foe:"jetski", comps:["negro","lamber","matxi"],
@@ -2667,7 +2659,8 @@ const SALAS_3 = {
          .PM.PK
          ..T...
          ....D.`),
-    w:["h:5:4","v:5:5","h:1:3","h:5:3","h:3:3","v:3:4","h:4:1","h:2:1","h:3:5"] },
+    w:["v:5:5","h:5:3","v:3:4","h:4:1","h:2:1","h:3:5"],
+    v:["h:5:4","h:1:3","h:3:3"] },
 };
 
 const CONSEJOS_3 = {
@@ -4342,24 +4335,40 @@ function drawMar(g, th){
 
 function drawPiso(g,x,y,th){
   const px=x*CS, py=y*CS;
+  /* En la playa el marco es el muelle de madera: la loseta es la arena y todo
+     lo que la rodea -la salida, el puesto del jefe, los banos- esta sobre
+     tablones. Ademas separa de un vistazo lo que se juega de lo que no. */
+  const enElMarco = JUEGO === 3 &&
+        (x < CX0 || x >= CX0 + CW || y < CY0 || y >= CY0 + CH);
+  if(enElMarco){
+    g.fillStyle = (x + y) % 2 ? "#C9A472" : "#C29C69";
+    g.fillRect(px,py,CS,CS);
+    for(let k = 0; k < 3; k++){                       // los tablones
+      const ty = py + (k + 1) * (CS/3);
+      g.fillStyle = "#00000026"; g.fillRect(px, ty - 1, CS, 1.6);
+      g.fillStyle = "#FFFFFF22"; g.fillRect(px, ty + .6, CS, 1);
+    }
+    for(let k = 0; k < 5; k++){                       // la veta
+      g.strokeStyle = "#00000012"; g.lineWidth = 1;
+      const vy = py + rnd(x,y,k+3) * CS;
+      g.beginPath(); g.moveTo(px + rnd(x,y,k+7)*CS*.4, vy);
+      g.lineTo(px + CS*.5 + rnd(x,y,k+9)*CS*.5, vy + rnd(x,y,k+5)*2 - 1); g.stroke();
+    }
+    g.fillStyle = "#00000018";                        // los clavos
+    g.fillRect(px+3, py+3, 1.6, 1.6); g.fillRect(px+CS-5, py+3, 1.6, 1.6);
+    return;
+  }
   g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
   g.fillRect(px,py,CS,CS);
   if(th.patron==="arena"){
-    /* Los surcos que deja el agua al bajar: ondas largas y paralelas, con el
-       grano fino encima. No son rectas: si lo fueran parecerían baldosas. */
-    for(let i=0;i<4;i++){
-      const y0 = py + (i + .5) * (CS/4) + rnd(x,y,i+2) * 4 - 2;
-      g.strokeStyle = i%2 ? "#00000014" : "#FFFFFF3A";
-      g.lineWidth = i%2 ? 2.2 : 1.6;
-      g.beginPath();
-      g.moveTo(px, y0);
-      g.bezierCurveTo(px+CS*.33, y0 - 3 + rnd(x,y,i+5)*6,
-                      px+CS*.66, y0 + 3 - rnd(x,y,i+8)*6, px+CS, y0);
-      g.stroke();
-    }
-    for(let i=0;i<12;i++){                      // el grano
-      g.fillStyle = rnd(x,y,i+11) > .5 ? "#00000010" : "#FFFFFF28";
-      g.fillRect(px + rnd(x,y,i+13)*CS, py + rnd(x,y,i+17)*CS, 1.6, 1.6);
+    /* Arena lisa: sólo el grano. Los surcos van en las paredes, que es donde
+       el agua los deja de verdad; dibujados en el piso parecían un piso de
+       tablas, porque lo que hace que algo se lea como madera es la línea larga
+       y repetida de lado a lado. */
+    for(let k = 0; k < 26; k++){                      // el grano, bien denso
+      const t = rnd(x,y,k+30);
+      g.fillStyle = t > .62 ? "#FFFFFF3A" : t > .3 ? "#00000010" : "#00000018";
+      g.fillRect(px + rnd(x,y,k+40)*CS, py + rnd(x,y,k+55)*CS, 1.3, 1.3);
     }
   }else if(th.patron==="alfombra"){
     /* alfombra industrial: el grano fino que tienen todas las oficinas */
@@ -4420,6 +4429,45 @@ function drawPiso(g,x,y,th){
 }
 
 /* Las paredes van en las aristas. Se dibujan encima de todo lo demás. */
+/* La red de voley: el vidrio de la playa. Se dibuja como el vidrio -sobre la
+   franja de la arista- pero con los dos postes de madera y el tejido. */
+function drawRed(g, px, py, an, al, vert){
+  const largo = vert ? al : an, ancho = vert ? an : al;
+  g.save();
+  g.translate(px + an/2, py + al/2);
+  if(!vert) g.rotate(Math.PI/2);
+  const mL = largo/2, mA = ancho/2;
+  /* el tejido: apenas un velo, que la arena se tiene que ver a traves */
+  g.fillStyle = "rgba(255,255,255,.13)";
+  g.fillRect(-mA, -mL, ancho, largo);
+  /* las dos sogas, arriba y abajo del pano */
+  g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 1.3;
+  g.beginPath();
+  g.moveTo(-mA + .6, -mL + 4); g.lineTo(-mA + .6, mL - 4);
+  g.moveTo( mA - .6, -mL + 4); g.lineTo( mA - .6, mL - 4);
+  g.stroke();
+  /* el tejido de verdad: los cuadraditos, vistos desde arriba */
+  g.strokeStyle = "rgba(255,255,255,.34)"; g.lineWidth = 1;
+  g.beginPath();
+  const paso = (largo - 8) / 7;
+  for(let k = 0; k <= 7; k++){
+    const y = -mL + 4 + k * paso;
+    g.moveTo(-mA + .6, y); g.lineTo(mA - .6, y);
+  }
+  g.stroke();
+  /* y los postes, uno en cada punta, que es lo que la planta en la arena */
+  for(const s of [-1, 1]){
+    const y = s * (mL - 2.5);
+    g.fillStyle = "#00000026";
+    g.beginPath(); g.ellipse(0, y + 1.5, ancho*.9, 2.6, 0, 0, 7); g.fill();
+    g.fillStyle = "#A9763F";
+    g.beginPath(); g.arc(0, y, Math.max(2.4, ancho*.62), 0, 7); g.fill();
+    g.fillStyle = "#C89A5E";
+    g.beginPath(); g.arc(-.5, y - .5, Math.max(1.2, ancho*.34), 0, 7); g.fill();
+  }
+  g.restore();
+}
+
 function drawParedes(){
   const th=S.th, t=Math.max(5, CS*0.09);
   ctx.save();
@@ -4453,6 +4501,9 @@ function drawParedes(){
       const py = vert ? y*CS + 2       : (y+1)*CS - t/2;
       const an = vert ? t : CS - 4;
       const al = vert ? CS - 4 : t;
+
+      if(JUEGO === 3){ drawRed(ctx, px, py, an, al, vert); return; }
+
 
       /* el paño: un velo neutro que apaga el color del piso, y encima el
          celeste. Queda translúcido, pero el tinte lo gana el vidrio. */
@@ -5104,16 +5155,40 @@ const FOE_BODY = {
   procurador:"#1E1E24", guardapolvo:"#D8D5CC", gabardina:"#7A6A4E", gala:"#2A2038",
 };
 
-function drawFoe(g,bob,look){
-  if(look==="perro") return drawPerro(g,bob);
-  const body = FOE_BODY[look] || "#262B38";
+/* De vacaciones ninguno anda de traje: color vivo y como lo lleva puesto. */
+const FOE_PLAYA = {
+  overol:{c:"#2FA88C", t:"remera"},   saco:{c:"#E8A33C", t:"musculosa"},
+  traje:{c:"#D8543F", t:"torso"},     guardia:{c:"#E0554F", t:"torso"},
+  procurador:{c:"#2F6FB8", t:"musculosa"}, guardapolvo:{c:"#F0E4C8", t:"musculosa"},
+  gabardina:{c:"#8A5FC4", t:"remera"},gala:{c:"#22B0C8", t:"torso"},
+};
+
+function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
+  const playa = JUEGO === 3 ? FOE_PLAYA[look] : null;
+  const body = playa ? playa.c : (FOE_BODY[look] || "#262B38");
   const oscuro = look!=="guardapolvo";
+  const PIEL = "#E8B98A";
 
   g.fillStyle="#00000042"; g.beginPath(); g.ellipse(0,16,13,5.5,0,0,7); g.fill();
-  g.fillStyle=oscuro?"#1A1D24":"#B9B6AE"; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
-  g.fillStyle=body; rr(g,-11.5,-9+bob,23,17,5); g.fill();
-
-  if(look==="traje" || look==="gala" || look==="procurador"){
+  if(playa){                                    // bermudas y la pierna al sol
+    g.fillStyle=PIEL; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
+    g.fillStyle=playa.c; g.fillRect(-8,4,7,6); g.fillRect(1,4,7,6);
+    g.fillStyle="#00000018"; g.fillRect(-8,9,7,1.2); g.fillRect(1,9,7,1.2);
+  }else{
+    g.fillStyle=oscuro?"#1A1D24":"#B9B6AE"; g.fillRect(-7.5,5,6,12); g.fillRect(1.5,5,6,12);
+  }  if(playa && playa.t === "torso"){
+    g.fillStyle=PIEL; rr(g,-11.5,-9+bob,23,17,5); g.fill();
+    g.fillStyle="#00000012"; g.fillRect(-11.5,-1+bob,23,1.2);   // la sombra del pecho
+    g.fillStyle=playa.c; rr(g,-11.5,3+bob,23,5,2.5); g.fill();  // el elastico del short
+  }else{
+    g.fillStyle=body; rr(g,-11.5,-9+bob,23,17,5); g.fill();
+    if(playa && playa.t === "musculosa"){                       // los hombros afuera
+      g.fillStyle=PIEL;
+      rr(g,-11.5,-9+bob,4.5,8,2); g.fill(); rr(g,7,-9+bob,4.5,8,2); g.fill();
+      g.fillStyle="#00000010"; g.fillRect(-7,-9+bob,14,1);
+    }
+  }
+  if(!playa && (look==="traje" || look==="gala" || look==="procurador")){
     g.fillStyle="#F5F5F7";
     g.beginPath(); g.moveTo(-4,-9+bob); g.lineTo(4,-9+bob);
     g.lineTo(2,2+bob); g.lineTo(-2,2+bob); g.fill();
@@ -5121,28 +5196,36 @@ function drawFoe(g,bob,look){
     g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(3,-4+bob);
     g.lineTo(0,4+bob); g.lineTo(-3,-4+bob); g.fill();
   }
-  if(look==="overol" || look==="guardia"){
+  if(!playa && (look==="overol" || look==="guardia")){
     g.fillStyle="#00000033"; g.fillRect(-11.5,-3+bob,23,3);
     g.fillStyle="#C9CDD4"; g.fillRect(-7,-9+bob,2.5,8); g.fillRect(4.5,-9+bob,2.5,8);
   }
-  if(look==="guardia"){
+  if(!playa && look==="guardia"){
     g.fillStyle="#D2A24C"; g.fillRect(-11.5,-1+bob,23,2);           // cinturón
     g.fillStyle="#E8E4DA"; g.fillRect(-9,-7+bob,4,3);               // placa
   }
-  if(look==="saco" || look==="gabardina"){
+  if(!playa && (look==="saco" || look==="gabardina")){
     g.fillStyle= look==="saco" ? "#6E6146" : "#5F5340";
     g.fillRect(-2,-9+bob,4,14);
     g.fillStyle="#EFE8D8"; g.fillRect(-1.2,-9+bob,2.4,9);
   }
-  if(look==="guardapolvo"){
+  if(!playa && look==="guardapolvo"){
     g.strokeStyle="#A9A69E"; g.lineWidth=1; g.beginPath();
     g.moveTo(0,-9+bob); g.lineTo(0,7+bob); g.stroke();
     g.fillStyle="#8FA88F"; g.fillRect(4,-5+bob,4,5);                // frasco en el bolsillo
   }
-  g.fillStyle=body; g.fillRect(-14.5,-6+bob,4,11); g.fillRect(10.5,-6+bob,4,11);
-
-  if(look==="guardia"){                                             // linterna encendida
-    g.fillStyle="#3A3F4A"; g.fillRect(13,-2+bob,7,3.5);
+  g.fillStyle = playa ? PIEL : body;
+  g.fillRect(-14.5,-6+bob,4,11); g.fillRect(10.5,-6+bob,4,11);
+  if(playa && playa.t === "remera"){                            // la manga corta
+    g.fillStyle=playa.c; g.fillRect(-14.5,-6+bob,4,4.5); g.fillRect(10.5,-6+bob,4,4.5);
+  }
+  if(playa && look==="guardia"){                                    // binoculares
+    g.fillStyle="#2E3440";
+    rr(g,12,-5+bob,5,7,1.5); g.fill(); rr(g,17.5,-5+bob,5,7,1.5); g.fill();
+    g.fillStyle="#1B2029"; g.fillRect(17,-2.5+bob,1,2);
+    g.fillStyle="#BFE8F4"; g.fillRect(12.6,-4.4+bob,3.8,2); g.fillRect(18.1,-4.4+bob,3.8,2);
+  }
+  if(!playa && look==="guardia"){                                  // linterna encendida    g.fillStyle="#3A3F4A"; g.fillRect(13,-2+bob,7,3.5);
     g.fillStyle="#FFE9A8"; g.beginPath();
     g.moveTo(20,-2+bob); g.lineTo(30,-6+bob); g.lineTo(30,4+bob); g.lineTo(20,1.5+bob); g.fill();
   }
@@ -5411,8 +5494,6 @@ const $ = id=>document.getElementById(id);
 
 /* Lo que mide la franja del aviso. Fija a propósito: ver el comentario de
    más abajo, en syncUI. */
-const ALTO_AVISO = 42;   // el cartel mide ~32 y le sobra un poco por lado
-
 function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
@@ -5540,7 +5621,6 @@ function syncUI(){
      ancho, y el tablero entero se achicaba 46px por lado-. Sólo cuando no
      entra vuelve a flotar sobre el borde de abajo, que es el lado seguro: la
      salida está arriba y nunca se tapa. */
-  acomodarCartel();
 
   /* los dos botones sobre el tablero, al lado de tu personaje */
   const ele = $("eleccion");
@@ -6826,7 +6906,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "c5aeea0f75";
+const VERSION = "6e08814e5c";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
