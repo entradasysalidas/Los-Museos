@@ -888,7 +888,7 @@
        no entraba, y como estaba centrado se derramaba para arriba y tapaba el
        encabezado. --pista la mide syncUI y la pone aca. */
     #boardwrap canvas{flex:0 0 auto;max-width:100%;width:auto;height:auto;
-      max-height:calc(100% - var(--pista,0px))}
+      max-height:calc(100% - var(--pista,0px) - var(--aviso,0px))}
     aside{order:2;flex:none}
     #relato{display:none}
     /* El cartel de avisos sale del flujo: reservaba una franja fija debajo del
@@ -4492,32 +4492,40 @@ function drawParedes(){
    lucecita de alarma pasa a ser si el dueño se despertó. */
 function drawSombrilla(g,c){
   const on = !c.alarm;
-  g.fillStyle="#00000026"; g.beginPath(); g.ellipse(24,40,16,5,0,0,7); g.fill();
-  /* el paño, a gajos */
-  const gajos = ["#E0554F","#F4F1E8","#E0554F","#F4F1E8","#E0554F","#F4F1E8"];
-  for(let i=0;i<6;i++){
-    g.fillStyle = gajos[i];
-    g.beginPath(); g.moveTo(24,6);
-    g.arc(24,6, 19, Math.PI + i*(Math.PI/6), Math.PI + (i+1)*(Math.PI/6));
+  const cx = 24, cy = 19, R = 13.5;            // el paño, desde arriba
+  g.fillStyle = "#00000022";
+  g.beginPath(); g.ellipse(cx+1.5, cy+2, R, R*.94, 0, 0, 7); g.fill();
+  /* ocho gajos alternados, como las de verdad */
+  const A = Math.PI / 4;
+  for(let k = 0; k < 8; k++){
+    g.fillStyle = k % 2 ? "#F4F1E8" : (on ? "#E0554F" : "#A79E96");
+    g.beginPath(); g.moveTo(cx, cy);
+    g.arc(cx, cy, R, k*A - Math.PI/2, (k+1)*A - Math.PI/2);
     g.closePath(); g.fill();
   }
-  g.fillStyle="#00000018";
-  g.beginPath(); g.moveTo(5,6); g.lineTo(43,6); g.lineTo(43,8); g.lineTo(5,8); g.fill();
-  g.fillStyle="#B98A52"; g.fillRect(23,6,2.4,26);            // el caño
-  /* la heladerita, si todavía está */
+  /* las varillas y los dos aros, que es lo que la hace leerse desde arriba */
+  g.strokeStyle = "#00000020"; g.lineWidth = 1;
+  for(let k = 0; k < 8; k++){
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(k*A - Math.PI/2) * R, cy + Math.sin(k*A - Math.PI/2) * R);
+    g.stroke();
+  }
+  for(const r of [R*.42, R*.72]){
+    g.strokeStyle = "#00000016"; g.lineWidth = 1;
+    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke();
+  }
+  g.fillStyle = "#B98A52"; g.beginPath(); g.arc(cx, cy, 2, 0, 7); g.fill();   // el caño
+  /* la heladerita, asomando abajo de la sombrilla */
   if(on && c.piece){
     const col = PIE[c.piece] ? PIE[c.piece].color : "#3F7FD6";
-    g.fillStyle="#00000022"; rr(g,13,36,22,4,2); g.fill();
-    g.fillStyle=col; rr(g,13,25,22,13,2.5); g.fill();
-    g.fillStyle="#F4F1E8"; rr(g,12,23,24,4.5,2); g.fill();   // la tapa
-    g.fillStyle="#00000020"; g.fillRect(22,27,4,2.4);        // la manija
-    g.fillStyle="#FFFFFF2E"; rr(g,15,28,6,7,1.5); g.fill();  // brillo
-  }else{
-    g.fillStyle="#00000014"; g.beginPath(); g.ellipse(24,33,11,4,0,0,7); g.fill();
-  }
-  if(!on){                                                    // el dueño se despertó
-    g.fillStyle="#E0685D"; g.beginPath(); g.arc(37,34,2.6,0,7); g.fill();
-    g.fillStyle="#E0685D33"; g.beginPath(); g.arc(37,34,6.5,0,7); g.fill();
+    g.fillStyle = "#00000022"; rr(g,15,41,18,3,1.5); g.fill();
+    g.fillStyle = col;         rr(g,15,32,18,10,2); g.fill();
+    g.fillStyle = "#F4F1E8";   rr(g,14,30,20,3.6,1.8); g.fill();      // la tapa
+    g.fillStyle = "#00000022"; g.fillRect(22,33.5,4,2);               // la manija
+    g.fillStyle = "#FFFFFF2E"; rr(g,17,34,5,5,1.2); g.fill();
+  }else if(!on){
+    g.fillStyle = "#E0685D"; g.beginPath(); g.arc(38,38,2.6,0,7); g.fill();
+    g.fillStyle = "#E0685D33"; g.beginPath(); g.arc(38,38,6.5,0,7); g.fill();
   }
 }
 
@@ -5367,6 +5375,10 @@ function drawVignette(){
    ========================================================================== */
 const $ = id=>document.getElementById(id);
 
+/* Lo que mide la franja del aviso. Fija a propósito: ver el comentario de
+   más abajo, en syncUI. */
+const ALTO_AVISO = 46;
+
 function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
@@ -5487,14 +5499,23 @@ function syncUI(){
   /* El cartel de avisos, tambien pegado al lienzo. En el telefono flota sobre
      el borde de abajo del tablero, y ese borde ya no coincide con el del
      marco. */
+  /* El aviso del jefe tiene su propia franja debajo del tablero, reservada
+     siempre. Antes flotaba encima y te tapaba la última fila justo cuando más
+     mirabas -es donde suele estar la salida o vos-. La franja es fija y no la
+     que mide el cartel de esta ronda: si dependiera del cartel, el tablero
+     cambiaría de tamaño cada vez que aparece uno. */
   const cart = $("cartel");
+  if(caja && caja.style && caja.style.setProperty)
+    caja.style.setProperty("--aviso", ALTO_AVISO + "px");
   if(cart && cart.style && cart.offsetParent && cv && cv.getBoundingClientRect){
-    /* con los rectangulos de verdad: el hueco entre el pie del tablero y el
-       pie del marco, que es lo que hay que descontar. */
     const rm = cart.offsetParent.getBoundingClientRect();
     const rc = cv.getBoundingClientRect();
-    if(rm.height && rc.height)
-      cart.style.bottom = Math.max(8, Math.round(rm.bottom - rc.bottom) + 8) + "px";
+    if(rm.height && rc.height){
+      const hueco = Math.round(rm.bottom - rc.bottom);   // lo que queda bajo el tablero
+      const alto  = cart.offsetHeight || ALTO_AVISO;
+      /* centrado en el hueco si entra; si no, pegado al borde de abajo */
+      cart.style.bottom = Math.max(6, hueco > alto ? Math.round((hueco - alto) / 2) : 6) + "px";
+    }
   }
 
   /* los dos botones sobre el tablero, al lado de tu personaje */
@@ -6781,7 +6802,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "d077943713";
+const VERSION = "6e74382820";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
