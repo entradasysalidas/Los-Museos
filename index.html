@@ -1439,6 +1439,36 @@ const POWERS = {
   negro :{n:"Siempre con el fernet", d:"Arrancás con un fernet en la mochila: por un turno te movés también en diagonal."},
 };
 
+/* Lo que cambia de nombre en cada juego. Se traduce al mostrarlo, no al
+   guardarlo: el codigo sigue hablando de vitrinas y de mates. */
+const JERGA = {
+  /* la mas larga va primera: si tradujera pieza y vitrina por separado
+     quedaba "la heladerita mas lejana a la heladerita vacia" */
+  3:[["la pieza más lejana a la vitrina vacía más cercana",
+      "la heladerita más lejana al lugar vacío más cercano"],
+     ["de una planta","de una sombrilla"],
+     ["una pieza ya en la mano","una heladerita ya en la mano"],
+     ["ninguna pieza","ninguna heladerita"],
+     ["cualquier pieza","cualquier heladerita"],
+     ["la pieza más lejana","la heladerita más lejana"],
+     ["cómplice","amigo"],
+     ["un mate en la mochila","una birra en la mochila"],
+     ["los del tablero los podés repetir","las del tablero las podés repetir"]],
+};
+function enJerga(txt){
+  const j = JERGA[JUEGO];
+  if(!j || !txt) return txt;
+  let t = txt;
+  for(const par of j) t = t.split(par[0]).join(par[1]);
+  return t;
+}
+function poderDe(quien){
+  const p = POWERS[quien];
+  if(!p) return p;
+  const d = enJerga(p.d);
+  return d === p.d ? p : {n:p.n, d:d};
+}
+
 
 /* ---------- el ropero ----------
    Un disfraz es ropa y nada mas: no toca una sola regla. Es la unica
@@ -1732,7 +1762,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero), power = POWERS[sala.hero];
+  const hero = deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero), power = poderDe(sala.hero);
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -2550,130 +2580,133 @@ const THEMES_V = {
 const FOES_3 = {
   turista    :{n:"El Turista",         look:"overol", d:"Camina y nada más. Es la playa escuela."},
   barraca    :{n:"El de la Barraca",   look:"saco",
-               d:"Cada sombrilla que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
+               d:"Cada heladerita que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
   guardavidas:{n:"El Guardavidas",     look:"guardia",
                d:"Si terminás a dos casilleros o menos en su línea recta, sin nada en el medio, te ve desde la silla y avanza uno extra.", twist:"linterna"},
   globo      :{n:"El del Globo",       look:"overol",
                d:"No te persigue: va gritando y deambula. No podés anticiparlo, así que no hay camino seguro.", twist:"azar"},
-  perro      :{n:"El Perro",           look:"perro", d:"Te huele igual: meterte en la carpa no sirve.", twist:"olfato"},
+  perro      :{n:"El Perro",           look:"perro", d:"Te huele igual: meterte abajo de una sombrilla no sirve.", twist:"olfato"},
   enojado    :{n:"El Turista Enojado", look:"traje",  d:"Te vio y no te suelta. El perseguidor clásico, sin trucos."},
   reposeras  :{n:"El de las Reposeras",look:"guardapolvo",
-               d:"Una vez por partida te deshace una entrega: la heladerita vuelve a una sombrilla. Al reentregarla, tu amigo te convida otra vez.", twist:"reponeCerca"},
+               d:"Una vez por partida te deshace una entrega: la heladerita vuelve a su lugar en la arena. Al reentregarla, tu amigo te convida otra vez.", twist:"reponeCerca"},
   sorvete    :{n:"El del Carrinho",    look:"gabardina",
-               d:"Cada vez que pasa por una toalla acomoda las sombrillas: dos heladeritas cambian de lugar.", twist:"cambia"},
+               d:"Cada vez que pasa por una toalla acomoda todo: dos heladeritas cambian de lugar.", twist:"cambia"},
   fiscal     :{n:"O Fiscal",           look:"procurador",
                d:"Anota cada objeto ruidoso que usás; al segundo, sube el sol. La birra no cuenta.", twist:"anota"},
   /* Sin el sol alto de arranque: con las dos cosas juntas daba 4% con el bot,
      mas bravo que el peor del museo. Se queda con el teletransporte, que es
      lo que lo hace distinto. */
   jetski     :{n:"El del Jet Ski",     look:"gala",
-               d:"Te persigue y aparece en las sombrillas, no en las toallas.", twist:"vitrinas"},
+               d:"Te persigue y aparece en las heladeritas, no en las toallas.", twist:"vitrinas"},
 };
 
 const SALAS_3 = {
   v0:{ num:0, name:"Playa mansa", wing:"Recién llegados", piso:"sol", afuera:"mar",
     ac:["#2F9CB8","#8FD3E4","#E6F6FA"],
     hero:"negro", foe:"turista", comps:["hippie","chuna","chupa"],
-    e:L(`M..M..
-         ..K.A.
-         T.PAQP
-         ..C..D`),
-    w:["v:3:3","v:5:3","h:6:3","h:5:4","h:4:1","h:5:1","h:4:5"],
-    v:["v:4:3","h:2:2","v:2:4"] },
-  v1:{ num:1, name:"Barraca 12", wing:"Recién llegados", piso:"sol", afuera:"mar",
-    ac:["#E0774F","#F0B292","#FDEDE4"],
-    hero:"hippie", foe:"globo", comps:["lamber","chupa","damian"],
-    e:L(`.A..M.
-         P.M...
-         .P.Q.L
-         .DC.AT`),
-    w:["v:3:4","h:2:2","v:5:3","h:5:1","h:2:1","h:4:5"],
-    v:["v:3:2","h:6:3","v:3:5"] },
-  v2:{ num:2, name:"La orilla", wing:"Media mañana", piso:"sol", afuera:"mar",
-    ac:["#2FA88C","#8CDCC9","#E4F7F2"],
-    hero:"damian", foe:"barraca", comps:["matxi","hippie","chuna"],
-    e:L(`ETM.PE
-         ...CP.
-         D.K..P
-         A..M..`),
-    w:["h:3:2","h:4:2","h:5:2","h:3:1","h:5:1","h:3:5"],
-    v:["v:4:2","v:1:5","v:1:2"] },
-  v3:{ num:3, name:"Los médanos", wing:"Media mañana", piso:"sol", afuera:"mar",
-    ac:["#D8A93C","#EDD08A","#FBF3DE"],
-    hero:"kzk", foe:"perro", comps:["negro","chuna","chupa"],
-    e:L(`D.M.T.
-         .P..Q.
-         P.M...
-         .A.KCA`),
-    w:["v:2:4","v:4:3","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"],
-    v:["v:4:5","v:2:3","v:5:2"] },
-  v4:{ num:4, name:"El parador", wing:"Mediodía", piso:"sol", afuera:"mar",
-    ac:["#C7563F","#E8A08C","#FBE8E2"],
-    hero:"lamber", foe:"fiscal", comps:["kzk","chupa","hippie"],
     e:L(`M.LM.D
          ...P..
          AT...P
          ...PC.`),
     w:["v:4:3","v:3:5","h:5:3","h:6:2","h:2:1","h:5:1"],
     v:["v:3:2","h:6:3","h:3:4"] },
-  v5:{ num:5, name:"La feirinha", wing:"Mediodía", piso:"sol", afuera:"mar",
-    ac:["#8A5FC4","#C0A3E4","#F1EAFA"],
-    hero:"chuna", foe:"reposeras", comps:["matxi","hippie","lamber"],
-    e:L(`D....C
-         .P..A.
-         .Q...P
-         .M..T.`),
-    w:["v:4:3","v:2:3","h:1:3","h:5:1","h:2:1"],
-    v:["v:1:4","h:6:4","v:3:2"] },
-  v6:{ num:6, name:"El muelle", wing:"Siesta", piso:"tarde", afuera:"mar",
-    ac:["#3F7FD6","#9CBFEC","#EAF1FB"],
-    hero:"tomy", foe:"enojado", comps:["negro","lamber","chupa"],
+  v1:{ num:1, name:"Barraca 12", wing:"Recién llegados", piso:"sol", afuera:"mar",
+    ac:["#E0774F","#F0B292","#FDEDE4"],
+    hero:"hippie", foe:"barraca", comps:["lamber","chupa","damian"],
+    e:L(`M..M..
+         ..K.A.
+         T.PAQP
+         ..C..D`),
+    w:["v:3:3","v:5:3","h:6:3","h:5:4","h:4:1","h:5:1","h:4:5"],
+    v:["v:4:3","h:2:2","v:2:4"] },
+  v2:{ num:2, name:"La orilla", wing:"Media mañana", piso:"sol", afuera:"mar",
+    ac:["#2FA88C","#8CDCC9","#E4F7F2"],
+    hero:"damian", foe:"globo", comps:["matxi","hippie","chuna"],
     e:L(`..P.TD
          ...P..
          ..AM.L
          ..P..C`),
     w:["h:5:4","v:5:4","h:5:2","h:4:1","h:3:1","h:3:5"],
     v:["h:3:4","h:6:2","h:2:2"] },
-  v7:{ num:7, name:"Praia Grande", wing:"Siesta", piso:"tarde", afuera:"mar",
-    ac:["#D8547F","#EFA3BC","#FCEAF1"],
-    hero:"matxi", foe:"guardavidas", comps:["kzk","chupa","hippie"],
-    e:L(`M....D
-         .P...P
-         ..LATP
-         .C.A..`),
-    w:["v:4:5","v:5:5","h:2:2","h:3:4","h:5:1","h:4:1","h:3:5"],
-    v:["h:6:2","h:1:2","v:3:5"] },
-  v8:{ num:8, name:"La playa de las carpas", wing:"Atardecer", piso:"tarde", afuera:"mar",
-    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
-    hero:"chupa", foe:"sorvete", comps:["tomy","hippie","lamber"],
+  v3:{ num:3, name:"Los médanos", wing:"Media mañana", piso:"sol", afuera:"mar",
+    ac:["#D8A93C","#EDD08A","#FBF3DE"],
+    hero:"kzk", foe:"jetski", comps:["negro","chuna","chupa"],
     e:L(`M.P..C
          ..K...
          .A....
          PDPLTA`),
     w:["h:3:3","h:4:2","v:2:2","h:4:1","h:5:1","h:3:5"],
     v:["v:3:2","h:4:4","h:2:3"] },
-  v9:{ num:9, name:"El último parador", wing:"Atardecer", piso:"tarde", afuera:"mar",
-    ac:["#E0553F","#F0A091","#2A1512"],
-    hero:"marian", foe:"jetski", comps:["negro","lamber","matxi"],
+  v4:{ num:4, name:"El parador", wing:"Mediodía", piso:"sol", afuera:"mar",
+    ac:["#C7563F","#E8A08C","#FBE8E2"],
+    hero:"lamber", foe:"perro", comps:["kzk","chupa","hippie"],
+    e:L(`D....C
+         .P..A.
+         .Q...P
+         .M..T.`),
+    w:["v:4:3","v:2:3","h:1:3","h:5:1","h:2:1"],
+    v:["v:1:4","h:6:4","v:3:2"] },
+  v5:{ num:5, name:"La feirinha", wing:"Mediodía", piso:"sol", afuera:"mar",
+    ac:["#8A5FC4","#C0A3E4","#F1EAFA"],
+    hero:"chuna", foe:"sorvete", comps:["matxi","hippie","lamber"],
     e:L(`APC...
          .PM.PK
          ..T...
          ....D.`),
     w:["v:5:5","h:5:3","v:3:4","h:4:1","h:2:1","h:3:5"],
     v:["h:5:4","h:1:3","h:3:3"] },
+  v6:{ num:6, name:"El muelle", wing:"Siesta", piso:"tarde", afuera:"mar",
+    ac:["#3F7FD6","#9CBFEC","#EAF1FB"],
+    hero:"tomy", foe:"enojado", comps:["negro","lamber","chupa"],
+    e:L(`ETM.PE
+         ...CP.
+         D.K..P
+         A..M..`),
+    w:["h:3:2","h:4:2","h:5:2","h:3:1","h:5:1","h:3:5"],
+    v:["v:4:2","v:1:5","v:1:2"] },
+  v7:{ num:7, name:"Praia Grande", wing:"Siesta", piso:"tarde", afuera:"mar",
+    ac:["#D8547F","#EFA3BC","#FCEAF1"],
+    hero:"matxi", foe:"fiscal", comps:["kzk","chupa","hippie"],
+    e:L(`.A..M.
+         P.M...
+         .P.Q.L
+         .DC.AT`),
+    w:["v:3:4","h:2:2","v:5:3","h:5:1","h:2:1","h:4:5"],
+    v:["v:3:2","h:6:3","v:3:5"] },
+  v8:{ num:8, name:"La playa de las carpas", wing:"Atardecer", piso:"tarde", afuera:"mar",
+    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
+    hero:"chupa", foe:"guardavidas", comps:["tomy","hippie","lamber"],
+    e:L(`M....D
+         .P...P
+         ..LATP
+         .C.A..`),
+    w:["v:4:5","v:5:5","h:2:2","h:3:4","h:5:1","h:4:1","h:3:5"],
+    v:["h:6:2","h:1:2","v:3:5"] },
+  v9:{ num:9, name:"El último parador", wing:"Atardecer", piso:"tarde", afuera:"mar",
+    ac:["#E0553F","#F0A091","#2A1512"],
+    hero:"marian", foe:"reposeras", comps:["negro","lamber","matxi"],
+    e:L(`D.M.T.
+         .P..Q.
+         P.M...
+         .A.KCA`),
+    w:["v:2:4","v:4:3","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"],
+    v:["v:4:5","v:2:3","v:5:2"] },
 };
 
+/* Un consejo por sala: la mitad habla del jefe que le toca y la otra mitad
+   del poder del que la protagoniza. Si alguna vez se vuelve a mover un jefe
+   de sala, esto hay que rehacerlo: ya quedó hablando de otro una vez. */
 const CONSEJOS_3 = {
-  v0:"El Turista camina y nada más, así que es el lugar para probar. La <b>birra</b> te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>, y podés encadenar dos o tres en el mismo turno. Ojo con la tercera.",
-  v1:"Tu poder te esconde también en la casilla de al lado de una carpa, y escondido no te encuentra ni «¡Se acerca!». Terminá el turno pegado a una y El de la Barraca no te busca esa ronda.",
-  v2:"El Guardavidas mira en línea recta desde la silla. No termines el turno alineado con él si no hay nada en el medio.",
-  v3:"El del Globo deambula: no hay ruta segura, hay que mirarlo cada ronda. Guardá el <b>F</b> para cuando quede una sola heladerita y esté lejos.",
-  v4:"El Perro te huele detrás de la carpa, así que esconderse no sirve acá. Con <b>F</b> cualquier amigo te acepta cualquier heladerita, y te la acepta desde la toalla de al lado.",
-  v5:"El Turista Enojado no tiene trucos, pero es constante. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida.",
-  v6:"El de las Reposeras te va a deshacer una entrega. Al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida.",
-  v7:"El del Carrinho mueve las heladeritas de lugar cada vez que pasa por una toalla. La primera vez que te agarren no te saca nada, así que podés arriesgar una.",
-  v8:"O Fiscal anota cada objeto que usás y al segundo sube el sol. Guardalos para la corrida final al puesto, cuando ya tengas las tres entregadas.",
-  v9:"Arranca con el sol alto y aparece en las sombrillas, no en las toallas. Robá primero la que tengas más cerca y mirá su próxima acción antes de moverte.",
+  v0:"El Turista camina y nada más, así que es el lugar para probar. Arrancás con un fernet en la mochila: mientras dure te movés también en diagonal. Y la <b>birra</b> te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
+  v1:"Cada heladerita que abrís hace avanzar a El de la Barraca al instante, así que no abras de gusto. Tu poder te esconde también en la casilla de al lado de una sombrilla, y escondido no te agarra ni «¡Se acerca!».",
+  v2:"El del Globo deambula: no hay ruta segura, hay que mirarlo cada ronda. Arrancás con una heladerita ya en la mano, así que la primera entrega la podés hacer sin robar nada.",
+  v3:"El del Jet Ski aparece en las heladeritas, no en las toallas: la que estás por abrir puede tenerlo encima. Guardá el <b>F</b> para cuando quede una sola y esté lejos.",
+  v4:"El Perro te huele igual, así que la sombrilla no te esconde acá. Con <b>F</b> cualquier amigo te acepta cualquier heladerita, y te la acepta desde la toalla de al lado.",
+  v5:"El del Carrinho cambia dos heladeritas de lugar cada vez que pasa por una toalla, así que la ruta que armaste puede dejar de servir. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida.",
+  v6:"El Turista Enojado no tiene trucos, pero es constante. Arrancás con una birra en la mochila y las del tablero las podés repetir: son pasos de más para no quedar nunca a tiro.",
+  v7:"O Fiscal anota cada objeto ruidoso que usás y al segundo sube el sol: guardalos para la corrida final al puesto. Y la primera vez que te agarren no te saca ninguna heladerita, así que podés arriesgar una.",
+  v8:"El Guardavidas mira en línea recta desde la silla. La red te corta el paso pero no te tapa: no termines el turno alineado con él aunque haya una en el medio. Empezás con un objeto extra.",
+  v9:"El de las Reposeras te va a deshacer una entrega, pero al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida. Ves su próxima acción antes de moverte: usalo para no gastar el turno en falso.",
 };
 
 const DECK_3 = [
@@ -6961,7 +6994,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "8619ee0972";
+const VERSION = "eb8b44bdfc";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
