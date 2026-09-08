@@ -2524,12 +2524,15 @@ const PIEZAS_3 = [
 ];
 
 const THEMES_V = {
-  sol  :{ oscuro:false, piso:["#F0E0BE","#EAD8B2"], patron:"porcelanato", junta:"#00000012",
-          luz:"#FFF7E2", luzA:.46, pared:"#FFFFFF", void:"#DCC79A", vineta:.05,
-          fondo:"#DCC79A", luces:false, neon:null, cartel:.5 },
-  tarde:{ oscuro:false, piso:["#EACB9E","#E0BE8E"], patron:"porcelanato", junta:"#00000018",
-          luz:"#FFE0B0", luzA:.34, pared:"#FFF6E8", void:"#C8A87A", vineta:.12,
-          fondo:"#C8A87A", luces:false, neon:null, cartel:.6 },
+  /* La luz iba al 46% y lavaba la arena hasta dejarla casi blanca. Y las
+     "paredes" acá no son paredes: son los surcos que deja el agua al bajar,
+     por eso el color de pared es arena mojada y no blanco. */
+  sol  :{ oscuro:false, piso:["#E8CE9A","#E0C48E"], patron:"arena", junta:"#00000010",
+          luz:"#FFF3D0", luzA:.14, pared:"#C39A62", void:"#F0DDB4", vineta:.04,
+          fondo:"#F0DDB4", luces:false, neon:null, cartel:.5 },
+  tarde:{ oscuro:false, piso:["#E4C08A","#DCB67E"], patron:"arena", junta:"#00000016",
+          luz:"#FFD9A0", luzA:.16, pared:"#B4864E", void:"#EACFA0", vineta:.10,
+          fondo:"#EACFA0", luces:false, neon:null, cartel:.6 },
 };
 
 const FOES_3 = {
@@ -3950,7 +3953,7 @@ function drawAfuera(g, th){
   const ESCENAS = {
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
-    cubiculos: drawCubiculos,
+    cubiculos: drawCubiculos, mar: drawMar,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -4270,11 +4273,66 @@ function buildFloorLayer(){
   }
 }
 
+/* Lo que se ve más allá de la loseta: el mar arriba, con la espuma en la
+   orilla, y la arena seca a los costados y abajo. */
+function drawMar(g, th){
+  const anchoTot = W*CS, altoTot = H*CS;
+  const orilla = (CY0 - .35) * CS;              // dónde rompe el agua
+  const mar = g.createLinearGradient(0, 0, 0, orilla);
+  mar.addColorStop(0, "#1E7FA8");
+  mar.addColorStop(.55, "#3FA6C4");
+  mar.addColorStop(1, "#7FCBDC");
+  g.fillStyle = mar; g.fillRect(0, 0, anchoTot, orilla);
+  /* tres crestas de olas, cada una más adentro */
+  for(let i=0;i<3;i++){
+    const y0 = orilla * (.42 + i*.19);
+    g.strokeStyle = "#FFFFFF"; g.globalAlpha = .18 + i*.10;
+    g.lineWidth = 2 + i;
+    g.beginPath(); g.moveTo(0, y0);
+    for(let x=0; x<=anchoTot; x+=CS/2)
+      g.lineTo(x, y0 + Math.sin((x/CS + i*1.7)) * 3.2);
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  /* la espuma de la orilla, donde el agua se termina */
+  g.fillStyle = "#FFFFFF"; g.globalAlpha = .5;
+  g.beginPath(); g.moveTo(0, orilla);
+  for(let x=0; x<=anchoTot; x+=CS/3)
+    g.lineTo(x, orilla - 5 + Math.sin(x/CS*1.6)*4);
+  g.lineTo(anchoTot, orilla + 7); g.lineTo(0, orilla + 7); g.fill();
+  g.globalAlpha = 1;
+  /* la arena seca: el resto */
+  g.fillStyle = th.fondo || "#F0DDB4";
+  g.fillRect(0, orilla, anchoTot, altoTot - orilla);
+  for(let i=0;i<90;i++){                        // conchillas y grano
+    const gx = rnd(i, 3, 1) * anchoTot, gy = orilla + rnd(i, 7, 2) * (altoTot - orilla);
+    g.fillStyle = rnd(i, 5, 4) > .5 ? "#00000012" : "#FFFFFF44";
+    g.fillRect(gx, gy, 2, 2);
+  }
+}
+
 function drawPiso(g,x,y,th){
   const px=x*CS, py=y*CS;
   g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
   g.fillRect(px,py,CS,CS);
-  if(th.patron==="alfombra"){
+  if(th.patron==="arena"){
+    /* Los surcos que deja el agua al bajar: ondas largas y paralelas, con el
+       grano fino encima. No son rectas: si lo fueran parecerían baldosas. */
+    for(let i=0;i<4;i++){
+      const y0 = py + (i + .5) * (CS/4) + rnd(x,y,i+2) * 4 - 2;
+      g.strokeStyle = i%2 ? "#00000014" : "#FFFFFF3A";
+      g.lineWidth = i%2 ? 2.2 : 1.6;
+      g.beginPath();
+      g.moveTo(px, y0);
+      g.bezierCurveTo(px+CS*.33, y0 - 3 + rnd(x,y,i+5)*6,
+                      px+CS*.66, y0 + 3 - rnd(x,y,i+8)*6, px+CS, y0);
+      g.stroke();
+    }
+    for(let i=0;i<12;i++){                      // el grano
+      g.fillStyle = rnd(x,y,i+11) > .5 ? "#00000010" : "#FFFFFF28";
+      g.fillRect(px + rnd(x,y,i+13)*CS, py + rnd(x,y,i+17)*CS, 1.6, 1.6);
+    }
+  }else if(th.patron==="alfombra"){
     /* alfombra industrial: el grano fino que tienen todas las oficinas */
     for(let i=0;i<14;i++){
       g.fillStyle = rnd(x,y,i) > .5 ? "#00000012" : "#ffffff10";
@@ -6616,7 +6674,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "8924d1d1ec";
+const VERSION = "db0bfa758a";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
