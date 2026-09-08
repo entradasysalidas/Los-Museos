@@ -1234,6 +1234,11 @@
       <span class="sello" id="sello2">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
+    <button class="tapa cerrada" id="tapa3" onclick="elegirJuego(3)" aria-pressed="false">
+      <img src="caja3.jpg" alt="Los Museos 3 · Vacaciones en la playa">
+      <span class="sello" id="sello3">🔒 Cerrado</span>
+      <span class="rotulo"><b>Los Museos 3</b><small>Vacaciones en la playa</small></span>
+    </button>
   </div>
   <button class="diaria" id="botondiaria" onclick="entrarDiaria()">
     <img src="diario.jpg" alt="Desafío diario">
@@ -1497,12 +1502,13 @@ function conDisfraz(look){
 }
 
 
-const PIECES = [
+const PIEZAS_1 = [
   {id:"rombo",     sym:"◆", name:"Rombo azul",      color:"#3F7FD6"},
   {id:"triangulo", sym:"▲", name:"Triángulo rojo",  color:"#D4534A"},
   {id:"circulo",   sym:"●", name:"Círculo naranja", color:"#E09A3C"},
 ];
-const PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
+let PIECES = PIEZAS_1;
+let PIE = Object.fromEntries(PIECES.map(p=>[p.id,p]));
 
 const OBJECTS = {
   mate1 :{ic:"🧉", n:"Mate",     d:"Recuperás los pasos que ya diste en esta ronda. Cuantos más hayas gastado, más te rinde: con los dos gastados caminás cuatro.",
@@ -1689,7 +1695,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = conDisfraz(CREW[sala.hero]), power = POWERS[sala.hero];
+  const hero = deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero), power = POWERS[sala.hero];
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -1901,6 +1907,7 @@ function leerLegajo(){
       salas     : l.salas || {},
       maratones : l.maratones || {},
       clave2    : !!l.clave2,
+      clave3    : !!l.clave3,
       diaria    : l.diaria || null,      // el desafio diario y su racha
       vistas    : Array.isArray(l.vistas) ? l.vistas
                   : (l.novedad ? [l.novedad] : []),   // avisos ya cerrados
@@ -1995,8 +2002,8 @@ const RANGOS = [
 ];
 /* Cada juego tiene su nombre corto y su rango máximo: "Dueño del museo" no
    quiere decir nada en el shopping. */
-const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping"};
-const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping"};
+const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping", 3:"De vacaciones"};
+const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping", 3:"Dueño del parador"};
 
 function rangoActual(){
   const n = salasHechas();
@@ -2405,7 +2412,7 @@ function salaDelDia(fecha){
 /* ---------- el registro del desafío diario ----------
    Un intento por día. Se guarda qué día jugaste, si ganaste y la racha, que
    es lo que después duele perder. */
-function enDiaria(){ return JUEGO === 3; }
+function enDiaria(){ return JUEGO === 9; }
 
 function leerDiaria(){
   if(!LEGAJO.diaria) LEGAJO.diaria = {ultimo:"", gano:false, rondas:0, racha:0, mejor:0, jugadas:0, ganadas:0};
@@ -2463,7 +2470,7 @@ function empezarDiaria(){
   const sala = salaDelDia();
   DIFICULTAD = dificultadDelDia(sala.semilla);   // la de hoy, igual para los nueve
   SALAS_DIA.hoy = sala;
-  cargarJuego(3);
+  cargarJuego(9);
   AZAR = rngDia(sala.semilla ^ 0x9E3779B9);
   newGame("hoy");
 }
@@ -2471,12 +2478,178 @@ function empezarDiaria(){
 const MESES_DIA = ["enero","febrero","marzo","abril","mayo","junio","julio",
                    "agosto","septiembre","octubre","noviembre","diciembre"];
 
+/* ==========================================================================
+   LOS MUSEOS DE VACACIONES · el tercero, en la playa, en Brasil
+   Mismas reglas que los otros dos, otro decorado. Lo que allá era una vitrina
+   acá es una sombrilla ajena con la heladerita abajo; el escritorio del
+   cómplice es su toalla; esconderse es meterse en una carpa; y la salida es
+   el puesto, adonde vas a comprar.
+   Las diez losetas no vienen de un manual impreso —éste no existe en papel—:
+   las tiró el mismo generador del desafío diario y se quedaron las que caen
+   en la banda de recorrido de las hechas a mano, de 25 a 35 pasos, ordenadas
+   de menos a más para que la curva suba.
+   ========================================================================== */
+
+/* Las piezas son las mismas por dentro —los ids están cableados en las losetas
+   y en las cartas— y sólo cambian de nombre y de color. */
+const PIEZAS_3 = [
+  {id:"rombo",     sym:"◆", name:"Heladerita azul",    color:"#3F7FD6"},
+  {id:"triangulo", sym:"▲", name:"Heladerita roja",    color:"#D4534A"},
+  {id:"circulo",   sym:"●", name:"Heladerita naranja", color:"#E09A3C"},
+];
+
+const THEMES_V = {
+  sol  :{ oscuro:false, piso:["#F0E0BE","#EAD8B2"], patron:"porcelanato", junta:"#00000012",
+          luz:"#FFF7E2", luzA:.46, pared:"#FFFFFF", void:"#DCC79A", vineta:.05,
+          fondo:"#DCC79A", luces:false, neon:null, cartel:.5 },
+  tarde:{ oscuro:false, piso:["#EACB9E","#E0BE8E"], patron:"porcelanato", junta:"#00000018",
+          luz:"#FFE0B0", luzA:.34, pared:"#FFF6E8", void:"#C8A87A", vineta:.12,
+          fondo:"#C8A87A", luces:false, neon:null, cartel:.6 },
+};
+
+const FOES_3 = {
+  turista    :{n:"El Turista",         look:"overol", d:"Camina y nada más. Es la playa escuela."},
+  barraca    :{n:"El de la Barraca",   look:"saco",
+               d:"Cada sombrilla que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
+  guardavidas:{n:"El Guardavidas",     look:"guardia",
+               d:"Si terminás a dos casilleros o menos en su línea recta, sin nada en el medio, te ve desde la silla y avanza uno extra.", twist:"linterna"},
+  globo      :{n:"El del Globo",       look:"overol",
+               d:"No te persigue: va gritando y deambula. No podés anticiparlo, así que no hay camino seguro.", twist:"azar"},
+  perro      :{n:"El Perro",           look:"perro", d:"Te huele igual: meterte en la carpa no sirve.", twist:"olfato"},
+  enojado    :{n:"El Turista Enojado", look:"traje",  d:"Te vio y no te suelta. El perseguidor clásico, sin trucos."},
+  reposeras  :{n:"El de las Reposeras",look:"guardapolvo",
+               d:"Una vez por partida te deshace una entrega: la heladerita vuelve a una sombrilla. Al reentregarla, tu amigo te convida otra vez.", twist:"reponeCerca"},
+  sorvete    :{n:"El del Carrinho",    look:"gabardina",
+               d:"Cada vez que pasa por una toalla acomoda las sombrillas: dos heladeritas cambian de lugar.", twist:"cambia"},
+  fiscal     :{n:"O Fiscal",           look:"procurador",
+               d:"Anota cada objeto ruidoso que usás; al segundo, sube el sol. La birra no cuenta.", twist:"anota"},
+  /* Sin el sol alto de arranque: con las dos cosas juntas daba 4% con el bot,
+     mas bravo que el peor del museo. Se queda con el teletransporte, que es
+     lo que lo hace distinto. */
+  jetski     :{n:"El del Jet Ski",     look:"gala",
+               d:"Te persigue y aparece en las sombrillas, no en las toallas.", twist:"vitrinas"},
+};
+
+const SALAS_3 = {
+  v0:{ num:0, name:"Playa mansa", wing:"Recién llegados", piso:"sol", afuera:"mar",
+    ac:["#2F9CB8","#8FD3E4","#E6F6FA"],
+    hero:"negro", foe:"turista", comps:["hippie","chuna","chupa"],
+    e:L(`......
+         ..K.A.
+         T.PAQP
+         ..C..D`),
+    w:["v:4:3","h:2:2","v:3:3","v:5:3","v:2:4","h:6:3","h:5:4","h:4:1","h:5:1","h:4:5"] },
+  v1:{ num:1, name:"Barraca 12", wing:"Recién llegados", piso:"sol", afuera:"mar",
+    ac:["#E0774F","#F0B292","#FDEDE4"],
+    hero:"hippie", foe:"globo", comps:["lamber","chupa","damian"],
+    e:L(`.A....
+         P.....
+         .P.Q.L
+         .DC.AT`),
+    w:["v:3:2","h:6:3","v:3:4","h:2:2","v:3:5","v:5:3","h:5:1","h:2:1","h:4:5"] },
+  v2:{ num:2, name:"La orilla", wing:"Media mañana", piso:"sol", afuera:"mar",
+    ac:["#2FA88C","#8CDCC9","#E4F7F2"],
+    hero:"damian", foe:"barraca", comps:["matxi","hippie","chuna"],
+    e:L(`ET..PE
+         ...CP.
+         D.K..P
+         A.....`),
+    w:["v:4:2","v:1:5","h:3:2","h:4:2","v:1:2","h:5:2","h:3:1","h:5:1","h:3:5"] },
+  v3:{ num:3, name:"Los médanos", wing:"Media mañana", piso:"sol", afuera:"mar",
+    ac:["#D8A93C","#EDD08A","#FBF3DE"],
+    hero:"kzk", foe:"perro", comps:["negro","chuna","chupa"],
+    e:L(`D...T.
+         .P..Q.
+         P.....
+         .A.KCA`),
+    w:["v:4:5","v:2:4","v:2:3","v:4:3","v:5:2","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"] },
+  v4:{ num:4, name:"El parador", wing:"Mediodía", piso:"sol", afuera:"mar",
+    ac:["#C7563F","#E8A08C","#FBE8E2"],
+    hero:"lamber", foe:"fiscal", comps:["kzk","chupa","hippie"],
+    e:L(`..LM.D
+         ...P..
+         AT...P
+         ...PC.`),
+    w:["v:3:2","v:4:3","h:3:4","v:3:5","h:6:3","h:5:3","h:6:2","h:2:1","h:5:1"] },
+  v5:{ num:5, name:"La feirinha", wing:"Mediodía", piso:"sol", afuera:"mar",
+    ac:["#8A5FC4","#C0A3E4","#F1EAFA"],
+    hero:"chuna", foe:"reposeras", comps:["matxi","hippie","lamber"],
+    e:L(`D....C
+         .P..A.
+         .Q...P
+         .M..T.`),
+    w:["v:1:4","h:6:4","v:4:3","v:2:3","v:3:2","h:1:3","h:5:1","h:2:1"] },
+  v6:{ num:6, name:"El muelle", wing:"Siesta", piso:"tarde", afuera:"mar",
+    ac:["#3F7FD6","#9CBFEC","#EAF1FB"],
+    hero:"tomy", foe:"enojado", comps:["negro","lamber","chupa"],
+    e:L(`..P.TD
+         ...P..
+         ..AM.L
+         ..P..C`),
+    w:["h:3:4","h:5:4","v:5:4","h:2:2","h:6:2","h:5:2","h:4:1","h:3:1","h:3:5"] },
+  v7:{ num:7, name:"Praia Grande", wing:"Siesta", piso:"tarde", afuera:"mar",
+    ac:["#D8547F","#EFA3BC","#FCEAF1"],
+    hero:"matxi", foe:"guardavidas", comps:["kzk","chupa","hippie"],
+    e:L(`.....D
+         .P...P
+         ..LATP
+         .C.A..`),
+    w:["h:6:2","v:4:5","h:1:2","v:5:5","h:2:2","h:3:4","v:3:5","h:5:1","h:4:1","h:3:5"] },
+  v8:{ num:8, name:"La playa de las carpas", wing:"Atardecer", piso:"tarde", afuera:"mar",
+    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
+    hero:"chupa", foe:"sorvete", comps:["tomy","hippie","lamber"],
+    e:L(`M.P..C
+         ..K...
+         .A....
+         PDPLTA`),
+    w:["v:3:2","h:4:4","h:3:3","h:4:2","v:2:2","h:2:3","h:4:1","h:5:1","h:3:5"] },
+  v9:{ num:9, name:"El último parador", wing:"Atardecer", piso:"tarde", afuera:"mar",
+    ac:["#E0553F","#F0A091","#2A1512"],
+    hero:"marian", foe:"jetski", comps:["negro","lamber","matxi"],
+    e:L(`APC...
+         .PM.PK
+         ..T...
+         ....D.`),
+    w:["h:5:4","v:5:5","h:1:3","h:5:3","h:3:3","v:3:4","h:4:1","h:2:1","h:3:5"] },
+};
+
+const CONSEJOS_3 = {
+  v0:"El Turista camina y nada más, así que es el lugar para probar. La <b>birra</b> te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>, y podés encadenar dos o tres en el mismo turno. Ojo con la tercera.",
+  v1:"Tu poder te esconde también en la casilla de al lado de una carpa, y escondido no te encuentra ni «¡Se acerca!». Terminá el turno pegado a una y El de la Barraca no te busca esa ronda.",
+  v2:"El Guardavidas mira en línea recta desde la silla. No termines el turno alineado con él si no hay nada en el medio.",
+  v3:"El del Globo deambula: no hay ruta segura, hay que mirarlo cada ronda. Guardá el <b>F</b> para cuando quede una sola heladerita y esté lejos.",
+  v4:"El Perro te huele detrás de la carpa, así que esconderse no sirve acá. Con <b>F</b> cualquier amigo te acepta cualquier heladerita, y te la acepta desde la toalla de al lado.",
+  v5:"El Turista Enojado no tiene trucos, pero es constante. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida.",
+  v6:"El de las Reposeras te va a deshacer una entrega. Al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida.",
+  v7:"El del Carrinho mueve las heladeritas de lugar cada vez que pasa por una toalla. La primera vez que te agarren no te saca nada, así que podés arriesgar una.",
+  v8:"O Fiscal anota cada objeto que usás y al segundo sube el sol. Guardalos para la corrida final al puesto, cuando ya tengas las tres entregadas.",
+  v9:"Arranca con el sol alto y aparece en las sombrillas, no en las toallas. Robá primero la que tengas más cerca y mirá su próxima acción antes de moverte.",
+};
+
+const DECK_3 = [
+  {n:"Va a la toalla de la azul",    d:"Aparece donde está tu amigo ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Va a la toalla de la roja",    d:"Aparece donde está tu amigo ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Va a la toalla de la naranja", d:"Aparece donde está tu amigo ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Va al baño",             d:"Se mete en el baño del balneario y te deja respirar.", k:"bath", ic:"🚽"},
+  {n:"Se va al agua",          d:"Se mete al mar un rato.",              k:"exit", ic:"🌊"},
+  {n:"Se va al agua",          d:"Se mete al mar un rato.",              k:"exit", ic:"🌊"},
+  {n:"Te espera en tu toalla", d:"Se planta donde dejaste todo.",        k:"mydesk", ic:"🏖️"},
+  {n:"Vuelve a su sombrilla",  d:"Se acuerda de que dejó las cosas.",    k:"home", ic:"⛱️"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Las carpas no te salvan.", k:"rush", ic:"🏃"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Las carpas no te salvan.", k:"rush", ic:"🏃"},
+];
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
   2: { n:"Los Museos 2", salas:SALAS_2, foes:FOES_2, themes:THEMES_2, deck:DECK_2,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_2 },
-  3: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
+  3: { n:"Los Museos de Vacaciones", salas:SALAS_3, foes:FOES_3, themes:THEMES_V,
+       deck:DECK_3, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_3,
+       piezas:PIEZAS_3 },
+  /* El desafío diario vive en el 9, apartado de los juegos de verdad: no es
+     uno más de la lista, es otra cosa que se sirve del mismo motor. */
+  9: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
        themes:THEMES_3, deck:DECK, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS,
        consejos:{} },
 };
@@ -2486,6 +2659,10 @@ function cargarJuego(n){
   if(!j) return false;
   AZAR = Math.random;          // el desafío diario lo vuelve a fijar después
   SALAS = j.salas; FOES = j.foes; THEMES = j.themes; DECK = j.deck;
+  /* Las piezas son las mismas por dentro y sólo cambian de nombre: en la playa
+     son heladeritas de colores, no rombos. */
+  PIECES = j.piezas || PIEZAS_1;
+  PIE = Object.fromEntries(PIECES.map(p => [p.id, p]));
   FRAME_DEF = j.frameDef; FRAME_WALLS = j.frameWalls; CONSEJOS = j.consejos;
   FRAME_MAP = null;            // se rearma con el marco del juego nuevo
   JUEGO = n;
@@ -3413,7 +3590,8 @@ function aislados(){
 const LAMINAS = {
   1:{gano:"fin.jpg"},
   2:{gano:"fin2.jpg"},
-  3:{gano:"findiario.jpg", perdio:"findiario-perdiste.jpg"},
+  /* el 3 es Vacaciones y todavía no tiene lámina; el diario es el 9 */
+  9:{gano:"findiario.jpg", perdio:"findiario-perdiste.jpg"},
 };
 function lamina(pie, alt, gano){
   const par = LAMINAS[JUEGO] || {};
@@ -4453,7 +4631,8 @@ function drawBanio(g){
 }
 
 function drawComplice(g,c){
-  const who = CREW[compOf(c.want)], piece = PIE[c.want];
+  const quien = compOf(c.want);
+  const who = deVacaciones(CREW[quien], quien), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
   g.fillStyle="#454C59"; rr(g,11,17,26,20,4); g.fill();                 // escritorio/silla
@@ -4474,16 +4653,49 @@ function drawComplice(g,c){
 }
 
 /* ---------- personas ---------- */
+/* En Vacaciones nadie está de oficina. Quién va sin remera y quién en
+   musculosa está fijo por persona, para que en las diez salas sea siempre
+   el mismo y se lo reconozca. */
+const PLAYEROS = {
+  negro:"torso", hippie:"torso", damian:"musculosa", kzk:"torso",
+  lamber:"musculosa", chuna:"musculosa", tomy:"torso", matxi:"musculosa",
+  chupa:"torso", marian:"musculosa",
+};
+function deVacaciones(look, heroKey){
+  if(JUEGO !== 3 || !look) return look;
+  const como = PLAYEROS[heroKey];
+  return como ? Object.assign({}, look, {playa:como}) : look;
+}
+
 function drawPerson(g, look, bob, alpha){
   const t = look.tall || 1;
   g.save();
   if(alpha!==undefined) g.globalAlpha=alpha;
   g.scale(1, t);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(0,15,11,4.5,0,0,7); g.fill();
-  g.fillStyle="#2B3140"; g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);      // piernas
+  const piel0 = look.skin || "#EFC08C";
+  const desnudo = look.playa === "torso";
+  /* las piernas: de vestir son pantalón, en la playa son la malla, del color
+     que le tocaba a la remera para que se lo siga reconociendo */
+  g.fillStyle = look.playa ? piel0 : "#2B3140";
+  g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);                             // piernas
+  if(look.playa){                                                              // la malla
+    g.fillStyle = look.shirt; g.fillRect(-6.5,4,5,5.5); g.fillRect(1.5,4,5,5.5);
+  }
   drawHairBack(g, look, bob);                                                  // melena, detrás de todo
-  g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();                 // remera
-  g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+  if(desnudo){                                                                 // torso al aire
+    g.fillStyle=piel0; rr(g,-9.5,-8+bob,19,15,5); g.fill();
+    g.fillStyle="#00000014"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+    /* la toalla al hombro, que es donde va el nombre cuando no hay remera */
+    g.fillStyle=look.shirt; rr(g,-9.5,-4.5+bob,19,8,2.5); g.fill();
+  }else{
+    g.fillStyle=look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();               // remera o musculosa
+    g.fillStyle="#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
+    if(look.playa === "musculosa"){                                            // hombros al aire
+      g.fillStyle=piel0;
+      g.fillRect(-9.5,-8+bob,3.2,7); g.fillRect(6.3,-8+bob,3.2,7);
+    }
+  }
   if(look.viste) vestirCuerpo(g, look.viste, bob);   // debajo del nombre, nunca encima
   if(look.tag){                                                                // nombre estampado
     g.save();
@@ -5359,7 +5571,7 @@ function dibujarCara(el, heroKey, disfrazId){
   g.scale(1.35,1.35);
   /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
      mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
-  let look = CREW[heroKey];
+  let look = deVacaciones(CREW[heroKey], heroKey);
   if(disfrazId === undefined) look = conDisfraz(look);
   else if(disfrazId && DISFRACES[disfrazId]){
     const d = DISFRACES[disfrazId];
@@ -6128,22 +6340,30 @@ function pintarFranjaDiaria(){
     : "Una sala nueva, la misma para todos" + racha;
 }
 
-function sellarTapaDos(){
-  const sel = document.getElementById("sello2");
-  if(!sel) return;
-  const abierto = elDosEstaAbierto();
-  sel.textContent = abierto ? "" : "🔒 Cerrado";
-  sel.hidden = abierto;          // ganada la tapa, la franja se va y se ve el dibujo
+/* El candado de cada tapa. Estaba escrito para la dos y ahora hay tres; con
+   una cuarta no habría que volver a tocarlo. */
+function sellarTapas(){
+  for(const n of [2, 3]){
+    const sel = document.getElementById("sello" + n);
+    if(!sel) continue;
+    const abierto = elJuegoEstaAbierto(n);
+    sel.textContent = abierto ? "" : "🔒 Cerrado";
+    sel.hidden = abierto;        // ganada la tapa, la franja se va y se ve el dibujo
+  }
 }
 
 function elegirJuego(n){
-  const t1 = document.getElementById("tapa1"), t2 = document.getElementById("tapa2");
-  JUEGO = (n === 2) ? 2 : 1;
-  if(t1){ t1.classList.toggle("elegida", JUEGO===1); t1.setAttribute("aria-pressed", JUEGO===1 ? "true" : "false"); }
-  if(t2){ t2.classList.toggle("elegida", JUEGO===2); t2.setAttribute("aria-pressed", JUEGO===2 ? "true" : "false"); }
-  sellarTapaDos();
+  JUEGO = (n === 2 || n === 3) ? n : 1;
+  for(const i of [1, 2, 3]){
+    const t = document.getElementById("tapa" + i);
+    if(!t) continue;
+    t.classList.toggle("elegida", JUEGO === i);
+    t.setAttribute("aria-pressed", JUEGO === i ? "true" : "false");
+  }
+  sellarTapas();
+  /* la casilla de la clave sale sólo si el juego elegido está cerrado */
   const fila = document.getElementById("filaclave");
-  if(fila && fila.classList) fila.classList.toggle("off", !(JUEGO===2 && !elDosEstaAbierto()));
+  if(fila && fila.classList) fila.classList.toggle("off", elJuegoEstaAbierto(JUEGO));
   textoDelPie();
 }
 
@@ -6174,7 +6394,7 @@ function prepararPortal(){
   const pie = document.getElementById("portalpie");
   if(inp && LEGAJO.nombre) inp.value = LEGAJO.nombre;
   textoDelPie();
-  sellarTapaDos();
+  sellarTapas();
   pintarFranjaDiaria();
   pintarNovedad();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
   if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
@@ -6184,10 +6404,22 @@ function prepararPortal(){
    cerradura. La página es pública y la palabra viaja en el código, así que
    cualquiera que mire el fuente la encuentra. Sirve para que no entre el que
    pasa de casualidad, no para guardar un secreto. */
-const PALABRA = "candombe";
+const PALABRA = "candombe";      // abre el shopping
+const PALABRA_3 = "caipirinha";  // abre las vacaciones
 
 /* El shopping se lo gana el que termino Los Museos. La palabra clave es para
    el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
+/* Vacaciones se abre terminando las diez del shopping EN NORMAL. La clave
+   sirve igual, para poder entrar a mirarlo sin tener que pasarlo todo. */
+function elTresEstaAbierto(){
+  if(LEGAJO.clave3) return true;
+  return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
+}
+
+function elJuegoEstaAbierto(n){
+  return n === 2 ? elDosEstaAbierto() : n === 3 ? elTresEstaAbierto() : true;
+}
+
 function elDosEstaAbierto(){
   if(LEGAJO.clave2) return true;
   const delUno = Object.keys(JUEGOS[1].salas);
@@ -6205,14 +6437,20 @@ function entrar(){
     if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
     return;
   }
-  if(JUEGO === 2 && !elDosEstaAbierto()){
+  /* Cada juego cerrado tiene su palabra. La de siempre abre el shopping y la
+     nueva las vacaciones; una no sirve para el otro. */
+  if(!elJuegoEstaAbierto(JUEGO)){
+    const suya = JUEGO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
-    if(dicha === PALABRA){
-      LEGAJO.clave2 = true;                       // ya no hace falta pedirla de nuevo
+    if(dicha === suya){
+      if(JUEGO === 3) LEGAJO.clave3 = true;       // ya no hace falta pedirla de nuevo
+      else            LEGAJO.clave2 = true;
     } else {
       if(pie) pie.innerHTML = dicha
         ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
-        : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.";
+        : (JUEGO === 3
+          ? "Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave."
+          : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
         if(cla.focus) { try{ cla.focus(); }catch(e){} }
         if(cla.animate){ try{ cla.animate(
@@ -6287,7 +6525,7 @@ function irAlDiario(){
 function salirDelDiario(aFicha){
   cerrarVuelveAlMuseo = false;
   DIFICULTAD = LEGAJO.dif || 1;      // en el desafío estaba forzada en normal
-  cargarJuego(JUEGO === 3 ? 1 : JUEGO);
+  cargarJuego(enDiaria() ? 1 : JUEGO);
   if(aFicha) ficha(); else menu();
 }
 
@@ -6324,7 +6562,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "78b7c50349";
+const VERSION = "16dbcfd34b";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
