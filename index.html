@@ -2591,7 +2591,7 @@ const SALAS_3 = {
   v0:{ num:0, name:"Playa mansa", wing:"Recién llegados", piso:"sol", afuera:"mar",
     ac:["#2F9CB8","#8FD3E4","#E6F6FA"],
     hero:"negro", foe:"turista", comps:["hippie","chuna","chupa"],
-    e:L(`......
+    e:L(`M..M..
          ..K.A.
          T.PAQP
          ..C..D`),
@@ -2599,31 +2599,31 @@ const SALAS_3 = {
   v1:{ num:1, name:"Barraca 12", wing:"Recién llegados", piso:"sol", afuera:"mar",
     ac:["#E0774F","#F0B292","#FDEDE4"],
     hero:"hippie", foe:"globo", comps:["lamber","chupa","damian"],
-    e:L(`.A....
-         P.....
+    e:L(`.A..M.
+         P.M...
          .P.Q.L
          .DC.AT`),
     w:["v:3:2","h:6:3","v:3:4","h:2:2","v:3:5","v:5:3","h:5:1","h:2:1","h:4:5"] },
   v2:{ num:2, name:"La orilla", wing:"Media mañana", piso:"sol", afuera:"mar",
     ac:["#2FA88C","#8CDCC9","#E4F7F2"],
     hero:"damian", foe:"barraca", comps:["matxi","hippie","chuna"],
-    e:L(`ET..PE
+    e:L(`ETM.PE
          ...CP.
          D.K..P
-         A.....`),
+         A..M..`),
     w:["v:4:2","v:1:5","h:3:2","h:4:2","v:1:2","h:5:2","h:3:1","h:5:1","h:3:5"] },
   v3:{ num:3, name:"Los médanos", wing:"Media mañana", piso:"sol", afuera:"mar",
     ac:["#D8A93C","#EDD08A","#FBF3DE"],
     hero:"kzk", foe:"perro", comps:["negro","chuna","chupa"],
-    e:L(`D...T.
+    e:L(`D.M.T.
          .P..Q.
-         P.....
+         P.M...
          .A.KCA`),
     w:["v:4:5","v:2:4","v:2:3","v:4:3","v:5:2","h:3:2","h:2:4","h:5:1","h:2:1","h:3:5"] },
   v4:{ num:4, name:"El parador", wing:"Mediodía", piso:"sol", afuera:"mar",
     ac:["#C7563F","#E8A08C","#FBE8E2"],
     hero:"lamber", foe:"fiscal", comps:["kzk","chupa","hippie"],
-    e:L(`..LM.D
+    e:L(`M.LM.D
          ...P..
          AT...P
          ...PC.`),
@@ -2647,7 +2647,7 @@ const SALAS_3 = {
   v7:{ num:7, name:"Praia Grande", wing:"Siesta", piso:"tarde", afuera:"mar",
     ac:["#D8547F","#EFA3BC","#FCEAF1"],
     hero:"matxi", foe:"guardavidas", comps:["kzk","chupa","hippie"],
-    e:L(`.....D
+    e:L(`M....D
          .P...P
          ..LATP
          .C.A..`),
@@ -6826,7 +6826,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "7eba12b606";
+const VERSION = "c5aeea0f75";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
