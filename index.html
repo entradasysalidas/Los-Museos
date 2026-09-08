@@ -4487,7 +4487,42 @@ function drawParedes(){
 }
 
 /* ---------- elementos ---------- */
+/* La sombrilla, y abajo la heladerita. Lo que en el museo es una vitrina con
+   la pieza adentro acá es una sombrilla ajena con la conservadora debajo: la
+   lucecita de alarma pasa a ser si el dueño se despertó. */
+function drawSombrilla(g,c){
+  const on = !c.alarm;
+  g.fillStyle="#00000026"; g.beginPath(); g.ellipse(24,40,16,5,0,0,7); g.fill();
+  /* el paño, a gajos */
+  const gajos = ["#E0554F","#F4F1E8","#E0554F","#F4F1E8","#E0554F","#F4F1E8"];
+  for(let i=0;i<6;i++){
+    g.fillStyle = gajos[i];
+    g.beginPath(); g.moveTo(24,6);
+    g.arc(24,6, 19, Math.PI + i*(Math.PI/6), Math.PI + (i+1)*(Math.PI/6));
+    g.closePath(); g.fill();
+  }
+  g.fillStyle="#00000018";
+  g.beginPath(); g.moveTo(5,6); g.lineTo(43,6); g.lineTo(43,8); g.lineTo(5,8); g.fill();
+  g.fillStyle="#B98A52"; g.fillRect(23,6,2.4,26);            // el caño
+  /* la heladerita, si todavía está */
+  if(on && c.piece){
+    const col = PIE[c.piece] ? PIE[c.piece].color : "#3F7FD6";
+    g.fillStyle="#00000022"; rr(g,13,36,22,4,2); g.fill();
+    g.fillStyle=col; rr(g,13,25,22,13,2.5); g.fill();
+    g.fillStyle="#F4F1E8"; rr(g,12,23,24,4.5,2); g.fill();   // la tapa
+    g.fillStyle="#00000020"; g.fillRect(22,27,4,2.4);        // la manija
+    g.fillStyle="#FFFFFF2E"; rr(g,15,28,6,7,1.5); g.fill();  // brillo
+  }else{
+    g.fillStyle="#00000014"; g.beginPath(); g.ellipse(24,33,11,4,0,0,7); g.fill();
+  }
+  if(!on){                                                    // el dueño se despertó
+    g.fillStyle="#E0685D"; g.beginPath(); g.arc(37,34,2.6,0,7); g.fill();
+    g.fillStyle="#E0685D33"; g.beginPath(); g.arc(37,34,6.5,0,7); g.fill();
+  }
+}
+
 function drawVitrina(g,c){
+  if(JUEGO === 3) return drawSombrilla(g,c);
   const on = !c.alarm;
   g.fillStyle="#00000035"; rr(g,9,36,30,6,3); g.fill();
   g.fillStyle="#2E3440"; rr(g,9,30,30,10,2); g.fill();       // base
@@ -4531,7 +4566,21 @@ function drawGema(g, id, cx, cy, s){
   g.restore();
 }
 
+/* La lata, con el triángulo dorado. En la playa no se toma mate. */
+function drawBirra(g){
+  g.fillStyle="#00000030"; g.beginPath(); g.ellipse(24,40,10,3.5,0,0,7); g.fill();
+  g.fillStyle="#CBD4DA"; rr(g,17,10,14,4,1.8); g.fill();      // la tapa
+  g.fillStyle="#8E9AA3"; rr(g,19.5,11,9,1.7,.8); g.fill();
+  g.fillStyle="#7FC5A3"; rr(g,17.5,13,13,26,2.4); g.fill();   // el cuerpo
+  g.strokeStyle="#D9B65A"; g.lineWidth=1.6;                    // el triángulo
+  g.beginPath(); g.moveTo(24,20); g.lineTo(29,31); g.lineTo(19,31); g.closePath(); g.stroke();
+  g.fillStyle="#D9B65A"; g.fillRect(18.5,16.4,11,1); g.fillRect(18.5,35,11,1);
+  g.fillStyle="#FFFFFF3A"; g.fillRect(19.5,14,1.8,24);         // brillo
+  g.fillStyle="#0B3A2626"; g.fillRect(28,14,1.8,24);
+}
+
 function drawMate(g){
+  if(JUEGO === 3) return drawBirra(g);
   g.fillStyle="#00000035"; rr(g,15,36,18,5,2); g.fill();
   g.fillStyle="#6B4A2A"; g.beginPath(); g.arc(24,28,10,0,7); g.fill();   // calabaza
   g.fillStyle="#4E3620"; g.beginPath(); g.arc(24,28,10,Math.PI*.15,Math.PI*.85); g.fill();
@@ -4543,7 +4592,23 @@ function drawMate(g){
   g.beginPath(); g.moveTo(20,16); g.quadraticCurveTo(20+Math.sin(t)*3,11,20,7); g.stroke();
 }
 
+/* La carpa del balneario: es donde te metés a que no te vean. */
+function drawCarpa(g){
+  g.fillStyle="#00000030"; g.beginPath(); g.ellipse(24,42,17,4.5,0,0,7); g.fill();
+  g.fillStyle="#2F9CB8";                                       // el techo
+  g.beginPath(); g.moveTo(24,6); g.lineTo(43,22); g.lineTo(5,22); g.closePath(); g.fill();
+  g.fillStyle="#F4F1E8";                                       // el gajo claro
+  g.beginPath(); g.moveTo(24,6); g.lineTo(33,22); g.lineTo(24,22); g.closePath(); g.fill();
+  g.fillStyle="#E8E4DA"; rr(g,8,22,32,19,1.5); g.fill();       // la lona
+  g.fillStyle="#2F9CB8";
+  for(let i=0;i<3;i++) g.fillRect(10 + i*10.5, 22, 4.5, 19);    // las rayas
+  g.fillStyle="#00000028";                                     // la entrada, en sombra
+  g.beginPath(); g.moveTo(19,41); g.lineTo(19,27); g.lineTo(29,27); g.lineTo(29,41); g.fill();
+  g.fillStyle="#B98A52"; g.fillRect(7,20,2,22); g.fillRect(39,20,2,22);
+}
+
 function drawPlanta(g){
+  if(JUEGO === 3) return drawCarpa(g);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,42,15,5,0,0,7); g.fill();
   g.fillStyle="#A8623C"; rr(g,13,27,22,16,3); g.fill();          // maceta
   g.fillStyle="#BA7047"; g.fillRect(11,25,26,5);
@@ -4664,7 +4729,32 @@ function drawMojado(g){
   g.textAlign="center"; g.textBaseline="middle"; g.fillText("!",24,20);
 }
 
+/* El puesto: adonde vas a comprar. Cerrado hasta que tengas las tres. */
+function drawPuestoPlaya(g,open){
+  g.fillStyle= open ? "#F0DDB4" : "#D8C49A"; g.fillRect(0,0,48,48);
+  g.fillStyle="#00000022"; rr(g,4,38,40,6,2); g.fill();
+  g.fillStyle="#C9A46E"; rr(g,6,20,36,20,2); g.fill();         // el mostrador
+  g.fillStyle="#B08B57"; g.fillRect(6,20,36,4);
+  g.strokeStyle="#00000016"; g.lineWidth=1;
+  for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(6,24+i*4); g.lineTo(42,24+i*4); g.stroke(); }
+  /* el toldo a rayas */
+  for(let i=0;i<6;i++){
+    g.fillStyle = i%2 ? "#F4F1E8" : (open ? "#E0554F" : "#9A8F86");
+    g.beginPath(); g.moveTo(3 + i*7, 16); g.lineTo(10 + i*7, 16);
+    g.lineTo(9 + i*7, 6); g.lineTo(4 + i*7, 6); g.closePath(); g.fill();
+  }
+  g.fillStyle="#B98A52"; g.fillRect(4,5,40,2);
+  g.fillStyle= open ? "#2A5C3E" : "#6E6A64";                    // el cartelito
+  rr(g,13,26,22,9,1.5); g.fill();
+  g.fillStyle= open ? "#EAFFF5" : "#C9C4BC";
+  g.font="bold 6.5px system-ui"; g.textAlign="center"; g.textBaseline="middle";
+  g.fillText(open ? "ABIERTO" : "CERRADO", 24, 30.5);
+  if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(121,174,158,${.08+p*.16})`; g.fillRect(0,0,48,48); }
+}
+
 function drawSalida(g,open){
+  if(JUEGO === 3) return drawPuestoPlaya(g,open);
   g.fillStyle="#232830"; g.fillRect(0,0,48,48);
   g.fillStyle=open?"#2C4A3A":"#2E333C"; g.fillRect(8,12,32,36);         // puerta
   g.strokeStyle=open?"#79AE9E":"#4A505C"; g.lineWidth=2; g.strokeRect(8,12,32,36);
@@ -4724,7 +4814,15 @@ function drawComplice(g,c){
   const who = deVacaciones(CREW[quien], quien), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
-  g.fillStyle="#454C59"; rr(g,11,17,26,20,4); g.fill();                 // escritorio/silla
+  if(JUEGO === 3){
+    /* la toalla tendida, con las rayas de siempre */
+    g.fillStyle="#F4F1E8"; rr(g,8,20,32,18,2); g.fill();
+    g.fillStyle= piece.color;
+    for(let i=0;i<3;i++) g.fillRect(10, 23 + i*5, 28, 2.6);
+    g.fillStyle="#00000012"; rr(g,8,20,32,3,2); g.fill();
+  }else{
+    g.fillStyle="#454C59"; rr(g,11,17,26,20,4); g.fill();               // escritorio/silla
+  }
   g.save(); g.translate(24,26); g.scale(.86,.86);
   drawPerson(g, who, 0, done?.5:1);
   g.restore();
@@ -5689,14 +5787,23 @@ function temaDeSala(sala){
      cualquier tinte salta. La alfombra clara necesita mucho más para que se
      note, sobre todo en el vacío de alrededor, que es puro fondo. */
   const oscuro = !!base.oscuro;
+  /* En la playa la arena es arena, sea cual sea el color de la sala. El museo
+     y el shopping se tiñen fuerte porque su piso es gris y el tinte es lo que
+     le da identidad a cada sala; acá la arena YA tiene color propio y al 24%
+     un acento turquesa la dejaba verde. El acento sigue estando en el borde de
+     la tarjeta, el número y las bolitas, que es donde se lee la sala. */
+  const arena = base.patron === "arena";
+  const kPiso  = arena ? 0.05 : (oscuro ? 0.13 : 0.24);
+  const kLuz   = arena ? 0.12 : (oscuro ? 0.30 : 0.45);
+  const kPared = arena ? 0.04 : (oscuro ? 0.05 : 0.09);
+  const kFondo = arena ? 0.07 : (oscuro ? 0.16 : 0.34);
   return Object.assign({}, base, {
     afuera: sala.afuera || null,
-    piso  : oscuro ? [mezcla(base.piso[0], ac, 0.13), mezcla(base.piso[1], ac, 0.13)]
-                   : [mezcla(base.piso[0], ac, 0.24), mezcla(base.piso[1], ac, 0.24)],
-    luz   : mezcla(base.luz, ac, oscuro ? 0.30 : 0.45),
-    pared : mezcla(base.pared, ac, oscuro ? 0.05 : 0.09),
-    void  : mezcla(base.void, ac, oscuro ? 0.16 : 0.34),
-    fondo : mezcla(base.fondo, ac, oscuro ? 0.16 : 0.34),
+    piso  : [mezcla(base.piso[0], ac, kPiso), mezcla(base.piso[1], ac, kPiso)],
+    luz   : mezcla(base.luz, ac, kLuz),
+    pared : mezcla(base.pared, ac, kPared),
+    void  : mezcla(base.void, ac, kFondo),
+    fondo : mezcla(base.fondo, ac, kFondo),
     junta : base.junta,
   });
 }
@@ -6674,7 +6781,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "db0bfa758a";
+const VERSION = "d077943713";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
