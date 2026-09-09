@@ -871,7 +871,11 @@
        ve igual de grande que antes, y si no, se achica en vez de empujar. El
        piso de 220px es para que en una pantalla muy baja no quede un sello: en
        ese caso vuelve a scrollear, que es preferible a no poder jugar. */
-    #app{height:100dvh;display:flex;flex-direction:column}
+    /* La columna mide por lo menos la pantalla, pero puede pasarse: el mapa
+       se sirve primero y entero, y si lo de abajo no entra, la página
+       scrollea un poco. Antes era al revés -alto fijo y el mapa se quedaba
+       con lo que sobraba- y por eso cambiaba de tamaño en cada pantalla. */
+    #app{min-height:100dvh;display:flex;flex-direction:column}
     #stage{display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-height:0}
     /* en columna: el tablero arriba y lo que lo acompaña abajo, todo pegado
        y el sobrante repartido. En fila, con el juego agregado a la pantalla
@@ -884,7 +888,7 @@
     #boardwrap{order:1;width:100%;margin:0;padding:0;
       background:var(--afuera,transparent);border:0;
       border-radius:12px;overflow:hidden;box-shadow:var(--shadow);
-      flex:1 1 auto;min-height:220px;position:relative;
+      flex:0 0 auto;position:relative;
       display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
     /* flex:none es la clave. Si el lienzo es un item flexible, el flex le fija
        primero el ancho y después max-height le recorta el alto: queda
@@ -892,8 +896,8 @@
        la imagen misma y el cuadrado se mantiene.
        Y el marco —borde, curva y sombra— se lo lleva el mapa, que es lo que se
        mira: así el borde lo sigue exactamente, sin franja de por medio. */
-    #boardwrap canvas{flex:0 0 auto;max-width:100%;max-height:calc(100% - 50px);
-      width:auto;height:auto;border:0;border-radius:0;box-shadow:none}
+    #boardwrap canvas{flex:0 0 auto;width:100%;height:auto;
+      max-width:100%;max-height:none;border:0;border-radius:0;box-shadow:none}
     /* La barra de pistas va abajo del mapa, no encima. Y no le cuesta tamaño:
        en un teléfono normal al mapa lo limita el ancho y de alto le sobra
        justo esta franja. Los márgenes los pone acomodarSobreElMapa, para que
@@ -990,6 +994,21 @@
     .slot.hand .ic{font-size:23px}
     .slot .nm{font-size:8.5px;line-height:1.15}
     .slot .st{display:none}
+
+    /* ---- que todo lo demás entre en lo que queda ----
+       El mapa ya no cede: lo que se aprieta es esto. Nada desaparece;
+       cambian los tamaños. */
+    .kicker{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stat{padding:6px 10px}
+    .stat .lbl{font-size:8.5px}
+    .stat .val{font-size:20px;margin-top:3px}
+    .stat .val small{font-size:11px}
+    .alertpips{margin-top:5px;gap:3px}
+    .apip{height:5px}
+    .deckwrap{min-height:44px;margin-top:6px}
+    .deckcard{min-height:44px;padding:6px 9px}
+    /* cuántas cartas le quedan ya lo dice la pila dibujada al lado */
+    .deckfoot{display:none}
 
     /* la ficha, que es lo que se saca por captura */
     .fichacab{grid-template-columns:1fr}
@@ -7098,7 +7117,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "0537bdfa5a";
+const VERSION = "4e87d7b22a";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
