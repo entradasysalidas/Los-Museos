@@ -1674,61 +1674,61 @@ let THEMES = {
    w: paredes, en aristas. Se dibujan con el editor y se guardan acá.        --- */
 const L = (s)=>s.trim().split("\n").map(r=>r.trim());
 let SALAS = {
-  tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris", ac:["#4B44B8","#9A95E2","#EAE8FB"],
+  tutorial:{ num:0, name:"Vestíbulo", wing:"Pasantía", piso:"gris", afuera:"atrio", ac:["#4B44B8","#9A95E2","#EAE8FB"],
     hero:"negro", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`A....A
          .C.D.P
          .M.M..
          T..PP.`), w:["v:1:3","v:1:4","h:2:4","h:4:4","v:3:3","h:6:3","h:6:2","v:5:5","h:5:1","h:4:1"] },
-  n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris", ac:["#B4531A","#E0A077","#FBEDE3"],
+  n1:{ num:1, name:"Depósito de embalaje", wing:"Mini Pyme", piso:"gris", afuera:"estacionamiento", ac:["#B4531A","#E0A077","#FBEDE3"],
     hero:"hippie", foe:"encargado", comps:["chupa","marian","tomy"],
     e:L(`D.P.P.
          ..A.M.
          .A..P.
          C.TM..`), w:["v:1:2","v:2:2","h:3:2","h:5:2","v:3:5","h:4:4","h:5:4","h:1:4","h:5:1","h:3:1","h:4:1"] },
-  n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris", ac:["#1E7A72","#86C4BE","#E3F3F1"],
+  n2:{ num:2, name:"Sala de Arqueología", wing:"Mini Pyme", piso:"gris", afuera:"pasillo", ac:["#1E7A72","#86C4BE","#E3F3F1"],
     hero:"damian", foe:"curador", comps:["lamber","chuna","kzk"],
     e:L(`MPP..P
          ..A...
          T.A...
          M..C.D`), w:["v:1:2","v:2:2","h:3:2","h:1:4","v:1:5","v:3:5","v:5:5","v:5:2","h:5:1","h:3:1","h:4:1"] },
-  n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris", ac:["#2A5CA8","#91B2DE","#E6EDF8"],
+  n3:{ num:3, name:"Oficinas administrativas", wing:"Mini Pyme", piso:"gris", afuera:"cubiculos", ac:["#2A5CA8","#91B2DE","#E6EDF8"],
     hero:"kzk", foe:"director", comps:["matxi","hippie","damian"],
     e:L(`.AD.MP
          .C....
          ......
          P.TMPA`), w:["v:3:5","h:4:4","v:4:5","v:5:5","v:5:2","v:3:2","h:1:2","v:1:5","h:5:1","h:4:1"] },
-  n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris", ac:["#A81E6E","#DE8FBC","#FAE6F1"],
+  n4:{ num:4, name:"Arte Moderno", wing:"S.R.L.", piso:"gris", afuera:"atrio", ac:["#A81E6E","#DE8FBC","#FAE6F1"],
     hero:"lamber", foe:"seguridad", comps:["tomy","marian","chupa"],
     e:L(`...DP.
          P...M.
          .M..A.
          .TPA.C`), w:["v:1:3","v:1:4","h:2:4","v:2:5","v:3:5","v:5:5","h:4:2","h:5:2","h:5:1","h:4:1","h:3:5"] },
-  n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera", ac:["#4FC3D9","#2C6B78","#0E2429"],
+  n5:{ num:5, name:"Archivo y sótano", wing:"S.R.L.", piso:"madera", afuera:"pasillo", ac:["#4FC3D9","#2C6B78","#0E2429"],
     hero:"chuna", foe:"procurad", comps:["damian","matxi","lamber"],
     e:L(`LTP.AC
          ...PAP
          ..L...
          D.....`), w:["h:2:2","h:3:2","h:4:3","v:4:4","h:4:4","v:5:3","v:5:4","v:2:2","h:1:3","h:5:1","h:3:1","h:2:1"] },
-  n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera", ac:["#6FCB6A","#3A6E38","#10240F"],
+  n6:{ num:6, name:"Ciencias Naturales", wing:"S.A.", piso:"madera", afuera:"butacas", ac:["#6FCB6A","#3A6E38","#10240F"],
     hero:"tomy", foe:"perro", comps:["hippie","kzk","chuna"],
     e:L(`P.P.LT
          A.....
          .DL...
          ...PAC`), w:["h:1:2","v:2:2","h:3:2","h:6:2","v:3:5","v:5:5","h:4:3","h:5:3","h:3:1","h:5:1"] },
-  n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera", ac:["#58D0B4","#2E6F60","#0D2621"],
+  n7:{ num:7, name:"Taller de Restauración", wing:"S.A.", piso:"madera", afuera:"pasillo", ac:["#58D0B4","#2E6F60","#0D2621"],
     hero:"matxi", foe:"restaura", comps:["chupa","damian","marian"],
     e:L(`.....A
          T.L.PC
          ..L...
          P.A.PD`), w:["h:1:2","h:1:3","h:5:2","v:1:5","v:3:5","h:4:2","v:4:3","h:4:3","h:5:1","h:3:1","h:2:1","h:4:5"] },
-  n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera", ac:["#C6D94F","#6C7629","#1F220C"],
+  n8:{ num:8, name:"Patio de Esculturas", wing:"Multinacional", piso:"madera", afuera:"atrio", ac:["#C6D94F","#6C7629","#1F220C"],
     hero:"chupa", foe:"inspector", comps:["lamber","tomy","hippie"],
     e:L(`P.A...
          .LC.D.
          ...L.A
          .P.T.P`), w:["v:1:2","h:3:2","h:1:3","h:2:4","v:2:5","v:3:5","v:4:5","v:2:4","h:6:4","h:5:1"] },
-  n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera", ac:["#E0B44C","#8A6B31","#241C0C"],
+  n9:{ num:9, name:"Gran Galería", wing:"Multinacional", piso:"madera", afuera:"atrio", ac:["#E0B44C","#8A6B31","#241C0C"],
     hero:"marian", foe:"general", comps:["chuna","matxi","kzk"],
     e:L(`.A.A.P
          P.C...
@@ -7075,7 +7075,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "575b968f33";
+const VERSION = "ab45993896";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
