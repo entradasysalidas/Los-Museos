@@ -877,35 +877,39 @@
        y el sobrante repartido. En fila, con el juego agregado a la pantalla
        de inicio -donde el cartel va en el flujo y no flotando- el aviso
        quedaba suelto abajo, lejos del tablero. */
-    #boardwrap{order:1;width:fit-content;max-width:100%;align-self:center;
-      margin:0;flex:1 1 auto;min-height:220px;
+    /* La caja del tablero no se ve: es sólo el lugar que le toca al mapa. Así
+       su alto es un número conocido —el que le deja la columna— y el lienzo
+       puede pedirle el suyo sin morderse la cola. Y no queda ningún contorno
+       alrededor del mapa, porque no hay caja que se vea. */
+    #boardwrap{order:1;width:100%;margin:0;padding:0;
+      background:none;border:0;box-shadow:none;
+      flex:1 1 auto;min-height:220px;position:relative;
       display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
-    /* la barra flota sobre el borde de abajo del mapa, como el aviso: si va
-       en el flujo le come alto a la caja, y el mapa -que es cuadrado- lo
-       paga también de ancho y deja de llegar al costado */
-    #boardwrap .hintbar{position:absolute;left:10px;right:10px;bottom:10px;
-      width:auto;min-width:0;z-index:4;box-shadow:0 6px 20px #00000040}
     /* flex:none es la clave. Si el lienzo es un item flexible, el flex le fija
-       primero el ancho y despues max-height le recorta el alto: queda
+       primero el ancho y después max-height le recorta el alto: queda
        aplastado. Sin flexionar, el par max-width/max-height se resuelve sobre
        la imagen misma y el cuadrado se mantiene.
-       Y el 100% del alto es el de la caja, pero adentro de la caja tambien va
-       la barra de pistas: sin descontarla el lienzo pedia mas de lo que hay,
-       no entraba, y como estaba centrado se derramaba para arriba y tapaba el
-       encabezado. --pista la mide syncUI y la pone aca. */
-    #boardwrap canvas{flex:0 0 auto;max-width:100%;width:auto;height:auto;
-      border-radius:6px;max-height:100%}
-    aside{order:2;flex:none}
-    #relato{display:none}
-    /* El aviso va encimado a la barra de pistas, en la franja que ella ya
-       ocupa abajo del tablero. Las otras dos formas no sirven: reservarle
-       una franja propia le come alto al lienzo -que es cuadrado, así que lo
-       pierde por los dos lados-, y colgarlo abajo de la caja le tapa la
-       tarjeta del héroe. Encimado no cuesta nada y dura 2,8 segundos. */
-    #boardwrap{position:relative}
-    #cartel{position:absolute;left:8px;right:8px;bottom:8px;z-index:5;
+       Y el marco —borde, curva y sombra— se lo lleva el mapa, que es lo que se
+       mira: así el borde lo sigue exactamente, sin franja de por medio. */
+    #boardwrap canvas{flex:0 0 auto;max-width:100%;max-height:100%;
+      width:auto;height:auto;border-radius:12px;
+      border:1px solid color-mix(in srgb, var(--brass) 26%, var(--line));
+      box-shadow:var(--shadow)}
+    /* La barra de pistas va abajo del mapa, no encima. Y no le cuesta tamaño:
+       en un teléfono normal al mapa lo limita el ancho y de alto le sobra
+       justo esta franja. Los márgenes los pone acomodarSobreElMapa, para que
+       quede del ancho del mapa aunque el mapa se achique. */
+    #boardwrap .hintbar{position:static;align-self:stretch;width:auto;
+      min-width:0;margin-top:8px;border-radius:9px}
+    /* El aviso sí se encima a la barra: es el mismo renglón y dura 2,8
+       segundos. Dónde apoyarlo también lo pone acomodarSobreElMapa. */
+    #boardwrap #cartel{position:absolute;z-index:5;
       min-height:0;padding:8px 14px;font-size:14px;pointer-events:none;
       background:var(--panel);border-radius:9px;box-shadow:0 8px 24px #00000055}
+    /* lo que acompaña al mapa va debajo, en una sola columna, y el
+       registro largo no entra en el teléfono */
+    aside{order:2;flex:none}
+    #relato{display:none}
 
     /* y vos entrás en una sola línea: los pasos al lado del nombre, no debajo */
     #cartayo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
@@ -1745,9 +1749,52 @@ const fx = { floats:[], shake:0, banner:null };
    Se llama al mostrarlo y no sólo desde syncUI: el aviso aparece por su
    cuenta y si no quedaba un cuadro colocado donde estaba el anterior. */
 
+/* Las dos tiras que flotan sobre el mapa -la barra de pistas y el aviso- van
+   pegadas al borde de abajo del mapa, no al de su caja: la caja ocupa todo
+   el ancho y el mapa es cuadrado, así que cuando sobra alto las tiras
+   quedarían colgando abajo, en el aire. */
+function acomodarSobreElMapa(){
+  if(typeof $ !== "function") return;
+  const caja = $("boardwrap");
+  if(!caja || !caja.querySelector || !caja.offsetParent) return;
+  const lienzo = caja.querySelector("canvas");
+  if(!lienzo || !lienzo.offsetHeight) return;
+  /* esto es sólo del teléfono: en pantalla grande la barra y el aviso van en
+     el flujo y moverlos a mano les correría los márgenes de gusto */
+  if(typeof matchMedia === "function" && !matchMedia("(max-width:860px)").matches) return;
+  /* el mapa es cuadrado y la caja ocupa todo el ancho: cuando el alto es el
+     que manda, el mapa queda más angosto y hay que correr las tiras */
+  const lado = Math.max(0, Math.round((caja.clientWidth - lienzo.offsetWidth) / 2));
+  const barra = $("hint");
+  if(barra && barra.style){
+    barra.style.marginLeft = lado + "px";
+    barra.style.marginRight = lado + "px";
+  }
+  /* el aviso se apoya sobre la barra si la hay, y si no justo abajo del mapa */
+  const cart = $("cartel");
+  if(cart && cart.style){
+    /* si hay barra, el aviso se apoya justo encima de ella. Si no hay, se
+       mete adentro del borde de abajo del mapa: afuera no hay lugar -la caja
+       termina donde termina el mapa- y quedaba pisando la tarjeta de abajo. */
+    const alto = cart.offsetHeight || 38;
+    const arriba = (barra && barra.offsetHeight)
+      ? barra.offsetTop
+      : Math.max(0, lienzo.offsetTop + lienzo.offsetHeight - alto - 8);
+    cart.style.top = arriba + "px";
+    cart.style.bottom = "auto";
+    cart.style.left = lienzo.offsetLeft + "px";
+    cart.style.right = Math.max(0, caja.clientWidth - lienzo.offsetLeft - lienzo.offsetWidth) + "px";
+  }
+}
+if(typeof addEventListener === "function"){
+  addEventListener("resize", acomodarSobreElMapa);
+  addEventListener("orientationchange", acomodarSobreElMapa);
+}
+
 function banner(txt,color){
   fx.banner={txt, color:color||"#EAE8E2", t:0};
   if(typeof pintarCartel==="function") pintarCartel(txt, color);
+  acomodarSobreElMapa();
 }
 
 const CH2TYPE = {P:"vitrina", Q:"vitrina", M:"mate", A:"planta", L:"banana", K:"camara", E:"escalera",
@@ -5810,6 +5857,7 @@ function syncUI(){
   $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
   $("hint").innerHTML = pistas.map(p => enJerga(p)).map(p =>
     /^<button/.test(p) ? p : '<span class="p">' + p + '</span>').join("");
+  acomodarSobreElMapa();
 
   renderLog();
   if(typeof syncEditor==="function") syncEditor();
@@ -7027,7 +7075,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "7497b0a86f";
+const VERSION = "575b968f33";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
