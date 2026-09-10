@@ -4911,6 +4911,7 @@ function drawCamara(g, c, x, y){
   const cam = (S.marks.camaras || []).find(k => k.x===x && k.y===y);
   const dir = cam ? haciaDondeMira(cam) : [1,0];
   const ang = Math.atan2(dir[1], dir[0]);
+  if(JUEGO === 3) return drawFaro(g, ang);
   g.save();
   g.translate(24, 20);
   g.fillStyle="#00000028"; g.beginPath(); g.ellipse(0,17,10,3.4,0,0,7); g.fill();
@@ -4921,6 +4922,40 @@ function drawCamara(g, c, x, y){
   g.fillStyle="#8FD3E8"; g.beginPath(); g.arc(8.7,-.4,1.5,0,7); g.fill();
   g.fillStyle="#E0685D"; g.beginPath(); g.arc(-6,-1.5,1.5,0,7); g.fill(); // la lucecita
   g.restore();
+}
+
+
+/* El faro chiquito: la cámara de la playa. Gira la luz, no la torre. */
+function drawFaro(g, ang){
+  g.fillStyle="#00000028"; g.beginPath(); g.ellipse(24,40,11,3.6,0,0,7); g.fill();
+  /* la base de piedra */
+  g.fillStyle="#B9B2A4"; rr(g,15,33,18,7,2); g.fill();
+  g.fillStyle="#00000018"; g.fillRect(15,38,18,2);
+  /* la torre, a franjas: se va angostando hacia arriba */
+  const franjas = [[34,9.5,"#F4F1E8"],[28.5,8.8,"#E0554F"],[23,8.1,"#F4F1E8"],
+                   [17.5,7.4,"#E0554F"],[12,6.7,"#F4F1E8"]];
+  for(const f of franjas){
+    const y = f[0], an = f[1], col = f[2];
+    g.fillStyle = col; rr(g, 24-an, y, an*2, 5.8, 1); g.fill();
+    g.fillStyle = "#00000010"; g.fillRect(24+an*0.35, y, an*0.65, 5.8);
+  }
+  /* la galería y el techo */
+  g.fillStyle="#8A5F32"; rr(g,15.5,10,17,2.6,1); g.fill();
+  g.fillStyle="#3E4650"; rr(g,17.5,3.5,13,3,1); g.fill();
+  g.fillStyle="#3E4650"; g.beginPath();
+  g.moveTo(24,0); g.lineTo(31,4); g.lineTo(17,4); g.closePath(); g.fill();
+  /* la linterna: el vidrio y, adentro, la lámpara que sí gira */
+  g.fillStyle="#BFE8F4"; rr(g,18.5,4.5,11,6,1.5); g.fill();
+  g.save();
+  g.translate(24, 7.5); g.rotate(ang);
+  g.fillStyle="#FFD24A"; g.beginPath(); g.arc(0,0,2.6,0,7); g.fill();
+  g.fillStyle="#FFF3C4"; g.beginPath(); g.arc(.6,-.6,1.2,0,7); g.fill();
+  /* el destello, apuntando adonde barre */
+  g.globalAlpha=.55; g.fillStyle="#FFE9A8";
+  g.beginPath(); g.moveTo(2,-2.4); g.lineTo(11,-4.2); g.lineTo(11,4.2); g.lineTo(2,2.4);
+  g.closePath(); g.fill(); g.globalAlpha=1;
+  g.restore();
+  g.fillStyle="#00000014"; rr(g,18.5,4.5,11,1.4,1); g.fill();
 }
 
 /* la escalera mecánica: los escalones y la flecha del sentido */
@@ -7156,7 +7191,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "2ab64748c3";
+const VERSION = "6c3d6aa49a";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
