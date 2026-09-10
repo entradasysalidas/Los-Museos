@@ -4986,27 +4986,63 @@ function drawMojado(g){
 }
 
 /* El puesto: adonde vas a comprar. Cerrado hasta que tengas las tres. */
+/* El puesto: adonde vas a comprar. Cerrado hasta que tengas las tres.
+   Abierto, atrás se abre el mar y bajan las escaleras del muelle. */
 function drawPuestoPlaya(g,open){
-  g.fillStyle= open ? "#F0DDB4" : "#D8C49A"; g.fillRect(0,0,48,48);
+  if(open){
+    /* el agua, del mismo azul con el que se pinta el mar de afuera */
+    const agua = g.createLinearGradient(0,0,0,48);
+    agua.addColorStop(0,"#7FCBDC"); agua.addColorStop(.55,"#3FA6C4");
+    agua.addColorStop(1,"#1E7FA8");
+    g.fillStyle=agua; g.fillRect(0,0,48,48);
+    g.strokeStyle="#FFFFFF"; g.lineWidth=1.4;                    // dos olitas
+    for(let k=0;k<2;k++){
+      g.globalAlpha=.30+k*.14;
+      const y=30+k*8; g.beginPath(); g.moveTo(0,y);
+      for(let x=0;x<=48;x+=6) g.lineTo(x, y + Math.sin(x/5+k)*1.6);
+      g.stroke();
+    }
+    g.globalAlpha=1;
+    /* las escaleras del muelle, bajando al agua: cada escalón más angosto */
+    for(let k=0;k<4;k++){
+      const an = 30 - k*4, y = 16 + k*7;
+      g.fillStyle="#00000026"; rr(g,(48-an)/2, y+1.5, an, 6, 1.5); g.fill();
+      g.fillStyle= k%2 ? "#C29C69" : "#C9A472"; rr(g,(48-an)/2, y, an, 6, 1.5); g.fill();
+      g.fillStyle="#FFFFFF22"; g.fillRect((48-an)/2, y, an, 1.2);
+    }
+    /* los pasamanos, que es lo que la hace escalera y no rampa */
+    g.strokeStyle="#A9763F"; g.lineWidth=2.2; g.lineCap="round";
+    for(const s of [-1,1]){
+      g.beginPath();
+      g.moveTo(24 + s*16, 13); g.lineTo(24 + s*8.5, 40); g.stroke();
+    }
+    g.fillStyle="#8A5F32";
+    g.fillRect(6,11,36,2.6);                                     // el borde del muelle
+    /* y el cartel, que ahora dice adónde se va */
+    g.fillStyle="#2A5C3E"; rr(g,8,2,32,9,1.5); g.fill();
+    g.fillStyle="#EAFFF5"; g.font="bold 6px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText("AL AGUA", 24, 6.9);
+    const p=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(121,174,158,${.06+p*.12})`; g.fillRect(0,0,48,48);
+    return;
+  }
+  g.fillStyle="#D8C49A"; g.fillRect(0,0,48,48);
   g.fillStyle="#00000022"; rr(g,4,38,40,6,2); g.fill();
   g.fillStyle="#C9A46E"; rr(g,6,20,36,20,2); g.fill();         // el mostrador
   g.fillStyle="#B08B57"; g.fillRect(6,20,36,4);
   g.strokeStyle="#00000016"; g.lineWidth=1;
   for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(6,24+i*4); g.lineTo(42,24+i*4); g.stroke(); }
-  /* el toldo a rayas */
-  for(let i=0;i<6;i++){
-    g.fillStyle = i%2 ? "#F4F1E8" : (open ? "#E0554F" : "#9A8F86");
+  for(let i=0;i<6;i++){                                        // el toldo a rayas
+    g.fillStyle = i%2 ? "#F4F1E8" : "#9A8F86";
     g.beginPath(); g.moveTo(3 + i*7, 16); g.lineTo(10 + i*7, 16);
     g.lineTo(9 + i*7, 6); g.lineTo(4 + i*7, 6); g.closePath(); g.fill();
   }
   g.fillStyle="#B98A52"; g.fillRect(4,5,40,2);
-  g.fillStyle= open ? "#2A5C3E" : "#6E6A64";                    // el cartelito
-  rr(g,13,26,22,9,1.5); g.fill();
-  g.fillStyle= open ? "#EAFFF5" : "#C9C4BC";
+  g.fillStyle="#6E6A64"; rr(g,13,26,22,9,1.5); g.fill();       // el cartelito
+  g.fillStyle="#C9C4BC";
   g.font="bold 6.5px system-ui"; g.textAlign="center"; g.textBaseline="middle";
-  g.fillText(open ? "ABIERTO" : "CERRADO", 24, 30.5);
-  if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
-    g.fillStyle=`rgba(121,174,158,${.08+p*.16})`; g.fillRect(0,0,48,48); }
+  g.fillText("CERRADO", 24, 30.5);
 }
 
 function drawSalida(g,open){
@@ -7120,7 +7156,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "cb84db2274";
+const VERSION = "2ab64748c3";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
