@@ -2674,14 +2674,17 @@ const PIEZAS_3 = [
 ];
 
 const THEMES_V = {
-  /* La luz iba al 46% y lavaba la arena hasta dejarla casi blanca. Y las
-     "paredes" acá no son paredes: son los surcos que deja el agua al bajar,
-     por eso el color de pared es arena mojada y no blanco. */
+  /* La luz iba al 46% y lavaba la arena hasta dejarla casi blanca.
+     Las paredes van del color del muelle, el mismo del recuadro del
+     tablero: probamos con arena mojada -que es lo que dejaría el agua- y
+     contra la madera del muelle no se distinguían, así que en los bordes
+     no se sabía dónde terminaba una cosa y empezaba la otra. Una sola
+     madera para todo lo que corta el paso. */
   sol  :{ oscuro:false, piso:["#E8CE9A","#E0C48E"], patron:"arena", junta:"#00000010",
-          luz:"#FFF3D0", luzA:.14, pared:"#C39A62", void:"#F0DDB4", vineta:.04,
+          luz:"#FFF3D0", luzA:.14, pared:"#8A5F32", void:"#F0DDB4", vineta:.04,
           fondo:"#F0DDB4", luces:false, neon:null, cartel:.5 },
   tarde:{ oscuro:false, piso:["#E4C08A","#DCB67E"], patron:"arena", junta:"#00000016",
-          luz:"#FFD9A0", luzA:.16, pared:"#B4864E", void:"#EACFA0", vineta:.10,
+          luz:"#FFD9A0", luzA:.16, pared:"#8A5F32", void:"#EACFA0", vineta:.10,
           fondo:"#EACFA0", luces:false, neon:null, cartel:.6 },
 };
 
@@ -7117,7 +7120,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "4e87d7b22a";
+const VERSION = "cb84db2274";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
