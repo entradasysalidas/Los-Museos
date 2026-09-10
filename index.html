@@ -4932,8 +4932,12 @@ function drawFaro(g, ang){
   g.fillStyle="#B9B2A4"; rr(g,15,33,18,7,2); g.fill();
   g.fillStyle="#00000018"; g.fillRect(15,38,18,2);
   /* la torre, a franjas: se va angostando hacia arriba */
-  const franjas = [[34,9.5,"#F4F1E8"],[28.5,8.8,"#E0554F"],[23,8.1,"#F4F1E8"],
-                   [17.5,7.4,"#E0554F"],[12,6.7,"#F4F1E8"]];
+  /* azul marino y no rojo: la sombrilla, la toalla y una de las heladeritas
+     ya son rojas, y el tablero estaba quedando todo del mismo color. El
+     marino tampoco se pisa con el azul de la heladerita, que es mucho más
+     claro, ni con el del mar. */
+  const franjas = [[34,9.5,"#F4F1E8"],[28.5,8.8,"#2F4B6E"],[23,8.1,"#F4F1E8"],
+                   [17.5,7.4,"#2F4B6E"],[12,6.7,"#F4F1E8"]];
   for(const f of franjas){
     const y = f[0], an = f[1], col = f[2];
     g.fillStyle = col; rr(g, 24-an, y, an*2, 5.8, 1); g.fill();
@@ -7191,7 +7195,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "6c3d6aa49a";
+const VERSION = "49607d9aff";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
