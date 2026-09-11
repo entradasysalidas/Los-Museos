@@ -940,9 +940,14 @@
        su alto es un número conocido —el que le deja la columna— y el lienzo
        puede pedirle el suyo sin morderse la cola. Y no queda ningún contorno
        alrededor del mapa, porque no hay caja que se vea. */
+    /* La caja no se ve: el marco —la curva y la sombra— se lo lleva el mapa.
+       Tenía el color del afuera de cuando el mapa era más angosto que ella y
+       se veían dos franjas de fondo a los costados; desde que el mapa manda
+       ocupa todo el ancho y eso no pasa más. Pintada, la franja de abajo
+       —que es el lugar del aviso— parecía un pedazo de tablero que no hace
+       nada. Sin pintar, aparece cuando dice algo y desaparece cuando no. */
     #boardwrap{order:1;width:100%;margin:0;padding:0;
-      background:var(--afuera,transparent);border:0;
-      border-radius:12px;overflow:hidden;box-shadow:var(--shadow);
+      background:none;border:0;box-shadow:none;
       flex:0 0 auto;position:relative;
       display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
     /* flex:none es la clave. Si el lienzo es un item flexible, el flex le fija
@@ -952,7 +957,8 @@
        Y el marco —borde, curva y sombra— se lo lleva el mapa, que es lo que se
        mira: así el borde lo sigue exactamente, sin franja de por medio. */
     #boardwrap canvas{flex:0 0 auto;width:100%;height:auto;
-      max-width:100%;max-height:none;border:0;border-radius:0;box-shadow:none}
+      max-width:100%;max-height:none;border:0;
+      border-radius:12px;box-shadow:var(--shadow)}
     /* La barra de pistas va abajo del mapa, no encima. Y no le cuesta tamaño:
        en un teléfono normal al mapa lo limita el ancho y de alto le sobra
        justo esta franja. Los márgenes los pone acomodarSobreElMapa, para que
@@ -9498,7 +9504,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "d03945acb8";
+const VERSION = "4d63a9708b";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
