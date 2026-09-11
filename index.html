@@ -4757,6 +4757,42 @@ function drawEstrellas(g, th){
   g.fillStyle = "#4F8F5A55";                         // un par de continentes
   g.beginPath(); g.ellipse(cx - R*.55, cy - R*.34, R*.20, R*.12, .5, 0, 7); g.fill();
   g.beginPath(); g.ellipse(cx - R*.28, cy - R*.62, R*.13, R*.09, -.3, 0, 7); g.fill();
+  /* Los paneles solares, a los dos costados del módulo: es lo que hace que
+     esto flote en vez de estar apoyado en algo. Van en el vacío, fuera de
+     la loseta, así que no tapan nada de lo que se juega. */
+  for(const lado of [-1, 1]){
+    const bx = lado < 0 ? CX0*CS - 4 : (CX0+CW)*CS + 4;
+    const by = al*0.42;
+    g.strokeStyle = "#8FA0B4"; g.lineWidth = 3;                 // el mástil
+    g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + lado*20, by); g.stroke();
+    for(let k = 0; k < 2; k++){                                 // los dos paños
+      const px0 = lado < 0 ? bx + lado*20 - 30 : bx + lado*20;
+      const py0 = by - 46 + k*50;
+      g.fillStyle = "#1B2740"; g.fillRect(px0, py0, 30, 42);
+      g.fillStyle = "#2F4E8A"; g.fillRect(px0 + 1.5, py0 + 1.5, 27, 39);
+      g.strokeStyle = "#0E1524"; g.lineWidth = 1;
+      for(let i = 1; i < 4; i++){
+        g.beginPath(); g.moveTo(px0 + i*7.5, py0); g.lineTo(px0 + i*7.5, py0 + 42); g.stroke();
+      }
+      for(let i = 1; i < 6; i++){
+        g.beginPath(); g.moveTo(px0, py0 + i*7); g.lineTo(px0 + 30, py0 + i*7); g.stroke();
+      }
+      g.fillStyle = "#8FB8C81C";                                // el reflejo del sol
+      g.beginPath(); g.moveTo(px0, py0); g.lineTo(px0 + 30, py0 + 20);
+      g.lineTo(px0 + 30, py0); g.closePath(); g.fill();
+    }
+  }
+  /* la antena va en el vacío de arriba a la izquierda: pegada al módulo la
+     tapaba la pasarela del marco */
+  const ax = an*0.055, ay = al*0.30;   // en la columna del vacío, no sobre la loseta
+  g.strokeStyle = "#8FA0B4"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax, ay - 24); g.stroke();
+  g.strokeStyle = "#C2CBD0"; g.lineWidth = 1.8;
+  g.beginPath(); g.arc(ax, ay - 28, 7, Math.PI*.12, Math.PI*.88); g.stroke();
+  g.fillStyle = "#C2CBD0"; g.fillRect(ax - 1, ay - 30, 2, 5);
+  g.fillStyle = "#E0685D";
+  g.beginPath(); g.arc(ax, ay + 1, 1.8, 0, 7); g.fill();
+
   g.fillStyle = "#FFFFFF22";                         // la atmósfera
   g.beginPath(); g.arc(cx, cy, R + 3, 0, 7); g.fill();
 }
@@ -4979,14 +5015,72 @@ function drawParedes(){
      exterior. Va el canto del muelle, madera oscura y un poco más grueso,
      como el borde de un deck. */
   const esPlaya = JUEGO === 3;
-  const tc = esPlaya ? t * 1.5 : t;
-  ctx.fillStyle = esPlaya ? "#8A5F32" : th.pared;
+  const esNave  = JUEGO === 4;
+  const tc = esPlaya ? t * 1.5 : esNave ? t * 1.6 : t;
+  ctx.fillStyle = esPlaya ? "#8A5F32" : esNave ? "#1E242F" : th.pared;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     if(!playable(x,y)) continue;
     if(!playable(x+1,y)) ctx.fillRect((x+1)*CS - tc/2, y*CS - tc/2, tc, CS + tc);
     if(!playable(x-1,y)) ctx.fillRect(x*CS - tc/2,     y*CS - tc/2, tc, CS + tc);
     if(!playable(x,y+1)) ctx.fillRect(x*CS - tc/2, (y+1)*CS - tc/2, CS + tc, tc);
     if(!playable(x,y-1)) ctx.fillRect(x*CS - tc/2,     y*CS - tc/2, CS + tc, tc);
+  }
+  /* El casco: la chapa oscura ya está puesta; encima va la chapa clara del
+     canto —que es la que le da el relieve—, las costillas cada media
+     casilla, los remaches y, en los tramos largos, un ojo de buey con el
+     vacío adentro. Sin los ojos de buey esto es una habitación gris. */
+  if(esNave){
+    const claro = "#8FA0B4", oscuro = "#10141C";
+    const tramo = (px, py, an, al, vertical) => {
+      /* la chapa clara, del lado de adentro */
+      ctx.fillStyle = claro;
+      if(vertical) ctx.fillRect(px + an*0.34, py, an*0.32, al);
+      else         ctx.fillRect(px, py + al*0.34, an, al*0.32);
+      /* las costillas */
+      ctx.fillStyle = oscuro;
+      if(vertical) for(let k = 0; k <= 2; k++) ctx.fillRect(px, py + al*k/2 - 1, an, 2);
+      else         for(let k = 0; k <= 2; k++) ctx.fillRect(px + an*k/2 - 1, py, 2, al);
+      /* los remaches */
+      ctx.fillStyle = "#FFFFFF26";
+      if(vertical) for(let k = 0; k < 2; k++)
+        ctx.fillRect(px + an*0.44, py + al*(k + .5)/2 - .8, 1.6, 1.6);
+      else for(let k = 0; k < 2; k++)
+        ctx.fillRect(px + an*(k + .5)/2 - .8, py + al*0.44, 1.6, 1.6);
+    };
+    const ojo = (cx, cy) => {
+      ctx.fillStyle = "#0A0D14";
+      ctx.beginPath(); ctx.arc(cx, cy, tc*0.42, 0, 7); ctx.fill();
+      ctx.strokeStyle = claro; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(cx, cy, tc*0.42, 0, 7); ctx.stroke();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath(); ctx.arc(cx - tc*0.12, cy - tc*0.1, .7, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + tc*0.14, cy + tc*0.12, .5, 0, 7); ctx.fill();
+      ctx.fillStyle = "#5FD8E82E";
+      ctx.beginPath(); ctx.arc(cx, cy, tc*0.42, 0, 7); ctx.fill();
+    };
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+      if(!playable(x,y)) continue;
+      const conOjo = rnd(x, y, 21) > .55;
+      if(!playable(x+1,y)){ tramo((x+1)*CS - tc/2, y*CS - tc/2, tc, CS + tc, true);
+        if(conOjo) ojo((x+1)*CS, y*CS + CS/2); }
+      if(!playable(x-1,y)){ tramo(x*CS - tc/2, y*CS - tc/2, tc, CS + tc, true);
+        if(conOjo) ojo(x*CS, y*CS + CS/2); }
+      if(!playable(x,y+1)){ tramo(x*CS - tc/2, (y+1)*CS - tc/2, CS + tc, tc, false);
+        if(conOjo) ojo(x*CS + CS/2, (y+1)*CS); }
+      if(!playable(x,y-1)){ tramo(x*CS - tc/2, y*CS - tc/2, CS + tc, tc, false);
+        if(conOjo) ojo(x*CS + CS/2, y*CS); }
+    }
+    /* las luces de posición, en las puntas de la loseta: verde a estribor y
+       roja a babor, como en cualquier nave */
+    const luces = [[CX0*CS, CY0*CS, "#E0685D"], [(CX0+CW)*CS, CY0*CS, "#7FD6A0"],
+                   [CX0*CS, (CY0+CH)*CS, "#E0685D"], [(CX0+CW)*CS, (CY0+CH)*CS, "#7FD6A0"]];
+    const pulso = (Math.sin(performance.now()/620) + 1) / 2;
+    for(const l of luces){
+      ctx.save(); ctx.shadowColor = l[2]; ctx.shadowBlur = 6 + pulso*7;
+      ctx.fillStyle = l[2];
+      ctx.beginPath(); ctx.arc(l[0], l[1], 2.2, 0, 7); ctx.fill();
+      ctx.restore();
+    }
   }
   /* y la veta clara arriba del canto, que es lo que lo hace madera */
   if(esPlaya){
@@ -5588,31 +5682,32 @@ function drawSalida(g,open){
 function drawNave(g,open){
   g.fillStyle="#14181F"; g.fillRect(0,0,48,48);
   /* el túnel de acople, visto de frente */
-  g.fillStyle="#3A4150"; rr(g,6,8,36,34,4); g.fill();
-  g.fillStyle="#2A303C"; rr(g,9,11,30,28,3); g.fill();
+  g.fillStyle="#3A4150"; rr(g,6,8,36,29,4); g.fill();
+  g.fillStyle="#2A303C"; rr(g,9,11,30,25,3); g.fill();
   for(const r of [13.5, 10, 6.5]){                     // los aros del túnel
     g.strokeStyle= open ? "#7FD6A0" : "#4A525F";
     g.lineWidth= r === 13.5 ? 2.2 : 1.6;
     g.globalAlpha = open ? 1 : .8;
-    g.beginPath(); g.arc(24,25,r,0,7); g.stroke();
+    g.beginPath(); g.arc(24,22,r,0,7); g.stroke();
   }
   g.globalAlpha = 1;
   if(open){
     /* el fondo del túnel: el vacío y una estrella */
-    g.fillStyle="#0B1026"; g.beginPath(); g.arc(24,25,5.4,0,7); g.fill();
-    g.fillStyle="#FFFFFF"; g.beginPath(); g.arc(22.5,23.5,.9,0,7); g.fill();
-    g.beginPath(); g.arc(26,26.5,.7,0,7); g.fill();
+    g.fillStyle="#0B1026"; g.beginPath(); g.arc(24,22,5.4,0,7); g.fill();
+    g.fillStyle="#FFFFFF"; g.beginPath(); g.arc(22.5,20.5,.9,0,7); g.fill();
+    g.beginPath(); g.arc(26,23.5,.7,0,7); g.fill();
     g.save(); g.shadowColor="#7FD6A0"; g.shadowBlur=10;
     g.strokeStyle="#7FD6A0"; g.lineWidth=1.6;
-    g.beginPath(); g.arc(24,25,8.6,0,7); g.stroke(); g.restore();
+    g.beginPath(); g.arc(24,22,8.6,0,7); g.stroke(); g.restore();
   }else{
-    g.fillStyle="#1C2028"; g.beginPath(); g.arc(24,25,5.4,0,7); g.fill();
+    g.fillStyle="#1C2028"; g.beginPath(); g.arc(24,22,5.4,0,7); g.fill();
   }
-  /* el cartel de arriba */
-  g.fillStyle= open ? "#2A5C3E" : "#33383F"; rr(g,7,1,34,7,1.5); g.fill();
+  /* el cartel va abajo y no arriba: el canto del casco le comía el borde
+     de arriba y se leía cortado */
+  g.fillStyle= open ? "#2A5C3E" : "#33383F"; rr(g,7,39,34,7,1.5); g.fill();
   g.fillStyle= open ? "#EAFFF5" : "#8A9099";
   g.font="bold 6px system-ui"; g.textAlign="center"; g.textBaseline="middle";
-  g.fillText(open ? "ACOPLADA" : "SIN ACOPLE", 24, 4.6);
+  g.fillText(open ? "ACOPLADA" : "SIN ACOPLE", 24, 42.6);
   if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
     g.fillStyle=`rgba(121,174,158,${.08+p*.16})`; g.fillRect(0,0,48,48); }
 }
@@ -7993,7 +8088,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "9c2d794be9";
+const VERSION = "a896b655b1";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
