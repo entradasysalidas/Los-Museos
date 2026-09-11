@@ -68,7 +68,7 @@
     letter-spacing:.02em;white-space:nowrap;text-transform:uppercase}
   .logo b{color:var(--brass);font-weight:400}
   .numnivel{display:flex;align-items:center;justify-content:center;flex:none;
-    width:82px;background:var(--brass);color:var(--bg);
+    width:82px;background:var(--brass);color:var(--tinta-brass,var(--bg));
     font:400 40px/1 "Archivo Black","Archivo",sans-serif;letter-spacing:-.04em;
     font-variant-numeric:tabular-nums}
   .salaname{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;
@@ -1217,15 +1217,15 @@
         <div class="goals" style="margin-top:12px">
           <div class="goal" id="gpiezas"><div class="lbl">Entregadas</div><div class="val">0/3</div></div>
           <div class="goal" id="gmov"><div class="lbl">Movimiento</div><div class="val"><span class="mps" id="mps"></span></div></div>
-          <div class="goal" id="gsalida"><div class="lbl">Salida</div><div class="val">🔒</div></div>
+          <div class="goal" id="gsalida"><div class="lbl" id="lblsalida">Salida</div><div class="val">🔒</div></div>
         </div>
         <div class="ojo off" id="ojo"></div>
       </div>
 
       <div class="card" id="cartaitems">
-        <h3>Piezas · salen de las vitrinas</h3>
+        <h3 id="tpiezas">Piezas · salen de las vitrinas</h3>
         <div class="slots" id="pieceslots"></div>
-        <h3 style="margin-top:14px">Objetos · te los dan los cómplices</h3>
+        <h3 id="tobjetos" style="margin-top:14px">Objetos · te los dan los cómplices</h3>
         <div class="slots" id="objslots"></div>
       </div>
 
@@ -1488,6 +1488,13 @@ const JERGA = {
      ["terminás en tu baño","terminás en la ducha"],
      ["Te teletransporta a tu baño.","Te teletransporta a la ducha."],
      ["parado en un baño: el tuyo o el suyo","parado en una ducha: la tuya o la suya"],
+     ["Piezas · salen de las vitrinas","Heladeritas · salen de las sombrillas"],
+     ["Objetos · te los dan los cómplices","Objetos · te los dan los amigos"],
+     ["en la vitrina","en la sombrilla"],
+     ["Mate de la mochila","Birra de la mochila"],
+     ["🖼️ Sacaste","🧊 Levantaste"],
+     ["La próxima vitrina que abras","La próxima heladerita que abras"],
+     ["Con los guantes puestos la vitrina","Con los guantes puestos la heladerita"],
      ["Vitrina vacía","Heladerita vacía"],
      ["Tomar el mate","Tomar la birra"],
      ["Ya tomaste tres mates en esta ronda.","Ya te tomaste tres birras en esta ronda."],
@@ -2794,7 +2801,7 @@ const SALAS_3 = {
     w:["v:4:5","v:5:5","h:2:2","h:3:4","h:5:1","h:4:1","h:3:5"],
     v:["h:6:2","h:1:2","v:3:5"] },
   v9:{ num:9, name:"El último parador", wing:"Atardecer", piso:"tarde", afuera:"mar",
-    ac:["#E0553F","#F0A091","#2A1512"],
+    ac:["#E0553F","#F0A091","#FBE9E4"],
     hero:"marian", foe:"reposeras", comps:["negro","lamber","matxi"],
     e:L(`D.M.T.
          .P..Q.
@@ -2948,13 +2955,13 @@ function takePiece(cell, silent){
   const i=S.pile.indexOf(id); if(i>=0) S.pile.splice(i,1);
   S.hand.push(id);
   if(!silent){
-    float(S.player.x,S.player.y,"PIEZA "+PIE[id].sym,PIE[id].color);
+    float(S.player.x,S.player.y,(JUEGO === 3 ? "" : "PIEZA ")+PIE[id].sym,PIE[id].color);
     const destino = aQuienLlevar(id);
     banner(`${PIE[id].sym} ${PIE[id].name} → llevásela a ${destino}`, PIE[id].color);
-    say(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${destino}</b>: <b>ahí</b> te dan el objeto.`,"y");
+    say(enJerga(`🖼️ Sacaste <b>${PIE[id].name}</b> ${PIE[id].sym}. Pasá por <b>${destino}</b>: <b>ahí</b> te dan el objeto.`),"y");
     if(S.guantes){
       S.guantes = false;
-      say("🧤 Con los guantes puestos la vitrina no hizo ni un ruido.","g");
+      say(enJerga("🧤 Con los guantes puestos la vitrina no hizo ni un ruido."),"g");
     }
     // El Procurador escucha la alarma y se acerca en el acto
     else if(S.foe.twist==="alarma"){
@@ -3626,7 +3633,7 @@ function useObject(i){
   if(id==="mate1"||id==="mate2"){
     S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
     if(S.diagonal){ S.diagonal=false; say("🥃 Con el mate se te fue el efecto del fernet.","r"); }
-    say(`🧉 Mate de la mochila: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`,"g");
+    say(enJerga(`🧉 Mate de la mochila: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`),"g");
     if(S.matesTurn>=TUNE.matesPerTurn){
       say("🧉 Tercer mate del turno… terminás en tu baño.","r");
       S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
@@ -5764,9 +5771,13 @@ function drawFloats(dt){
     if(p>=1){ fx.floats.splice(i,1); continue; }
     ctx.globalAlpha=Math.max(0, p<.15 ? p/.15 : 1-(p-.15)/.85);
     ctx.font='600 14px "Archivo",system-ui,sans-serif';
-    ctx.lineWidth=3.6; ctx.strokeStyle="#0B0D12cc";
     const px=f.x*CS+CS/2, py=f.y*CS+CS/2-18-p*28;
-    ctx.strokeText(f.txt,px,py); ctx.fillStyle=f.color; ctx.fillText(f.txt,px,py);
+    /* la chapita: a mitad de la subida, un texto con contorno sobre la
+       arena se lee como un error de dibujo. Con fondo se lee como un aviso. */
+    const an = ctx.measureText(f.txt).width + 14;
+    ctx.fillStyle = "#0B0D12d9";
+    rr(ctx, px - an/2, py - 11, an, 22, 6); ctx.fill();
+    ctx.fillStyle=f.color; ctx.fillText(f.txt,px,py);
     ctx.globalAlpha=1;
   }
 }
@@ -5787,6 +5798,16 @@ const $ = id=>document.getElementById(id);
 
 /* Lo que mide la franja del aviso. Fija a propósito: ver el comentario de
    más abajo, en syncUI. */
+/* Blanco o negro, el que se lea mejor arriba de este color. La fórmula es la
+   luminancia de siempre: el verde pesa más que el rojo y el rojo más que el
+   azul, que es como los ve el ojo. */
+function tintaSobre(hex){
+  const h = String(hex || "").replace("#", "");
+  if(h.length < 6) return "#0E1014";
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#14161C" : "#FFFFFF";
+}
+
 function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
@@ -5801,6 +5822,10 @@ function syncUI(){
     cuerpo.style.setProperty("--brass", ac[0]);
     cuerpo.style.setProperty("--brass-dim", ac[1]);
     cuerpo.style.setProperty("--brass-soft", ac[2]);
+    /* qué tinta va arriba del acento. Con veinte acentos distintos no
+       alcanza con elegir un color fijo: el número del nivel quedaba claro
+       sobre claro en el mostaza del diario y en la arena de la playa. */
+    cuerpo.style.setProperty("--tinta-brass", tintaSobre(ac[0]));
     /* con qué color pinta el mapa lo que hay afuera del edificio: la caja
        del tablero se pinta igual, y el paisaje sigue hasta el borde */
     cuerpo.style.setProperty("--afuera", (S.th && S.th.fondo) || "transparent");
@@ -5882,8 +5907,19 @@ function syncUI(){
              '<div class="nm">'+p.name+'</div>'+
              '<div class="st">la llevás</div></div>';
     return '<div class="slot vacio" style="color:'+p.color+'"><div class="ic">'+p.sym+
-           '</div><div class="nm">'+p.name+'</div><div class="st">en la vitrina</div></div>';
+           '</div><div class="nm">'+p.name+'</div><div class="st">'+enJerga("en la vitrina")+'</div></div>';
   }).join("");
+
+  const lblS = $("lblsalida");
+  if(lblS) lblS.textContent = JUEGO === 3 ? "El puesto" : "Salida";
+
+  /* los dos títulos de las filas: están escritos a mano en el html y hay
+     que traducirlos como el resto */
+  for(const par of [["tpiezas","Piezas · salen de las vitrinas"],
+                    ["tobjetos","Objetos · te los dan los cómplices"]]){
+    const el = $(par[0]);
+    if(el) el.textContent = enJerga(par[1]);
+  }
 
   $("objslots").innerHTML = Array.from({length:Math.max(3,S.objects.length)},(_,i)=>{
     if(i>=S.objects.length)
@@ -5927,7 +5963,8 @@ function syncUI(){
       const iM = mateEnLaMochila();
       const tomar = canDrinkHere() ? "drinkMate()" : (iM >= 0 ? "useObject(" + iM + ")" : null);
       ele.innerHTML =
-        (tomar ? '<button class="ele si" title="Tomar el mate" onclick="' + tomar + '">🧉</button>' : "") +
+        (tomar ? '<button class="ele si" title="' + enJerga("Tomar el mate") +
+                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : "🧉") + '</button>' : "") +
         '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
       /* Pegado a vos, medido sobre el lienzo. El marco incluye el cartel y
          la barra de abajo, así que un porcentaje del marco no cae donde uno
@@ -6985,18 +7022,23 @@ function sellarTapas(){
   }
 }
 
+/* Qué tapa está marcada en la portada. No es lo mismo que JUEGO: JUEGO es la
+   edición que se está jugando, y sólo cambia en cargarJuego, que mueve las
+   tablas y el dibujo juntos. Tocar una tapa sin entrar no puede cambiarla:
+   si lo hacía, quedaba media pantalla de cada juego. */
+let ELEGIDO = 1;
 function elegirJuego(n){
-  JUEGO = (n === 2 || n === 3) ? n : 1;
+  ELEGIDO = (n === 2 || n === 3) ? n : 1;
   for(const i of [1, 2, 3]){
     const t = document.getElementById("tapa" + i);
     if(!t) continue;
-    t.classList.toggle("elegida", JUEGO === i);
-    t.setAttribute("aria-pressed", JUEGO === i ? "true" : "false");
+    t.classList.toggle("elegida", ELEGIDO === i);
+    t.setAttribute("aria-pressed", ELEGIDO === i ? "true" : "false");
   }
   sellarTapas();
   /* la casilla de la clave sale sólo si el juego elegido está cerrado */
   const fila = document.getElementById("filaclave");
-  if(fila && fila.classList) fila.classList.toggle("off", elJuegoEstaAbierto(JUEGO));
+  if(fila && fila.classList) fila.classList.toggle("off", elJuegoEstaAbierto(ELEGIDO));
   textoDelPie();
 }
 
@@ -7004,10 +7046,10 @@ function elegirJuego(n){
 function textoDelPie(){
   const pie = document.getElementById("portalpie");
   if(!pie) return;
-  const j = JUEGOS[JUEGO];
+  const j = JUEGOS[ELEGIDO];
   const total = Object.keys(j.salas).length;
   const n = Object.keys(j.salas).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
-  if(JUEGO === 2){
+  if(ELEGIDO === 2){
     pie.innerHTML = elDosEstaAbierto()
       ? "<b>Escape del shopping</b> · " + total + " salas, con cámaras, escaleras mecánicas, " +
         "puertas con lector y vidrieras con temporizador." + (n ? " Llevás " + n + " de " + total + "." : "")
@@ -7022,6 +7064,7 @@ function textoDelPie(){
 
 function prepararPortal(){
   LEGAJO = leerLegajo();
+  elegirJuego(JUEGO);        // la tapa marcada es la edición en curso
   DIFICULTAD = LEGAJO.dif || 1;
   const inp = document.getElementById("nombre");
   const pie = document.getElementById("portalpie");
@@ -7072,16 +7115,16 @@ function entrar(){
   }
   /* Cada juego cerrado tiene su palabra. La de siempre abre el shopping y la
      nueva las vacaciones; una no sirve para el otro. */
-  if(!elJuegoEstaAbierto(JUEGO)){
-    const suya = JUEGO === 3 ? PALABRA_3 : PALABRA;
+  if(!elJuegoEstaAbierto(ELEGIDO)){
+    const suya = ELEGIDO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
     if(dicha === suya){
-      if(JUEGO === 3) LEGAJO.clave3 = true;       // ya no hace falta pedirla de nuevo
+      if(ELEGIDO === 3) LEGAJO.clave3 = true;     // ya no hace falta pedirla de nuevo
       else            LEGAJO.clave2 = true;
     } else {
       if(pie) pie.innerHTML = dicha
         ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
-        : (JUEGO === 3
+        : (ELEGIDO === 3
           ? "Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave."
           : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
@@ -7095,7 +7138,7 @@ function entrar(){
   }
   LEGAJO.nombre = nom;
   guardarLegajo(LEGAJO);
-  cargarJuego(JUEGO);
+  cargarJuego(ELEGIDO);
   yaEntre = true;
   const p = document.getElementById("portal");
   if(!p || !p.classList) return menu();
@@ -7142,7 +7185,7 @@ function volverAlPortal(){
   /* La sala que estabas jugando le deja su piel al cuerpo: las de piso
      claro encienden body.claro y el shopping body.juego2. La portada tiene
      la suya y hay que devolvérsela, si no vuelve pintada como la oficina. */
-  document.body.classList.remove("claro", "juego2");
+  document.body.classList.remove("claro", "juego2", "juego3");
   p.classList.remove("off", "sale");
   prepararPortal();
 }
@@ -7195,7 +7238,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "49607d9aff";
+const VERSION = "46bc06efc3";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
