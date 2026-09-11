@@ -1328,6 +1328,12 @@
       <span class="sello" id="sello4">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 4</b><small>En el espacio</small></span>
     </button>
+    <button class="tapa cerrada" id="tapa5" onclick="elegirJuego(5)" aria-pressed="false">
+      <img src="caja5.jpg" alt="Los Museos 5 · Escapan de la montaña"
+           onerror="this.remove()">
+      <span class="sello" id="sello5">🔒 Cerrado</span>
+      <span class="rotulo"><b>Los Museos 5</b><small>Escapan de la montaña</small></span>
+    </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
       <img src="diario.jpg" alt="Desafío diario">
       <span class="rotulo"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
@@ -1504,6 +1510,25 @@ const POWERS = {
 /* Lo que cambia de nombre en cada juego. Se traduce al mostrarlo, no al
    guardarlo: el codigo sigue hablando de vitrinas y de mates. */
 const JERGA = {
+  /* En la montaña el mate no se traduce: se toma mate de verdad. */
+  5:[["la pieza más lejana a la vitrina vacía más cercana",
+      "la tabla más lejana al locker vacío más cercano"],
+     ["Piezas · salen de las vitrinas","Tablas"],
+     ["Objetos · te los dan los cómplices","Objetos · te los dan los amigos"],
+     ["de una planta","de un pino"],
+     ["una pieza ya en la mano","una tabla ya en la mano"],
+     ["ninguna pieza","ninguna tabla"],
+     ["cualquier pieza","cualquier tabla"],
+     ["cómplice","amigo"],
+     ["en la vitrina","en el locker"],
+     ["Vitrina vacía","Locker vacío"],
+     ["Volvió a su vitrina","Volvió a su locker"],
+     ["vuelven a sus puestos","vuelven a sus bancos"],
+     ["La próxima vitrina que abras","El próximo locker que abras"],
+     ["Con los guantes puestos la vitrina","Con los guantes puestos el locker"],
+     ["Fernet","Chocolate"],
+     ["fernet","chocolate"],
+     ["🥃","☕"]],
   4:[["la pieza más lejana a la vitrina vacía más cercana",
       "la muestra más lejana a la cápsula vacía más cercana"],
      ["Piezas · salen de las vitrinas","Muestras"],
@@ -1621,11 +1646,14 @@ const PROPULSOR = {ic:"🚀", n:"Propulsor",
 const OBJETOS_4 = { mate1:TUBO_O2, mate2:TUBO_O2, fernet:PROPULSOR };
 function objetoDe(id){
   const o = OBJECTS[id];
-  if((JUEGO !== 3 && JUEGO !== 4) || !o) return o;
-  const piel = JUEGO === 4 ? OBJETOS_4[id] : OBJETOS_3[id];
-  const d = enJerga(o.d), aviso = enJerga(o.aviso);
-  if(!piel && d === o.d && aviso === o.aviso) return o;
-  return Object.assign({}, o, piel || {}, {d:d, aviso:aviso});
+  if(!o || !JERGA[JUEGO]) return o;
+  /* la piel manda sobre el nombre y el dibujo; el resto pasa por la jerga
+     —el nombre incluido, que era justo lo que quedaba afuera: la montaña
+     cambia el fernet por el chocolate sin piel y seguía diciendo Fernet. */
+  const piel = JUEGO === 4 ? OBJETOS_4[id] : JUEGO === 3 ? OBJETOS_3[id] : null;
+  const n = enJerga(o.n), d = enJerga(o.d), aviso = enJerga(o.aviso);
+  if(!piel && n === o.n && d === o.d && aviso === o.aviso) return o;
+  return Object.assign({}, o, {n:n, d:d, aviso:aviso}, piel || {});
 }
 
 function poderDe(quien){
@@ -2277,9 +2305,9 @@ const RANGOS = [
 /* Cada juego tiene su nombre corto y su rango máximo: "Dueño del museo" no
    quiere decir nada en el shopping. */
 const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping", 3:"De vacaciones",
-                      4:"En el espacio"};
+                      4:"En el espacio", 5:"En la montaña"};
 const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping", 3:"Dueño del parador",
-                      4:"Dueño de la estación"};
+                      4:"Dueño de la estación", 5:"Dueño del cerro"};
 
 /* El rango que te toca con tantas salas hechas en tal edición. Va con la
    edición adentro porque la portada habla de la tapa elegida, que no es
@@ -3108,6 +3136,178 @@ const DECK_4 = [
   {n:"¡Se acerca!",           d:"Va derecho hacia vos. Los cultivos no te salvan.", k:"rush", ic:"🏃"},
 ];
 
+/* ---------- Los Museos 5: escapan de la montaña ----------
+   La única edición donde el mate no cambia: en la nieve se toma mate de
+   verdad, así que vuelve a casa tal cual. El que cambia es el fernet, que
+   pasa a ser el chocolate caliente —y también te hace cortar en diagonal por
+   un turno, que es lo que el calor te da—. Y el telesilla cae solo en la
+   escalera mecánica: subís en uno y aparecés en el otro.
+
+   Las diez losetas son las de la playa espejadas de izquierda a derecha. El
+   marco es simétrico en x —arriba ocupa 2..5 y abajo 3..4—, así que espejar
+   deja todo en su lugar; y como no toca la conectividad ni las cuentas,
+   sigue garantizado que se pueden ganar. Lo que cambia es la mano: lo que
+   tenías a la derecha ahora está a la izquierda. */
+const PIEZAS_5 = [
+  {id:"rombo",     sym:"◆", name:"Tabla azul",    color:"#3F7FD6"},
+  {id:"triangulo", sym:"▲", name:"Tabla roja",    color:"#D4534A"},
+  {id:"circulo",   sym:"●", name:"Tabla naranja", color:"#E09A3C"},
+];
+
+/* La nieve del mediodía y la de la última hora, cuando el sol le da de
+   costado y se pone rosa. Las paredes son de madera: en la montaña lo que
+   corta el paso es el cerco del refugio, no una pared blanca —que arriba de
+   la nieve, además, no se vería—. */
+const THEMES_M = {
+  nieve    :{ oscuro:false, piso:["#EDF2F8","#E4EBF3"], patron:"nieve", junta:"#00000010",
+              luz:"#FFFFFF", luzA:.16, pared:"#8A6B4A", void:"#DCE6EF", vineta:.05,
+              fondo:"#DCE6EF", luces:false, neon:null, cartel:.5 },
+  atardecer:{ oscuro:false, piso:["#F0E4E4","#E8D8DA"], patron:"nieve", junta:"#00000014",
+              luz:"#FFD9C0", luzA:.20, pared:"#7A5A3E", void:"#E8D2CE", vineta:.10,
+              fondo:"#E8D2CE", luces:false, neon:null, cartel:.5 },
+};
+
+const FOES_5 = {
+  novato     :{n:"El Novato",        look:"overol", d:"Camina y nada más. Es la pista de aprendizaje."},
+  confiteria :{n:"El de la Confitería", look:"saco",
+               d:"Cada locker que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
+  pistero    :{n:"El Pistero",       look:"guardia",
+               d:"Si terminás a dos casilleros o menos en su línea recta, sin nada en el medio, te barre con el reflector y avanza uno extra.", twist:"linterna"},
+  snowboarder:{n:"El Snowboarder",   look:"overol",
+               d:"No te persigue: baja sin rumbo. No podés anticiparlo, así que no hay camino seguro.", twist:"azar"},
+  sanbernardo:{n:"El San Bernardo",  look:"perro", d:"Te huele igual: meterte atrás de un pino no sirve.", twist:"olfato"},
+  instructor :{n:"El Instructor",    look:"traje",  d:"Te vio y no te suelta. El perseguidor clásico, sin trucos."},
+  escuela    :{n:"La Escuela de Esquí", look:"guardapolvo",
+               d:"Una vez por partida te deshace una entrega: la tabla vuelve a su locker. Al reentregarla, tu amigo te convida otra vez.", twist:"reponeCerca"},
+  pisapistas :{n:"El Pisapistas",    look:"gabardina",
+               d:"Cada vez que pasa por un banco acomoda el guardaesquíes: dos tablas cambian de locker.", twist:"cambia"},
+  boleteria  :{n:"El de la Boletería", look:"procurador",
+               d:"Anota cada objeto ruidoso que usás; al segundo, sube la alerta. El mate no cuenta.", twist:"anota"},
+  dueno      :{n:"El Dueño del Cerro", look:"gala",
+               d:"Te persigue y aparece en los lockers, no en los bancos.", twist:"vitrinas"},
+};
+
+const SALAS_5 = {
+  m0:{ num:0, name:"La pista de aprendizaje", wing:"La base", piso:"nieve", afuera:"cerro",
+    ac:["#2F9CB8","#8FD3E4","#E6F6FA"],
+    hero:"negro", foe:"novato", comps:["hippie","chuna","chupa"],
+    e:L(`D.ML.M
+         ..P...
+         P...TA
+         .CP...`),
+    w:["v:2:3","v:3:5","h:2:3","h:1:2","h:5:1","h:2:1"],
+    v:["v:3:2","h:1:3","h:4:4"] },
+  m1:{ num:1, name:"El guardaesquíes", wing:"La base", piso:"nieve", afuera:"cerro",
+    ac:["#E0774F","#F0B292","#FDEDE4"],
+    hero:"hippie", foe:"confiteria", comps:["lamber","chupa","damian"],
+    e:L(`..M..M
+         .A.K..
+         PQAP.T
+         D..C..`),
+    w:["v:3:3","v:1:3","h:1:3","h:2:4","h:3:1","h:2:1","h:3:5"],
+    v:["v:2:3","h:5:2","v:4:4"] },
+  m2:{ num:2, name:"La medialuna", wing:"Media montaña", piso:"nieve", afuera:"cerro",
+    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
+    hero:"damian", foe:"snowboarder", comps:["matxi","hippie","chuna"],
+    e:L(`DT.P..
+         ..P...
+         L.MA..
+         C..P..`),
+    w:["h:2:4","v:1:4","h:2:2","h:3:1","h:4:1","h:4:5"],
+    v:["h:4:4","h:1:2","h:5:2"] },
+  m3:{ num:3, name:"El bosque de pinos", wing:"Media montaña", piso:"nieve", afuera:"cerro",
+    ac:["#2E7D5B","#8CCDB4","#E4F5EE"],
+    hero:"kzk", foe:"dueno", comps:["negro","chuna","chupa"],
+    e:L(`C..P.M
+         ...K..
+         ....A.
+         ATLPDP`),
+    w:["h:4:3","h:3:2","v:4:2","h:3:1","h:2:1","h:4:5"],
+    v:["v:3:2","h:3:4","h:5:3"] },
+  m4:{ num:4, name:"La confitería", wing:"Sobre el bosque", piso:"nieve", afuera:"cerro",
+    ac:["#C7563F","#E8A08C","#FBE8E2"],
+    hero:"lamber", foe:"sanbernardo", comps:["kzk","chupa","hippie"],
+    e:L(`C....D
+         .A..P.
+         P...Q.
+         .T..M.`),
+    w:["v:2:3","v:4:3","h:6:3","h:2:1","h:5:1"],
+    v:["v:5:4","h:1:4","v:3:2"] },
+  m5:{ num:5, name:"El telesilla", wing:"Sobre el bosque", piso:"nieve", afuera:"cerro",
+    ac:["#8A5FC4","#C0A3E4","#F1EAFA"],
+    hero:"chuna", foe:"pisapistas", comps:["matxi","hippie","lamber"],
+    e:L(`...CPA
+         KP.MP.
+         ...T..
+         .D....`),
+    w:["v:1:5","h:2:3","v:3:4","h:3:1","h:5:1","h:4:5"],
+    v:["h:2:4","h:6:3","h:4:3"] },
+  m6:{ num:6, name:"La cumbre chica", wing:"Cerca de la cumbre", piso:"atardecer", afuera:"cerro",
+    ac:["#3F7FD6","#9CBFEC","#EAF1FB"],
+    hero:"tomy", foe:"instructor", comps:["negro","lamber","chupa"],
+    e:L(`EP.MTE
+         .PC...
+         P..K.D
+         ..M..A`),
+    w:["h:4:2","h:3:2","h:2:2","h:4:1","h:2:1","h:4:5"],
+    v:["v:2:2","v:5:5","v:5:2"] },
+  m7:{ num:7, name:"El bosque nevado", wing:"Cerca de la cumbre", piso:"atardecer", afuera:"cerro",
+    ac:["#D8547F","#EFA3BC","#FCEAF1"],
+    hero:"matxi", foe:"boleteria", comps:["kzk","chupa","hippie"],
+    e:L(`.M..A.
+         ...M.P
+         L.Q.P.
+         TA.CD.`),
+    w:["v:3:4","h:5:2","v:1:3","h:2:1","h:5:1","h:3:5"],
+    v:["v:3:2","h:1:3","v:3:5"] },
+  m8:{ num:8, name:"El filo", wing:"La cumbre", piso:"atardecer", afuera:"cerro",
+    ac:["#E8A33C","#F2CE93","#FDF1DE"],
+    hero:"chupa", foe:"pistero", comps:["tomy","hippie","lamber"],
+    e:L(`D....M
+         P...P.
+         PTAL..
+         ..A.C.`),
+    w:["v:2:5","v:1:5","h:5:2","h:4:4","h:2:1","h:3:1","h:4:5"],
+    v:["h:1:2","h:6:2","v:3:5"] },
+  m9:{ num:9, name:"La cumbre", wing:"La cumbre", piso:"atardecer", afuera:"cerro",
+    ac:["#E0553F","#F0A091","#FBE9E4"],
+    hero:"marian", foe:"escuela", comps:["negro","lamber","matxi"],
+    e:L(`.T.M.D
+         .Q..P.
+         ...M.P
+         ACK.A.`),
+    w:["v:4:4","v:2:3","h:4:2","h:5:4","h:2:1","h:5:1","h:4:5"],
+    v:["v:2:5","v:4:3","v:1:2"] },
+};
+
+/* Un consejo por sala: la mitad del jefe que te toca y la otra del poder del
+   que la protagoniza. */
+const CONSEJOS_5 = {
+  m0:"El Novato camina y nada más, así que es la pista para aprender. Arrancás con un <b>chocolate caliente</b> en la mochila: mientras dure te movés también en diagonal. Y el <b>mate</b> de la nieve te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
+  m1:"Cada locker que abrís hace avanzar a El de la Confitería al instante, así que no abras de gusto. Tu poder te esconde también en la casilla de al lado de un pino, y escondido no te agarra ni «¡Se acerca!».",
+  m2:"El Snowboarder baja sin rumbo: no hay ruta segura, hay que mirarlo cada ronda. Arrancás con una tabla ya en la mano, así que la primera entrega la podés hacer sin abrir nada.",
+  m3:"El Dueño del Cerro aparece en los lockers, no en los bancos: el que estás por abrir puede tenerlo encima. Guardá el <b>F</b> para cuando quede uno solo y esté lejos.",
+  m4:"El San Bernardo te huele igual, así que el pino no te esconde acá. Con <b>F</b> cualquier amigo te acepta cualquier tabla, y te la acepta desde el banco de al lado.",
+  m5:"El Pisapistas cambia dos tablas de locker cada vez que pasa por un banco, así que la ruta que armaste puede dejar de servir. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida.",
+  m6:"El Instructor no tiene trucos, pero es constante. Arrancás con un mate en la mochila y los de la nieve los podés repetir: son pasos de más para no quedar nunca a tiro.",
+  m7:"El de la Boletería anota cada objeto ruidoso que usás y al segundo sube la alerta: guardalos para la corrida final al refugio. Y la primera vez que te agarren no te saca ninguna tabla, así que podés arriesgar una.",
+  m8:"El Pistero barre con el reflector en línea recta y gira un cuarto de vuelta por ronda. El vidrio te corta el paso pero no te tapa: no termines el turno en su línea aunque haya uno en el medio. Empezás con un objeto extra.",
+  m9:"La Escuela de Esquí te va a deshacer una entrega, pero al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida. Ves su próxima acción antes de moverte: usalo para no gastar el turno en falso.",
+};
+
+const DECK_5 = [
+  {n:"Va al banco de la azul",    d:"Aparece donde está tu amigo ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Va al banco de la roja",    d:"Aparece donde está tu amigo ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Va al banco de la naranja", d:"Aparece donde está tu amigo ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Va al baño del refugio", d:"Entra a sacarse la nieve y te deja respirar.", k:"bath", ic:"🚻"},
+  {n:"Se va a fumar afuera",   d:"Sale al frío un rato.",              k:"exit", ic:"🚬"},
+  {n:"Se va a fumar afuera",   d:"Sale al frío un rato.",              k:"exit", ic:"🚬"},
+  {n:"Te espera en tu banco",  d:"Se planta donde dejaste todo.",      k:"mydesk", ic:"🪑"},
+  {n:"Vuelve a su puesto",     d:"Se acuerda de que dejó el turno.",   k:"home", ic:"🎿"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los pinos no te salvan.", k:"rush", ic:"🏃"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los pinos no te salvan.", k:"rush", ic:"🏃"},
+];
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
@@ -3119,6 +3319,9 @@ const JUEGOS = {
   4: { n:"Los Museos en el espacio", salas:SALAS_4, foes:FOES_4, themes:THEMES_E,
        deck:DECK_4, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_4,
        piezas:PIEZAS_4 },
+  5: { n:"Los Museos en la montaña", salas:SALAS_5, foes:FOES_5, themes:THEMES_M,
+       deck:DECK_5, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_5,
+       piezas:PIEZAS_5 },
   /* El desafío diario vive en el 9, apartado de los juegos de verdad: no es
      uno más de la lista, es otra cosa que se sirve del mismo motor. */
   9: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
@@ -3144,6 +3347,7 @@ function cargarJuego(n){
     document.body.classList.toggle("juego2", n === 2);
     document.body.classList.toggle("juego3", n === 3);
     document.body.classList.toggle("juego4", n === 4);
+    document.body.classList.toggle("juego5", n === 5);
   }
   return true;
 }
@@ -7838,17 +8042,15 @@ function pintarFranjaDiaria(){
 /* El candado de cada tapa. Estaba escrito para la dos y ahora hay tres; con
    una cuarta no habría que volver a tocarlo. */
 function sellarTapas(){
-  /* la cuarta se abre terminando las diez de la playa en normal */
-  const t4 = document.getElementById("tapa4"), s4 = document.getElementById("sello4");
-  if(t4 && t4.classList){
-    const abierta = elCuatroEstaAbierto();
-    t4.classList.toggle("cerrada", !abierta);
-    if(s4) s4.textContent = abierta ? "" : "🔒 Cerrado";
-  }
-  for(const n of [2, 3]){
+  /* Las cuatro que se abren, en un solo lugar. Vaciarle el texto al sello no
+     alcanza: la franja tiene fondo propio y sigue pintada, así que hay que
+     esconderla. Y la clase «cerrada» es la que deja la tapa apagada. */
+  for(const n of [2, 3, 4, 5]){
+    const abierto = elJuegoEstaAbierto(n);
+    const tapa = document.getElementById("tapa" + n);
+    if(tapa && tapa.classList) tapa.classList.toggle("cerrada", !abierto);
     const sel = document.getElementById("sello" + n);
     if(!sel) continue;
-    const abierto = elJuegoEstaAbierto(n);
     sel.textContent = abierto ? "" : "🔒 Cerrado";
     sel.hidden = abierto;        // ganada la tapa, la franja se va y se ve el dibujo
   }
@@ -7860,8 +8062,8 @@ function sellarTapas(){
    si lo hacía, quedaba media pantalla de cada juego. */
 let ELEGIDO = 1;
 function elegirJuego(n){
-  ELEGIDO = (n === 2 || n === 3 || n === 4) ? n : 1;
-  for(const i of [1, 2, 3, 4]){
+  ELEGIDO = (n >= 2 && n <= 5) ? n : 1;
+  for(const i of [1, 2, 3, 4, 5]){
     const t = document.getElementById("tapa" + i);
     if(!t) continue;
     t.classList.toggle("elegida", ELEGIDO === i);
@@ -7923,6 +8125,7 @@ function prepararPortal(){
 const PALABRA = "candombe";      // abre el shopping
 const PALABRA_3 = "caipirinha";  // abre las vacaciones
 const PALABRA_4 = "ingravidez";  // abre el espacio
+const PALABRA_5 = "chocolate";   // abre la montaña
 
 /* El shopping se lo gana el que termino Los Museos. La palabra clave es para
    el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
@@ -7933,6 +8136,11 @@ function elTresEstaAbierto(){
   return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
 }
 
+function elCincoEstaAbierto(){
+  if(LEGAJO.clave5) return true;
+  return Object.keys(JUEGOS[4].salas).every(k => hechaEn(k, 1));
+}
+
 function elCuatroEstaAbierto(){
   if(LEGAJO.clave4) return true;
   return Object.keys(JUEGOS[3].salas).every(k => hechaEn(k, 1));
@@ -7941,7 +8149,8 @@ function elCuatroEstaAbierto(){
 function elJuegoEstaAbierto(n){
   return n === 2 ? elDosEstaAbierto()
        : n === 3 ? elTresEstaAbierto()
-       : n === 4 ? elCuatroEstaAbierto() : true;
+       : n === 4 ? elCuatroEstaAbierto()
+       : n === 5 ? elCincoEstaAbierto() : true;
 }
 
 function elDosEstaAbierto(){
@@ -7964,19 +8173,22 @@ function entrar(){
   /* Cada juego cerrado tiene su palabra. La de siempre abre el shopping y la
      nueva las vacaciones; una no sirve para el otro. */
   if(!elJuegoEstaAbierto(ELEGIDO)){
-    const suya = ELEGIDO === 4 ? PALABRA_4 : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
+    const suya = ELEGIDO === 5 ? PALABRA_5 : ELEGIDO === 4 ? PALABRA_4
+               : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
     if(dicha === suya){
       /* ya no hace falta pedirla de nuevo */
-      if(ELEGIDO === 4)      LEGAJO.clave4 = true;
+      if(ELEGIDO === 5)      LEGAJO.clave5 = true;
+      else if(ELEGIDO === 4) LEGAJO.clave4 = true;
       else if(ELEGIDO === 3) LEGAJO.clave3 = true;
       else                   LEGAJO.clave2 = true;
     } else {
       if(pie) pie.innerHTML = dicha
         ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
-        : (ELEGIDO === 3
-          ? "Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave."
-          : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
+        : ({3:"Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave.",
+            4:"El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.",
+            5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave."}[ELEGIDO]
+           || "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
         if(cla.focus) { try{ cla.focus(); }catch(e){} }
         if(cla.animate){ try{ cla.animate(
@@ -8088,7 +8300,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "a896b655b1";
+const VERSION = "6fcf83b32b";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
