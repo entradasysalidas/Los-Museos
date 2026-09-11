@@ -973,6 +973,10 @@
     aside{order:2;flex:none}
     #relato{display:none}
 
+    /* la explicación del poder se va cuando su botón ya está en la barra de
+       abajo: queda el nombre, que es lo que identifica de quién es el turno */
+    #yopoder.yaabajo .expl{display:none}
+
     /* y vos entrás en una sola línea: los pasos al lado del nombre, no debajo */
     #cartayo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
     #cartayo .yo{flex:1 1 0;min-width:0}
@@ -7959,7 +7963,7 @@ function syncUI(){
       '<button class="teclaF" onclick="usarPoder()"' + (listo ? "" : " disabled") +
       ' title="' + (listo ? "Usar tu poder" : "Todavía no se puede") + '">F</button>');
   }
-  $("yopoder").innerHTML = "<b>"+S.power.n+"</b> · "+expl;
+  $("yopoder").innerHTML = "<b>"+S.power.n+"</b><span class=\"expl\"> · "+expl+"</span>";
 
   /* El ojo de halcón: hasta ahora la carta se calculaba y no se dibujaba en
      ningún lado, así que el poder de Marian no se veía. Se saca del mazo acá
@@ -8125,6 +8129,15 @@ function syncUI(){
   $("hint").className = pistas.length ? ("hintbar on" + (esperando ? " urgente" : "")) : "hintbar";
   $("hint").innerHTML = pistas.map(p => enJerga(p)).map(p =>
     /^<button/.test(p) ? p : '<span class="p">' + p + '</span>').join("");
+  /* Si el botón del poder está en la barra de abajo, la tarjeta del héroe no
+     repite la explicación: en el teléfono quedaban las dos cosas pegadas
+     diciendo lo mismo. Sólo cuando el botón está: si el poder todavía no se
+     puede usar, el texto es lo único que lo explica. */
+  S.poderAbajo = pistas.some(p =>
+    /offerDelivery()|correr()|fixVitrina()/.test(String(p)));
+  const poderAbajo = S.poderAbajo;
+  const tarjeta = $("yopoder");
+  if(tarjeta && tarjeta.classList) tarjeta.classList.toggle("yaabajo", poderAbajo);
   acomodarSobreElMapa();
 
   renderLog();
@@ -9485,7 +9498,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "94f3492320";
+const VERSION = "d03945acb8";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
