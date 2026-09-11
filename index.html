@@ -1594,10 +1594,35 @@ const BIRRA = {ic:"🍺", n:"Birra",
              '<path d="M15.1 6.1v13.4" stroke="#0B3A26" stroke-opacity=".16" stroke-width="1.2" fill="none"/>' +
            '</svg>'};
 const OBJETOS_3 = { mate1:BIRRA, mate2:BIRRA };
+
+/* En el espacio el mate es el tubo de oxígeno y el fernet es el propulsor:
+   la misma regla, otro nombre y otro dibujo. */
+const TUBO_O2 = {ic:"🫧", n:"Oxígeno",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<rect x="8" y="5.6" width="8" height="15.4" rx="4" fill="#D8DEE6"/>' +
+             '<rect x="9.4" y="7.4" width="2" height="11" rx="1" fill="#FFFFFF" opacity=".75"/>' +
+             '<rect x="8" y="13.4" width="8" height="3.2" fill="#2F9CB8"/>' +
+             '<rect x="10.4" y="2.4" width="3.2" height="3.6" rx="1" fill="#8E9AA3"/>' +
+             '<circle cx="12" cy="2.6" r="1.7" fill="#5E6874"/>' +
+             '<circle cx="16" cy="9.4" r="1.9" fill="#1C2028"/>' +
+             '<circle cx="16" cy="9.4" r="1.2" fill="#7FD6A0"/>' +
+           '</svg>'};
+const PROPULSOR = {ic:"🚀", n:"Propulsor",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<rect x="8.6" y="3" width="6.8" height="11.4" rx="3.4" fill="#D8DEE6"/>' +
+             '<rect x="9.8" y="4.6" width="1.8" height="8" rx=".9" fill="#FFFFFF" opacity=".7"/>' +
+             '<path d="M8.6 8.4 5.6 13.4h3Z" fill="#8E9AA3"/>' +
+             '<path d="M15.4 8.4 18.4 13.4h-3Z" fill="#8E9AA3"/>' +
+             '<rect x="9.4" y="14.4" width="5.2" height="2.4" rx=".8" fill="#3A4150"/>' +
+             '<path d="M12 22c-1.6-1.8-2.2-3.2-2.2-4.6h4.4c0 1.4-.6 2.8-2.2 4.6Z" fill="#F2C14E"/>' +
+             '<path d="M12 20.4c-.8-1-1.1-1.8-1.1-2.6h2.2c0 .8-.3 1.6-1.1 2.6Z" fill="#E0685D"/>' +
+             '<circle cx="12" cy="6.2" r="1.5" fill="#5FD8E8"/>' +
+           '</svg>'};
+const OBJETOS_4 = { mate1:TUBO_O2, mate2:TUBO_O2, fernet:PROPULSOR };
 function objetoDe(id){
   const o = OBJECTS[id];
-  if(JUEGO !== 3 || !o) return o;
-  const piel = OBJETOS_3[id];
+  if((JUEGO !== 3 && JUEGO !== 4) || !o) return o;
+  const piel = JUEGO === 4 ? OBJETOS_4[id] : OBJETOS_3[id];
   const d = enJerga(o.d), aviso = enJerga(o.aviso);
   if(!piel && d === o.d && aviso === o.aviso) return o;
   return Object.assign({}, o, piel || {}, {d:d, aviso:aviso});
@@ -1944,7 +1969,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero), power = poderDe(sala.hero);
+  const hero = deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero)), power = poderDe(sala.hero);
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -3298,7 +3323,7 @@ function drinkMate(){
   if(!S||S.over||S.busy||!canDrinkHere()) return;
   S.drunk.add(key(S.player.x,S.player.y));
   S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
-  float(S.player.x,S.player.y, JUEGO === 3 ? "+BIRRA" : "+MATE", acentoSala());
+  float(S.player.x,S.player.y, JUEGO === 3 ? "+BIRRA" : JUEGO === 4 ? "+O₂" : "+MATE", acentoSala());
   if(S.matesTurn>=TUNE.matesPerTurn){
     say("🧉 Tercer mate del turno… terminás en tu baño.","r");
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
@@ -4378,7 +4403,7 @@ function drawAfuera(g, th){
   const ESCENAS = {
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
-    cubiculos: drawCubiculos, mar: drawMar,
+    cubiculos: drawCubiculos, mar: drawMar, estrellas: drawEstrellas,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -4700,6 +4725,42 @@ function buildFloorLayer(){
 
 /* Lo que se ve más allá de la loseta: el mar arriba, con la espuma en la
    orilla, y la arena seca a los costados y abajo. */
+/* Lo que hay afuera del módulo: el vacío, las estrellas y la Tierra abajo.
+   Las estrellas son siempre las mismas —salen de rnd, que es determinista—
+   así que no titilan de una ronda a la otra, que marearía. */
+function drawEstrellas(g, th){
+  const an = W*CS, al = H*CS;
+  g.fillStyle = th.fondo || "#080B12";
+  g.fillRect(0, 0, an, al);
+  /* una nebulosa apenas, para que el negro no quede plano */
+  const neb = g.createRadialGradient(an*0.22, al*0.30, 10, an*0.22, al*0.30, an*0.45);
+  neb.addColorStop(0, (th.neon || "#5FD8E8") + "1C");
+  neb.addColorStop(1, "#00000000");
+  g.fillStyle = neb; g.fillRect(0, 0, an, al);
+  for(let i = 0; i < 150; i++){
+    const sx = rnd(i, 11, 3) * an, sy = rnd(i, 5, 7) * al;
+    const t = rnd(i, 3, 13);
+    const r = t > .93 ? 1.9 : t > .72 ? 1.3 : .8;
+    g.fillStyle = t > .93 ? "#FFFFFF" : t > .5 ? "#FFFFFFB0" : "#FFFFFF70";
+    g.beginPath(); g.arc(sx, sy, r, 0, 7); g.fill();
+    if(t > .96){                                     // las cuatro puntas
+      g.fillStyle = "#FFFFFF55";
+      g.fillRect(sx - 4, sy - .4, 8, .8); g.fillRect(sx - .4, sy - 4, .8, 8);
+    }
+  }
+  /* la Tierra, asomando abajo a la derecha */
+  const cx = an * 1.02, cy = al * 1.18, R = al * 0.62;
+  const tierra = g.createRadialGradient(cx - R*.45, cy - R*.5, R*.1, cx, cy, R);
+  tierra.addColorStop(0, "#6FA8D8"); tierra.addColorStop(.55, "#2F6BB8");
+  tierra.addColorStop(1, "#12294A");
+  g.fillStyle = tierra; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+  g.fillStyle = "#4F8F5A55";                         // un par de continentes
+  g.beginPath(); g.ellipse(cx - R*.55, cy - R*.34, R*.20, R*.12, .5, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(cx - R*.28, cy - R*.62, R*.13, R*.09, -.3, 0, 7); g.fill();
+  g.fillStyle = "#FFFFFF22";                         // la atmósfera
+  g.beginPath(); g.arc(cx, cy, R + 3, 0, 7); g.fill();
+}
+
 function drawMar(g, th){
   const anchoTot = W*CS, altoTot = H*CS;
   const orilla = (CY0 - .35) * CS;              // dónde rompe el agua
@@ -4763,6 +4824,42 @@ function drawPiso(g,x,y,th){
   }
   g.fillStyle=(x+y)%2 ? th.piso[0] : th.piso[1];
   g.fillRect(px,py,CS,CS);
+  /* En el espacio la loseta es rejilla de metal y el marco es la pasarela:
+     placas más claras, remachadas. Igual que el muelle en la playa, separa
+     de un vistazo lo que se juega de lo que no. */
+  if(JUEGO === 4){
+    const enElMarco = x < CX0 || x >= CX0 + CW || y < CY0 || y >= CY0 + CH;
+    if(enElMarco){
+      g.fillStyle = (x + y) % 2 ? "#3A4150" : "#353C4A";
+      g.fillRect(px,py,CS,CS);
+      g.fillStyle = "#00000030";                       // la juntura de las placas
+      g.fillRect(px, py + CS/2 - 1, CS, 2);
+      g.fillStyle = "#FFFFFF14";
+      g.fillRect(px, py + CS/2 + 1, CS, 1);
+      g.fillStyle = "#FFFFFF1A";                       // los remaches
+      for(const p of [[4,4],[CS-6,4],[4,CS-6],[CS-6,CS-6]])
+        g.fillRect(px + p[0], py + p[1], 2, 2);
+      return;
+    }
+    /* la rejilla: un damero apenas, y arriba la trama que la hace rejilla */
+    g.fillStyle = (x+y)%2 ? th.piso[0] : th.piso[1];
+    g.fillRect(px,py,CS,CS);
+    const paso = CS / 4;
+    g.fillStyle = "#00000038";
+    for(let k = 1; k < 4; k++){
+      g.fillRect(px + k*paso - .7, py, 1.4, CS);
+      g.fillRect(px, py + k*paso - .7, CS, 1.4);
+    }
+    g.fillStyle = "#FFFFFF10";
+    for(let k = 1; k < 4; k++){
+      g.fillRect(px + k*paso + .7, py, .8, CS);
+      g.fillRect(px, py + k*paso + .7, CS, .8);
+    }
+    /* y el brillo del borde de la placa, que le da el relieve */
+    g.fillStyle = "#FFFFFF0E"; g.fillRect(px, py, CS, 1.2);
+    g.fillStyle = "#00000026"; g.fillRect(px, py + CS - 1.2, CS, 1.2);
+    return;
+  }
   if(th.patron==="arena"){
     /* Arena lisa: sólo el grano. Los surcos van en las paredes, que es donde
        el agua los deja de verdad; dibujados en el piso parecían un piso de
@@ -4992,6 +5089,38 @@ function drawParedes(){
 /* La sombrilla, y abajo la heladerita. Lo que en el museo es una vitrina con
    la pieza adentro acá es una sombrilla ajena con la conservadora debajo: la
    lucecita de alarma pasa a ser si el dueño se despertó. */
+/* La cápsula de muestras: un tubo de vidrio sobre su base, con el cristal
+   flotando adentro. Vacía se apaga y le queda el testigo rojo. */
+function drawCapsula(g,c){
+  const on = !c.alarm;
+  const col = (on && c.piece && PIE[c.piece]) ? PIE[c.piece].color : "#5A6470";
+  g.fillStyle="#00000040"; g.beginPath(); g.ellipse(24,42,15,4,0,0,7); g.fill();
+  g.fillStyle="#3A4150"; rr(g,10,36,28,6,2); g.fill();            // la base
+  g.fillStyle="#2A303C"; rr(g,12,38,24,3,1.5); g.fill();
+  /* el tubo */
+  g.fillStyle="#8FB8C866"; rr(g,13,10,22,27,4); g.fill();
+  g.fillStyle="#FFFFFF22"; rr(g,15,12,5,23,2.5); g.fill();        // el reflejo
+  if(on && c.piece){
+    /* el cristal, flotando, con su resplandor */
+    g.save();
+    g.shadowColor = col; g.shadowBlur = 9;
+    g.fillStyle = col;
+    g.beginPath(); g.moveTo(24,17); g.lineTo(31,24); g.lineTo(24,31); g.lineTo(17,24);
+      g.closePath(); g.fill();
+    g.restore();
+    g.fillStyle="#FFFFFF66";
+    g.beginPath(); g.moveTo(24,19); g.lineTo(28,24); g.lineTo(24,22); g.closePath(); g.fill();
+  }
+  g.fillStyle="#4A525F"; rr(g,11,7,26,5,2); g.fill();             // la tapa
+  g.fillStyle="#5E6874"; rr(g,19,5,10,3,1.5); g.fill();
+  if(on){
+    g.fillStyle="#7FD6A0"; g.beginPath(); g.arc(33,39,1.7,0,7); g.fill();
+  }else{
+    g.fillStyle="#E0685D"; g.beginPath(); g.arc(33,39,2.4,0,7); g.fill();
+    g.fillStyle="#E0685D33"; g.beginPath(); g.arc(33,39,6,0,7); g.fill();
+  }
+}
+
 function drawHeladera(g,c){
   const on = !c.alarm;
   g.fillStyle="#00000026"; g.beginPath(); g.ellipse(24,41,17,4.5,0,0,7); g.fill();
@@ -5036,6 +5165,7 @@ function drawSombrillaPlaya(g){
 
 function drawVitrina(g,c){
   if(JUEGO === 3) return drawHeladera(g,c);
+  if(JUEGO === 4) return drawCapsula(g,c);
   const on = !c.alarm;
   g.fillStyle="#00000035"; rr(g,9,36,30,6,3); g.fill();
   g.fillStyle="#2E3440"; rr(g,9,30,30,10,2); g.fill();       // base
@@ -5092,6 +5222,23 @@ function drawBirra(g){
   g.fillStyle="#0B3A2626"; g.fillRect(28,14,1.8,24);
 }
 
+/* El tubo de oxígeno: el mate del espacio. Parado encima te devuelve los
+   pasos que ya diste, igual que el mate. */
+function drawTubo(g){
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,41,9,3.4,0,0,7); g.fill();
+  g.fillStyle="#D8DEE6"; rr(g,17,12,14,28,6); g.fill();           // el cilindro
+  g.fillStyle="#FFFFFF88"; rr(g,19,15,3.4,20,1.7); g.fill();      // el brillo
+  g.fillStyle="#2F9CB8"; rr(g,17,26,14,6,1); g.fill();            // la banda
+  g.fillStyle="#00000022"; g.fillRect(17,31,14,1.4);
+  g.fillStyle="#8E9AA3"; rr(g,20.5,7,7,6,2); g.fill();            // la válvula
+  g.fillStyle="#5E6874"; g.beginPath(); g.arc(24,7,3,0,7); g.fill();
+  g.fillStyle="#C2CBD0"; g.beginPath(); g.arc(24,7,1.4,0,7); g.fill();
+  g.fillStyle="#1C2028"; g.beginPath(); g.arc(30,17,3.2,0,7); g.fill();  // el manómetro
+  g.fillStyle="#7FD6A0"; g.beginPath(); g.arc(30,17,2.2,0,7); g.fill();
+  g.strokeStyle="#1C2028"; g.lineWidth=1;
+  g.beginPath(); g.moveTo(30,17); g.lineTo(31.6,15.4); g.stroke();
+}
+
 function drawMate(g){
   if(JUEGO === 3) return drawBirra(g);
   g.fillStyle="#00000035"; rr(g,15,36,18,5,2); g.fill();
@@ -5122,6 +5269,7 @@ function drawCarpa(g){
 
 function drawPlanta(g){
   if(JUEGO === 3) return drawSombrillaPlaya(g);
+  if(JUEGO === 4) return drawCultivo(g);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,42,15,5,0,0,7); g.fill();
   g.fillStyle="#A8623C"; rr(g,13,27,22,16,3); g.fill();          // maceta
   g.fillStyle="#BA7047"; g.fillRect(11,25,26,5);
@@ -5171,6 +5319,7 @@ function drawCamara(g, c, x, y){
   const dir = cam ? haciaDondeMira(cam) : [1,0];
   const ang = Math.atan2(dir[1], dir[0]);
   if(JUEGO === 3) return drawFaro(g, ang);
+  if(JUEGO === 4) return drawDron(g, ang);
   g.save();
   g.translate(24, 20);
   g.fillStyle="#00000028"; g.beginPath(); g.ellipse(0,17,10,3.4,0,0,7); g.fill();
@@ -5183,6 +5332,78 @@ function drawCamara(g, c, x, y){
   g.restore();
 }
 
+
+/* El cultivo hidropónico: donde te escondés en el espacio. La planta sigue
+   siendo una planta, que es la gracia. */
+function drawCultivo(g){
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,40,16,4,0,0,7); g.fill();
+  g.fillStyle="#3A4150"; rr(g,7,28,34,11,2.5); g.fill();          // la bandeja
+  g.fillStyle="#2A303C"; rr(g,9,30,30,3,1.5); g.fill();
+  g.fillStyle="#1E4A33"; rr(g,9,31,30,6,1.5); g.fill();           // el sustrato
+  /* los brotes */
+  for(let k = 0; k < 5; k++){
+    const bx = 11 + k*4.8;
+    g.strokeStyle="#4FA85F"; g.lineWidth=1.6; g.lineCap="round";
+    g.beginPath(); g.moveTo(bx, 32); g.lineTo(bx + (k%2?1.6:-1.6), 22); g.stroke();
+    g.fillStyle= k%2 ? "#6FCB8A" : "#4FA85F";
+    g.beginPath(); g.ellipse(bx + (k%2?2.6:-2.6), 21, 3.4, 2, k%2?.5:-.5, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(bx + (k%2?-1:1), 24, 2.8, 1.7, k%2?-.4:.4, 0, 7); g.fill();
+  }
+  /* la barra de luz de arriba, que es lo que lo hace hidropónico */
+  g.fillStyle="#3A4150"; rr(g,8,6,32,5,2); g.fill();
+  g.fillStyle="#FFE9A8"; rr(g,10,9,28,2.4,1.2); g.fill();
+  g.fillStyle="#FFE9A825"; rr(g,10,11,28,7,3); g.fill();
+}
+
+/* La esclusa: entrás por una y salís por la otra, como la escalera. */
+function drawEsclusa(g){
+  g.fillStyle="#2A303C"; rr(g,5,5,38,38,4); g.fill();             // el mamparo
+  g.fillStyle="#00000030"; rr(g,7,7,34,34,3); g.fill();
+  g.fillStyle="#3A4150"; g.beginPath(); g.arc(24,24,15,0,7); g.fill();  // la escotilla
+  g.fillStyle="#4A525F"; g.beginPath(); g.arc(24,24,12.5,0,7); g.fill();
+  g.fillStyle="#1C2028"; g.beginPath(); g.arc(24,24,8.5,0,7); g.fill();
+  /* el vidrio, con el vacío del otro lado */
+  g.fillStyle="#0B1026"; g.beginPath(); g.arc(24,24,7,0,7); g.fill();
+  g.fillStyle="#FFFFFF"; 
+  for(const p of [[21,21,.9],[27,22,.7],[24,27,.8],[20,26,.6]]){
+    g.globalAlpha = .85; g.beginPath(); g.arc(p[0],p[1],p[2],0,7); g.fill();
+  }
+  g.globalAlpha = 1;
+  g.fillStyle="#FFFFFF18"; g.beginPath(); g.arc(21,21,3.4,0,7); g.fill();
+  /* los bulones y la manija */
+  g.fillStyle="#5E6874";
+  for(let k = 0; k < 8; k++){
+    const a = k * Math.PI/4;
+    g.beginPath(); g.arc(24 + Math.cos(a)*13.6, 24 + Math.sin(a)*13.6, 1.5, 0, 7); g.fill();
+  }
+  g.strokeStyle="#C2CBD0"; g.lineWidth=2.4; g.lineCap="round";
+  g.beginPath(); g.moveTo(16,32); g.lineTo(32,16); g.stroke();
+  g.fillStyle="#C2CBD0"; g.beginPath(); g.arc(24,24,2.2,0,7); g.fill();
+}
+
+/* El dron de vigilancia: la cámara del espacio. Barre en línea recta y gira
+   un cuarto de vuelta por ronda, así que lo que rota es él entero. */
+function drawDron(g, ang){
+  g.fillStyle="#00000040"; g.beginPath(); g.ellipse(24,40,10,3.4,0,0,7); g.fill();
+  g.save();
+  g.translate(24, 22); g.rotate(ang);
+  /* los cuatro brazos con sus hélices */
+  g.strokeStyle="#3A4150"; g.lineWidth=2.4;
+  for(let k = 0; k < 4; k++){
+    const a = k * Math.PI/2 + Math.PI/4;
+    const ex = Math.cos(a)*11, ey = Math.sin(a)*11;
+    g.beginPath(); g.moveTo(0,0); g.lineTo(ex,ey); g.stroke();
+    g.fillStyle="#2A303C"; g.beginPath(); g.arc(ex,ey,3.4,0,7); g.fill();
+    g.fillStyle="#FFFFFF22"; g.beginPath(); g.ellipse(ex,ey,4.4,1.2,a,0,7); g.fill();
+  }
+  g.fillStyle="#4A525F"; rr(g,-6,-5,12,10,3); g.fill();           // el cuerpo
+  g.fillStyle="#5E6874"; rr(g,-4.4,-3.6,8.8,4,2); g.fill();
+  /* el ojo, del lado al que mira */
+  g.fillStyle="#1C2028"; g.beginPath(); g.arc(6.5,0,3.4,0,7); g.fill();
+  g.fillStyle="#BFE8F4"; g.beginPath(); g.arc(7.2,-.6,1.6,0,7); g.fill();
+  g.fillStyle="#E0685D"; g.beginPath(); g.arc(-5,0,1.4,0,7); g.fill();   // el testigo
+  g.restore();
+}
 
 /* El faro chiquito: la cámara de la playa. Gira la luz, no la torre. */
 function drawFaro(g, ang){
@@ -5223,8 +5444,10 @@ function drawFaro(g, ang){
 
 /* la escalera mecánica: los escalones y la flecha del sentido */
 function drawEscalera(g){
-  /* En la playa la escalera es la carpa: te metes en una y salis por la otra. */
+  /* En la playa la escalera es la carpa y en el espacio la esclusa: entrás
+     por una y salís por la otra. */
   if(JUEGO === 3) return drawCarpa(g);
+  if(JUEGO === 4) return drawEsclusa(g);
   g.save();
   g.fillStyle="#00000022"; rr(g,6,8,36,32,3); g.fill();
   g.fillStyle="#7E8695";
@@ -5345,6 +5568,7 @@ function drawPuestoPlaya(g,open){
 
 function drawSalida(g,open){
   if(JUEGO === 3) return drawPuestoPlaya(g,open);
+  if(JUEGO === 4) return drawNave(g,open);
   g.fillStyle="#232830"; g.fillRect(0,0,48,48);
   g.fillStyle=open?"#2C4A3A":"#2E333C"; g.fillRect(8,12,32,36);         // puerta
   g.strokeStyle=open?"#79AE9E":"#4A505C"; g.lineWidth=2; g.strokeRect(8,12,32,36);
@@ -5357,6 +5581,40 @@ function drawSalida(g,open){
   g.fillText(open?"SALIDA":"CERRADO",24,6);
   if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
     g.fillStyle=`rgba(121,174,158,${.10+p*.20})`; g.fillRect(0,0,48,48); }
+}
+
+/* La nave: adonde te escapás. Cerrada hasta que entregues las tres; abierta,
+   el túnel de acople se ilumina y se ve el vacío del otro lado. */
+function drawNave(g,open){
+  g.fillStyle="#14181F"; g.fillRect(0,0,48,48);
+  /* el túnel de acople, visto de frente */
+  g.fillStyle="#3A4150"; rr(g,6,8,36,34,4); g.fill();
+  g.fillStyle="#2A303C"; rr(g,9,11,30,28,3); g.fill();
+  for(const r of [13.5, 10, 6.5]){                     // los aros del túnel
+    g.strokeStyle= open ? "#7FD6A0" : "#4A525F";
+    g.lineWidth= r === 13.5 ? 2.2 : 1.6;
+    g.globalAlpha = open ? 1 : .8;
+    g.beginPath(); g.arc(24,25,r,0,7); g.stroke();
+  }
+  g.globalAlpha = 1;
+  if(open){
+    /* el fondo del túnel: el vacío y una estrella */
+    g.fillStyle="#0B1026"; g.beginPath(); g.arc(24,25,5.4,0,7); g.fill();
+    g.fillStyle="#FFFFFF"; g.beginPath(); g.arc(22.5,23.5,.9,0,7); g.fill();
+    g.beginPath(); g.arc(26,26.5,.7,0,7); g.fill();
+    g.save(); g.shadowColor="#7FD6A0"; g.shadowBlur=10;
+    g.strokeStyle="#7FD6A0"; g.lineWidth=1.6;
+    g.beginPath(); g.arc(24,25,8.6,0,7); g.stroke(); g.restore();
+  }else{
+    g.fillStyle="#1C2028"; g.beginPath(); g.arc(24,25,5.4,0,7); g.fill();
+  }
+  /* el cartel de arriba */
+  g.fillStyle= open ? "#2A5C3E" : "#33383F"; rr(g,7,1,34,7,1.5); g.fill();
+  g.fillStyle= open ? "#EAFFF5" : "#8A9099";
+  g.font="bold 6px system-ui"; g.textAlign="center"; g.textBaseline="middle";
+  g.fillText(open ? "ACOPLADA" : "SIN ACOPLE", 24, 4.6);
+  if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(121,174,158,${.08+p*.16})`; g.fillRect(0,0,48,48); }
 }
 
 /* Escritorio. Sin luces de estado: las lucecitas son solo de la vitrina, que
@@ -5416,6 +5674,7 @@ function drawDucha(g){
 
 function drawPuesto(g,mine){
   if(JUEGO === 3) return drawReposera(g,mine);
+  if(JUEGO === 4) return drawConsola(g,mine);
   g.fillStyle="#00000030"; rr(g,4,12,40,30,3); g.fill();
   // silla, asomando por detrás
   g.fillStyle="#39404D"; rr(g,17,2,14,13,4); g.fill();
@@ -5445,7 +5704,55 @@ function drawPuesto(g,mine){
   }
 }
 
+/* Tu consola, y la del comandante al lado. Es el escritorio del espacio: el
+   lugar propio de cada uno, adonde las cartas los mandan a volver. */
+function drawConsola(g,mine){
+  const luz = mine ? "#5FD8E8" : "#E0685D";
+  g.fillStyle="#00000038"; rr(g,4,14,40,28,3); g.fill();
+  g.fillStyle="#39404D"; rr(g,17,3,14,12,3); g.fill();            // la butaca
+  g.fillStyle="#2E353F"; rr(g,19,5,10,9,2); g.fill();
+  g.fillStyle= mine ? "#3A4150" : "#43394A"; rr(g,3,14,42,26,2); g.fill();  // la mesa
+  g.fillStyle= mine ? "#4A525F" : "#53495C"; g.fillRect(3,14,42,4);
+  /* las tres pantallas */
+  for(let k = 0; k < 3; k++){
+    const sx = 7 + k*12.5;
+    g.fillStyle="#1C2028"; rr(g,sx,18,10.5,9,1.5); g.fill();
+    g.fillStyle= luz + "44"; rr(g,sx+1,19,8.5,7,1); g.fill();
+    g.fillStyle= luz;
+    for(let i = 0; i < 3; i++) g.fillRect(sx+2, 20 + i*2, 6.5 - i*2, .9);
+  }
+  g.fillStyle="#C9C4B9"; rr(g,14,30,20,3.4,1); g.fill();          // el teclado
+  g.fillStyle="#00000022"; g.fillRect(3,27,42,1.2);
+  /* el cartelito: el tuyo con tu inicial, el suyo en rojo */
+  if(mine){
+    g.fillStyle="#D9D4C7"; rr(g,4,34,13,7,1); g.fill();
+    g.fillStyle="#3A3F4A"; g.font="bold 6px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText((S.hero.n.replace("El ","")[0]||"").toUpperCase(), 10.5, 38);
+  }else{
+    g.fillStyle="#8A3A34"; rr(g,4,34,21,7,1); g.fill();
+    g.fillStyle="#F2E6E4"; g.font="bold 5px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText("COMANDO", 14.5, 38);
+  }
+}
+
+/* La esclusa sanitaria: el baño del espacio, que es una cabina y nada más. */
+function drawCabina(g){
+  g.fillStyle="#00000030"; rr(g,11,36,26,5,2.5); g.fill();
+  g.fillStyle="#3A4150"; rr(g,11,8,26,30,3); g.fill();            // la cabina
+  g.fillStyle="#2A303C"; rr(g,13,10,22,26,2); g.fill();
+  g.fillStyle="#4A525F"; rr(g,14,11,20,13,2); g.fill();           // la puerta
+  g.fillStyle="#1C2028"; rr(g,16,13,16,8,1.5); g.fill();
+  g.fillStyle="#8FB8C833"; rr(g,17,14,14,6,1); g.fill();          // el vidrio
+  g.fillStyle="#5E6874"; rr(g,15,26,18,7,1.5); g.fill();          // el panel
+  g.fillStyle="#7FD6A0"; g.beginPath(); g.arc(19,29.5,1.5,0,7); g.fill();
+  g.fillStyle="#3A4150"; g.fillRect(23,28,8,1.4); g.fillRect(23,31,6,1.4);
+  g.fillStyle="#C2CBD0"; g.fillRect(31,17,2.6,3);                 // la manija
+}
+
 function drawBanio(g){
+  if(JUEGO === 4) return drawCabina(g);
   if(JUEGO === 3) return drawDucha(g);
   g.fillStyle="#00000030"; rr(g,13,34,22,6,3); g.fill();
   g.fillStyle="#E8E6E0"; rr(g,16,18,16,18,4); g.fill();                 // inodoro
@@ -5456,10 +5763,19 @@ function drawBanio(g){
 
 function drawComplice(g,c){
   const quien = compOf(c.want);
-  const who = deVacaciones(CREW[quien], quien), piece = PIE[c.want];
+  const who = deEspacio(deVacaciones(CREW[quien], quien)), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
-  if(JUEGO === 3){
+  if(JUEGO === 4){
+    /* el módulo: una consola chica con su pantalla, y el tripulante sentado */
+    g.fillStyle="#3A4150"; rr(g,9,20,30,17,2.5); g.fill();
+    g.fillStyle="#4A525F"; g.fillRect(9,20,30,3);
+    g.fillStyle="#1C2028"; rr(g,12,24,24,8,1.5); g.fill();
+    g.fillStyle= piece.color + "55"; rr(g,13,25,22,6,1); g.fill();
+    g.fillStyle= piece.color;
+    g.fillRect(14,26,8,1); g.fillRect(14,28,12,1); g.fillRect(14,30,6,1);
+    g.fillStyle="#00000022"; g.fillRect(9,32,30,1.2);
+  }else if(JUEGO === 3){
     /* la toalla tendida, con las rayas de siempre */
     g.fillStyle="#F4F1E8"; rr(g,8,20,32,18,2); g.fill();
     g.fillStyle= piece.color;
@@ -5493,6 +5809,14 @@ const PLAYEROS = {
   lamber:"musculosa", chuna:"musculosa", tomy:"torso", matxi:"musculosa",
   chupa:"torso", marian:"musculosa",
 };
+/* En el espacio van los nueve con traje. No hay lista de quién lleva qué
+   como en la playa: acá el traje es obligatorio para todos, que es justo el
+   chiste. */
+function deEspacio(look){
+  if(JUEGO !== 4 || !look) return look;
+  return Object.assign({}, look, {espacio:true});
+}
+
 function deVacaciones(look, heroKey){
   if(JUEGO !== 3 || !look) return look;
   const como = PLAYEROS[heroKey];
@@ -5528,6 +5852,17 @@ function drawPerson(g, look, bob, alpha){
       g.fillRect(-9.5,-8+bob,3.2,7); g.fillRect(6.3,-8+bob,3.2,7);
     }
   }
+  if(look.espacio){
+    /* el peto del traje: los tirantes de la mochila de oxígeno y el panel de
+       control en el pecho. Va debajo del nombre, que en el traje es el
+       parche cosido. */
+    g.fillStyle = "#D8DEE6";
+    g.fillRect(-7.4, -8 + bob, 2.6, 9); g.fillRect(4.8, -8 + bob, 2.6, 9);
+    g.fillStyle = "#00000022"; g.fillRect(-9.5, 3 + bob, 19, 2.2);
+    g.fillStyle = "#3A4150"; rr(g, 4.4, 1.6 + bob, 5.2, 4.4, 1); g.fill();
+    g.fillStyle = "#7FD6A0"; g.fillRect(5.2, 2.6 + bob, 1.4, 1.4);
+    g.fillStyle = "#5FD8E8"; g.fillRect(7.2, 2.6 + bob, 1.4, 1.4);
+  }
   if(look.viste) vestirCuerpo(g, look.viste, bob);   // debajo del nombre, nunca encima
   if(look.tag){                                                                // nombre estampado
     g.save();
@@ -5549,6 +5884,7 @@ function drawPerson(g, look, bob, alpha){
   g.fillStyle="#1C1F26";
   g.beginPath(); g.arc(-2.9,-14.8+bob,1.15,0,7); g.fill();
   g.beginPath(); g.arc(2.9,-14.8+bob,1.15,0,7); g.fill();
+  if(look.espacio) ponerCasco(g, look, bob);
   if(look.viste) vestirCabeza(g, look.viste, bob);
   g.globalAlpha=1;
   g.restore();
@@ -5712,6 +6048,34 @@ function vestirCabeza(g, d, bob){
   }
 }
 
+/* El casco: un aro alrededor de la cara y el visor, que es un brillo en
+   diagonal. La cara queda a la vista —si el visor la tapara no se sabría
+   quién es— y abajo va el collarín, que es lo que lo hace traje y no gorra. */
+function ponerCasco(g, look, bob){
+  const y = -14.5 + bob;
+  /* el collarín, apoyado en los hombros */
+  g.fillStyle = "#D8DEE6"; rr(g, -8.6, y + 6.4, 17.2, 4.4, 2); g.fill();
+  g.fillStyle = "#00000022"; g.fillRect(-8.6, y + 9.4, 17.2, 1.4);
+  /* la burbuja */
+  g.strokeStyle = "#D8DEE6"; g.lineWidth = 2.6;
+  g.beginPath(); g.arc(0, y, 9.4, 0, 7); g.stroke();
+  g.strokeStyle = "#8FB8C8"; g.lineWidth = 1;
+  g.beginPath(); g.arc(0, y, 8.1, 0, 7); g.stroke();
+  /* el reflejo del visor: una franja en diagonal y nada más, para no taparle
+     la cara */
+  g.save();
+  g.beginPath(); g.arc(0, y, 8.4, 0, 7); g.clip();
+  g.fillStyle = "#FFFFFF2E";
+  g.beginPath(); g.moveTo(-9, y - 2); g.lineTo(-2, y - 9);
+  g.lineTo(2, y - 9); g.lineTo(-9, y + 2); g.closePath(); g.fill();
+  g.restore();
+  /* la antena y la luz del casco */
+  g.strokeStyle = "#B9C0C8"; g.lineWidth = 1.2; g.lineCap = "round";
+  g.beginPath(); g.moveTo(7, y - 6.4); g.lineTo(10.4, y - 11); g.stroke();
+  g.fillStyle = "#E0685D"; g.beginPath(); g.arc(10.6, y - 11.4, 1.4, 0, 7); g.fill();
+  g.fillStyle = "#FFE9A8"; g.beginPath(); g.arc(-7.4, y - 5.6, 1.6, 0, 7); g.fill();
+}
+
 /* La melena va DETRÁS de la cara. Si se dibuja encima, tapa los ojos y el
    personaje termina pareciendo el Tío Cosa. */
 function drawHairBack(g, look, bob){
@@ -5775,6 +6139,7 @@ const FOE_PLAYA = {
 };
 
 function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
+  const enTraje = JUEGO === 4;
   const playa = JUEGO === 3 ? FOE_PLAYA[look] : null;
   const body = playa ? playa.c : (FOE_BODY[look] || "#262B38");
   const oscuro = look!=="guardapolvo";
@@ -5851,6 +6216,22 @@ function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
   }
 
   g.fillStyle="#E8B98A"; g.beginPath(); g.arc(0,-16+bob,8.6,0,7); g.fill();
+  if(enTraje){
+    /* el casco del jefe: el mismo aro, un poco más grande, y el visor
+       espejado, que es lo que lo hace autoridad y no tripulante */
+    const y = -16 + bob;
+    g.fillStyle="#B9C0C8"; rr(g,-9.4,y+6.6,18.8,4.6,2); g.fill();
+    g.strokeStyle="#C2CBD0"; g.lineWidth=2.8;
+    g.beginPath(); g.arc(0,y,10,0,7); g.stroke();
+    g.save();
+    g.beginPath(); g.arc(0,y,8.8,0,7); g.clip();
+    g.fillStyle="#1C2C3E88"; g.fillRect(-10,y-10,20,20);
+    g.fillStyle="#FFFFFF33";
+    g.beginPath(); g.moveTo(-9,y-1); g.lineTo(-1,y-9);
+    g.lineTo(3,y-9); g.lineTo(-9,y+3); g.closePath(); g.fill();
+    g.restore();
+    g.fillStyle="#E0685D"; g.beginPath(); g.arc(8.2,y-6.2,1.5,0,7); g.fill();
+  }
 
   if(look==="traje"){                                               // calvo con canas
     g.fillStyle="#8D939E";
@@ -5975,7 +6356,7 @@ function frame(now){
     const c=S.grid[y][x];
     switch(c.type){
       case "vitrina":  inCell(ctx,x,y,g=>{ drawVitrina(g,c); if(c.reloj) drawRelojito(g,c); }); break;
-      case "mate":     inCell(ctx,x,y,g=>drawMate(g)); break;
+      case "mate":     inCell(ctx,x,y,g=>(JUEGO === 4 ? drawTubo(g) : drawMate(g))); break;
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>drawMojado(g)); break;
       case "camara":   inCell(ctx,x,y,g=>drawCamara(g,c,x,y)); break;
@@ -6307,7 +6688,7 @@ function syncUI(){
       const tomar = canDrinkHere() ? "drinkMate()" : (iM >= 0 ? "useObject(" + iM + ")" : null);
       ele.innerHTML =
         (tomar ? '<button class="ele si" title="' + enJerga("Tomar el mate") +
-                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : "🧉") + '</button>' : "") +
+                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : JUEGO === 4 ? "🫧" : "🧉") + '</button>' : "") +
         '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
       /* Pegado a vos, medido sobre el lienzo. El marco incluye el cartel y
          la barra de abajo, así que un porcentaje del marco no cae donde uno
@@ -6551,7 +6932,7 @@ function dibujarCara(el, heroKey, disfrazId){
   g.scale(1.35,1.35);
   /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
      mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
-  let look = deVacaciones(CREW[heroKey], heroKey);
+  let look = deEspacio(deVacaciones(CREW[heroKey], heroKey));
   if(disfrazId === undefined) look = conDisfraz(look);
   else if(disfrazId && DISFRACES[disfrazId]){
     const d = DISFRACES[disfrazId];
@@ -6586,11 +6967,15 @@ function temaDeSala(sala){
      le da identidad a cada sala; acá la arena YA tiene color propio y al 24%
      un acento turquesa la dejaba verde. El acento sigue estando en el borde de
      la tarjeta, el número y las bolitas, que es donde se lee la sala. */
+  /* Y la rejilla de metal, igual: el acento al 13% le daba un tinte dorado y
+     dejaba de leerse como metal. El color de la sala vive en el borde de la
+     tarjeta, el número y las bolitas. */
   const arena = base.patron === "arena";
-  const kPiso  = arena ? 0.05 : (oscuro ? 0.13 : 0.24);
+  const propio = arena || base.patron === "rejilla";
+  const kPiso  = propio ? 0.05 : (oscuro ? 0.13 : 0.24);
   const kLuz   = arena ? 0.12 : (oscuro ? 0.30 : 0.45);
   const kPared = arena ? 0.04 : (oscuro ? 0.05 : 0.09);
-  const kFondo = arena ? 0.07 : (oscuro ? 0.16 : 0.34);
+  const kFondo = propio ? 0.07 : (oscuro ? 0.20 : 0.34);
   return Object.assign({}, base, {
     afuera: sala.afuera || null,
     piso  : [mezcla(base.piso[0], ac, kPiso), mezcla(base.piso[1], ac, kPiso)],
@@ -7608,7 +7993,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "38e753707c";
+const VERSION = "9c2d794be9";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
