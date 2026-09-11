@@ -3370,6 +3370,16 @@ function cargarJuego(n){
     document.body.classList.toggle("juego3", n === 3);
     document.body.classList.toggle("juego4", n === 4);
     document.body.classList.toggle("juego5", n === 5);
+    /* Y la piel de la edición: clara u oscura según su sala cero. El menú de
+       las diez salas se ve antes de que exista una partida, así que sin esto
+       heredaba la piel de la sala que venías jugando —del espacio al menú de
+       la montaña, oscuro sobre una edición que es clara—. Al empezar una
+       partida, syncUI la ajusta sala por sala, como siempre. */
+    /* el desafío diario arma su sala al empezar, así que puede no tener
+       ninguna todavía: en ese caso vale el primer tema de la edición */
+    const sala0 = Object.values(j.salas)[0];
+    const tema0 = (sala0 && j.themes[sala0.piso]) || Object.values(j.themes)[0];
+    if(tema0) document.body.classList.toggle("claro", !tema0.oscuro);
   }
   return true;
 }
@@ -8739,7 +8749,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "35a3a78a94";
+const VERSION = "288e351d75";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
