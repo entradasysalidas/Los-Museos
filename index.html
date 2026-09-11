@@ -5348,21 +5348,46 @@ function vestirCuerpo(g, d, bob){
       g.strokeStyle=d.c1; g.lineWidth=.9;
       g.beginPath(); g.moveTo(0,-8+bob); g.lineTo(0,7+bob); g.stroke();
       g.fillStyle="#8FA88F"; g.fillRect(3.4,-4.5+bob,3.2,4); break;
-    case "lunares":
-      g.fillStyle=d.c1;
-      [[-5.5,-4.5],[4.5,-5],[-3,3],[5,2.5],[0,5]].forEach(p=>{
-        g.beginPath(); g.arc(p[0],p[1]+bob,1.7,0,7); g.fill(); });
-      g.fillStyle=d.c2; g.beginPath(); g.arc(0,-6.5+bob,2.2,0,7); g.fill(); break;
-    case "panza":                                       // panza clara del dino
-      g.fillStyle="#CFE3C0"; rr(g,-5,-3+bob,10,9,3); g.fill();
-      g.fillStyle=d.c2;
-      [[-8,-6],[-4,-7.5],[0,-8],[4,-7.5],[8,-6]].forEach(p=>{
-        g.beginPath(); g.moveTo(p[0]-1.6,p[1]+bob+2); g.lineTo(p[0],p[1]+bob-1.6);
-        g.lineTo(p[0]+1.6,p[1]+bob+2); g.fill(); }); break;
-    case "bombilla":                                    // la bombilla del mate
-      g.strokeStyle=d.c2; g.lineWidth=1.6; g.lineCap="round";
-      g.beginPath(); g.moveTo(4,-6+bob); g.lineTo(9,-15+bob); g.stroke();
-      g.fillStyle="#00000022"; rr(g,-9.5,-2+bob,19,4,2); g.fill(); break;
+    case "lunares":                                   // payaso: golilla y pompones
+      /* la golilla es lo que lo hace payaso de un vistazo: cinco bollos
+         claros cruzando los hombros, arriba de todo */
+      g.fillStyle=d.c1;                               // los pompones del frente
+      [[0,-3.5],[0,1],[0,5.5]].forEach(p=>{
+        g.beginPath(); g.arc(p[0],p[1]+bob,2.2,0,7); g.fill(); });
+      g.fillStyle=d.c2;                               // los puños
+      g.fillRect(-11.5,2+bob,2.6,3.4); g.fillRect(8.9,2+bob,2.6,3.4);
+      [-6.5,-3.2,0,3.2,6.5].forEach(x=>{             // la golilla
+        g.beginPath(); g.arc(x,-8.4+bob,3,0,7); g.fill(); });
+      g.fillStyle="#00000018";
+      [-6.5,-3.2,0,3.2,6.5].forEach(x=>{
+        g.beginPath(); g.arc(x,-7.4+bob,3,Math.PI*.15,Math.PI*.85); g.fill(); });
+      break;
+    case "panza":                                     // dino: panza, cresta y cola
+      g.fillStyle=d.c2;                               // la cola, asomando atrás
+      g.beginPath();
+      g.moveTo(-9,2+bob); g.quadraticCurveTo(-17,4+bob,-15,10+bob);
+      g.quadraticCurveTo(-13,6+bob,-8,6+bob); g.fill();
+      g.fillStyle="#CFE3C0"; rr(g,-5.5,-5+bob,11,10,3.5); g.fill(); // la panza
+      g.fillStyle="#00000014";
+      for(let i=0;i<3;i++) g.fillRect(-4.9,-3+bob+i*3,9.8,1.1);  // las rayas
+      g.fillStyle=d.c2;                               // la cresta, hombro a hombro
+      [[-8,-6],[-4,-7.6],[0,-8.4],[4,-7.6],[8,-6]].forEach(p=>{
+        g.beginPath(); g.moveTo(p[0]-2,p[1]+bob+2.4); g.lineTo(p[0],p[1]+bob-2.2);
+        g.lineTo(p[0]+2,p[1]+bob+2.4); g.fill(); });
+      break;
+    case "bombilla":                                  // mate: la calabaza entera
+      g.fillStyle=d.c1;                               // el cuerpo, bien panzón
+      g.beginPath(); g.ellipse(0,0+bob,8.6,7.6,0,0,7); g.fill();
+      g.fillStyle="#00000020";                        // la sombra de abajo
+      g.beginPath(); g.ellipse(0,2+bob,8.6,5,0,0,Math.PI); g.fill();
+      g.fillStyle=d.c2;                               // el aro de metal
+      g.fillRect(-6.6,-6.6+bob,13.2,2);
+      g.fillStyle="#3E7A4A";                          // la yerba asomando
+      g.beginPath(); g.ellipse(0,-6.5+bob,5.6,1.9,0,Math.PI,0); g.fill();
+      g.strokeStyle=d.c2; g.lineWidth=1.8; g.lineCap="round";   // la bombilla
+      g.beginPath(); g.moveTo(3.5,-4.5+bob); g.lineTo(9.5,-14+bob); g.stroke();
+      g.fillStyle=d.c2; g.beginPath(); g.arc(9.5,-14.5+bob,1.5,0,7); g.fill();
+      break;
   }
 }
 
@@ -5401,23 +5426,45 @@ function vestirCabeza(g, d, bob){
     case "vincha":
       g.fillStyle=d.c2; g.fillRect(-8,y-3.4,16,2.2);
       g.beginPath(); g.arc(-7.4,y-4.6,2,0,7); g.fill(); break;
-    case "payaso":                                      // pelo colorado y nariz
+    case "payaso":                                    // cara blanca, nariz y gorrito
+      /* nada de pintarle la cara entera: le tapaba los ojos y quedaba un
+         bollo. El payaso se lee por el pelo, el gorro y la nariz. */
+      g.fillStyle=d.c1;                               // el pelo colorado
+      g.beginPath(); g.arc(-7.8,y-1.2,4,0,7); g.fill();
+      g.beginPath(); g.arc(7.8,y-1.2,4,0,7); g.fill();
+      g.fillStyle=d.c2;                               // el gorrito de cono
+      g.beginPath(); g.moveTo(-4.6,y-6.4); g.lineTo(4.6,y-6.4);
+      g.lineTo(0.6,y-15); g.closePath(); g.fill();
+      g.fillStyle=d.c1; g.beginPath(); g.arc(0.6,y-15.6,2,0,7); g.fill();
+      g.beginPath(); g.arc(0,y+1.8,2.4,0,7); g.fill();          // la nariz
+      g.fillStyle="#FFFFFF60";
+      g.beginPath(); g.arc(-.7,y+1.1,.9,0,7); g.fill();
+      g.fillStyle=d.c1;                               // los cachetes
+      g.beginPath(); g.arc(-4.6,y+2.6,1.5,0,7); g.fill();
+      g.beginPath(); g.arc(4.6,y+2.6,1.5,0,7); g.fill();
+      break;
+    case "dino":                                      // capucha, hocico y cresta
       g.fillStyle=d.c1;
-      g.beginPath(); g.arc(-7.6,y-1.4,3.6,0,7); g.fill();
-      g.beginPath(); g.arc(7.6,y-1.4,3.6,0,7); g.fill();
-      g.fillStyle=d.c2; g.beginPath(); g.arc(0,y-6.6,2.4,0,7); g.fill();
-      g.fillStyle="#E0685D"; g.beginPath(); g.arc(0,y-12.5+11,2.1,0,7); g.fill(); break;
-    case "dino":                                        // capucha con cresta
+      g.beginPath(); g.arc(0,y-1,8.8,Math.PI,0); g.fill();
+      g.fillRect(-8.8,y-1.4,17.6,3.2);
+      rr(g,5.5,y-1.4,8.5,6,2.2); g.fill();            // el hocico, saliendo
+      g.fillStyle="#00000022"; g.fillRect(7,y+1.4,6,1);
+      g.fillStyle="#F6F2EC";                          // un diente
+      g.beginPath(); g.moveTo(11,y+2.4); g.lineTo(12.4,y+4.6);
+      g.lineTo(12.8,y+2.4); g.fill();
+      g.fillStyle=d.c2;                               // la cresta de la capucha
+      [[-5,-9.6],[0,-11],[5,-9.6]].forEach(p=>{
+        g.beginPath(); g.moveTo(p[0]-2.2,y+p[1]+2.8); g.lineTo(p[0],y+p[1]-2);
+        g.lineTo(p[0]+2.2,y+p[1]+2.8); g.fill(); });
+      break;
+    case "mate":                                      // el mate chico, de sombrero
       g.fillStyle=d.c1;
-      g.beginPath(); g.arc(0,y-1,8.6,Math.PI,0); g.fill();
-      g.fillRect(-8.6,y-1.4,17.2,2.4);
-      g.fillStyle=d.c2;
-      [[-4,-9.5],[0,-10.6],[4,-9.5]].forEach(p=>{
-        g.beginPath(); g.moveTo(p[0]-1.8,y+p[1]+2.4); g.lineTo(p[0],y+p[1]-1.4);
-        g.lineTo(p[0]+1.8,y+p[1]+2.4); g.fill(); }); break;
-    case "mate":                                        // una calabaza por sombrero
-      g.fillStyle=d.c1; g.beginPath(); g.arc(0,y-5.6,5.4,0,7); g.fill();
-      g.fillStyle="#3E7A4A"; g.beginPath(); g.arc(0,y-7.4,3.4,Math.PI,0); g.fill();
+      g.beginPath(); g.ellipse(0,y-6.4,6,5.4,0,0,7); g.fill();
+      g.fillStyle="#00000020";
+      g.beginPath(); g.ellipse(0,y-4.6,6,3.2,0,0,Math.PI); g.fill();
+      g.fillStyle=d.c2; g.fillRect(-4.6,y-11,9.2,1.6);
+      g.fillStyle="#3E7A4A";
+      g.beginPath(); g.ellipse(0,y-11,4,1.8,0,Math.PI,0); g.fill();
       break;
   }
 }
@@ -7289,7 +7336,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "acf5f0bd3f";
+const VERSION = "5b3bd04867";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
