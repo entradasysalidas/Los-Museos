@@ -3181,10 +3181,12 @@ const PIEZAS_5 = [
 const THEMES_M = {
   nieve    :{ oscuro:false, piso:["#EDF2F8","#E4EBF3"], patron:"nieve", junta:"#00000010",
               luz:"#FFFFFF", luzA:.16, pared:"#8A6B4A", void:"#DCE6EF", vineta:.05,
+              alto:"#F7FAFD", bajo:"#C2CFDE", sombra:"40,58,86",  // la ladera
               fondo:"#DCE6EF", luces:false, neon:null, cartel:.5 },
-  atardecer:{ oscuro:false, piso:["#F0E4E4","#E8D8DA"], patron:"nieve", junta:"#00000014",
-              luz:"#FFD9C0", luzA:.20, pared:"#7A5A3E", void:"#E8D2CE", vineta:.10,
-              fondo:"#E8D2CE", luces:false, neon:null, cartel:.5 },
+  atardecer:{ oscuro:false, piso:["#F6E6E2","#EFDCDA"], patron:"nieve", junta:"#00000014",
+              luz:"#FFD9C0", luzA:.20, pared:"#7A5A3E", void:"#F0DCD6", vineta:.10,
+              alto:"#FFE8D4", bajo:"#A88C9E", sombra:"86,50,66",  // la última luz
+              fondo:"#F0DCD6", luces:false, neon:null, cartel:.5 },
 };
 
 const FOES_5 = {
@@ -4950,54 +4952,120 @@ function buildFloorLayer(){
 
 /* Lo que se ve más allá de la loseta: el mar arriba, con la espuma en la
    orilla, y la arena seca a los costados y abajo. */
-/* Lo que hay afuera del refugio: el cielo, las cumbres del fondo y el bosque
-   de pinos. Los pinos salen del generador determinista, así que están
-   siempre en el mismo lugar y no bailan de una ronda a la otra. */
+/* Lo que hay afuera del refugio: la ladera, vista desde arriba igual que el
+   tablero. Nada de cielo ni de cumbres paradas: el tablero es planta pura y
+   una vista de costado atrás se lee como un telón colgado. El relieve se hace
+   como en un mapa sombreado —cada loma con su filo iluminado y la sombra del
+   lado de abajo—, que es la única manera de que se vea que hay montaña sin
+   salir de la vista de arriba.
+   Todo sale del generador determinista, así que el cerro es el mismo cada vez
+   que entrás a la sala. */
 function drawCerro(g, th){
   const an = W*CS, al = H*CS;
-  /* el cielo */
-  const cielo = g.createLinearGradient(0, 0, 0, al*0.55);
-  const arriba = th.oscuro ? "#2A3550" : "#8FC4E8";
-  cielo.addColorStop(0, arriba); cielo.addColorStop(1, th.fondo || "#DCE6EF");
-  g.fillStyle = cielo; g.fillRect(0, 0, an, al*0.55);
-  g.fillStyle = th.fondo || "#DCE6EF"; g.fillRect(0, al*0.55 - 1, an, al*0.46);
-  /* las cumbres del fondo: tres, cada una más clara que la de adelante */
-  const cumbre = (x0, ancho, alto, col, nieve) => {
-    g.fillStyle = col;
-    g.beginPath(); g.moveTo(x0, al*0.52);
-    g.lineTo(x0 + ancho/2, al*0.52 - alto);
-    g.lineTo(x0 + ancho, al*0.52); g.closePath(); g.fill();
-    g.fillStyle = nieve;                                // el nevado de arriba
-    g.beginPath(); g.moveTo(x0 + ancho/2, al*0.52 - alto);
-    g.lineTo(x0 + ancho/2 + ancho*0.17, al*0.52 - alto*0.62);
-    g.lineTo(x0 + ancho/2 + ancho*0.07, al*0.52 - alto*0.66);
-    g.lineTo(x0 + ancho/2 - ancho*0.05, al*0.52 - alto*0.58);
-    g.lineTo(x0 + ancho/2 - ancho*0.16, al*0.52 - alto*0.64);
-    g.closePath(); g.fill();
+  const oscuro = !!th.oscuro;
+  /* la ladera: arriba es más alto —nieve limpia— y abajo más bajo, donde la
+     nieve se ensucia y empieza el bosque */
+  const suelo = g.createLinearGradient(0, 0, 0, al);
+  /* los extremos los trae el tema: fijos, el atardecer se veía igual que el
+     mediodía y la hora del día es la mitad de la identidad de cada sala */
+  suelo.addColorStop(0, th.alto || (oscuro ? "#C8CEDC" : "#F7FAFD"));
+  suelo.addColorStop(.55, th.fondo || "#DCE6EF");
+  suelo.addColorStop(1, th.bajo || (oscuro ? "#B9A8A8" : "#C2CFDE"));
+  g.fillStyle = suelo; g.fillRect(0, 0, an, al);
+
+  /* las lomas: cinco filos cruzando la ladera. Cada uno es una curva con la
+     luz arriba y la sombra abajo, que es lo que hace el volumen. */
+  const filo = (y0, amp, fase, fuerza) => {
+    const alto = (x) => y0 + Math.sin(x/an * Math.PI * 2 * amp + fase) * al * 0.035
+                           + Math.sin(x/an * Math.PI * 5.7 + fase*2) * al * 0.012;
+    /* la sombra, del lado de abajo */
+    /* el color de la sombra lo dice el tema: al mediodía es azul y a la
+       última hora es malva, y eso es la mitad de la hora del día */
+    const tinta = th.sombra || "40,58,86";
+    const sombra = g.createLinearGradient(0, y0, 0, y0 + al*0.13);
+    sombra.addColorStop(0, "rgba(" + tinta + "," + (0.18 * fuerza).toFixed(3) + ")");
+    sombra.addColorStop(1, "rgba(" + tinta + ",0)");
+    g.fillStyle = sombra;
+    g.beginPath(); g.moveTo(0, alto(0));
+    for(let x = 0; x <= an; x += 8) g.lineTo(x, alto(x));
+    g.lineTo(an, y0 + al*0.13); g.lineTo(0, y0 + al*0.13); g.closePath(); g.fill();
+    /* y el filo iluminado */
+    g.strokeStyle = "rgba(255,255,255," + (0.62 * fuerza).toFixed(3) + ")";
+    g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(0, alto(0));
+    for(let x = 0; x <= an; x += 8) g.lineTo(x, alto(x));
+    g.stroke();
   };
-  cumbre(-an*0.08, an*0.52, al*0.30, th.oscuro ? "#4A5470" : "#A8BCD0", "#EEF4FA");
-  cumbre(an*0.44, an*0.66, al*0.36, th.oscuro ? "#3E475E" : "#93A9C0", "#F6FAFE");
-  cumbre(an*0.16, an*0.44, al*0.22, th.oscuro ? "#586380" : "#B9C9DA", "#FFFFFF");
-  /* el bosque: pinos de varios tamaños, apoyados en la nieve */
-  for(let i = 0; i < 46; i++){
+  filo(al*0.08, 1.1, 0.4, 1);
+  filo(al*0.26, 1.6, 2.1, .85);
+  filo(al*0.46, 1.3, 4.0, .7);
+  filo(al*0.68, 1.9, 1.2, .8);
+  filo(al*0.87, 1.4, 3.3, .9);
+
+  /* la pista peinada, bajando por el costado izquierdo: es lo que pone al
+     refugio en un lugar del mundo y no flotando en la nieve */
+  /* la pista entra en la columna del vacío y no se pasa: más abajo se
+     metía por debajo del tablero y quedaba cortada */
+  const px0 = an*0.016, ancho = (y) => an*0.062 + (y/al)*an*0.022;
+  g.fillStyle = oscuro ? "#F0E4E6" : "#FDFEFF";
+  g.beginPath(); g.moveTo(px0, 0);
+  for(let y = 0; y <= al; y += 10) g.lineTo(px0 + Math.sin(y/al*3.1)*an*0.02 + ancho(y), y);
+  for(let y = al; y >= 0; y -= 10) g.lineTo(px0 + Math.sin(y/al*3.1)*an*0.02, y);
+  g.closePath(); g.fill();
+  /* el peinado de la máquina: rayas perpendiculares a la caída */
+  g.strokeStyle = "rgba(120,140,170,.20)"; g.lineWidth = 1.2;
+  for(let y = 4; y < al; y += 7){
+    const x1 = px0 + Math.sin(y/al*3.1)*an*0.02;
+    g.beginPath(); g.moveTo(x1, y); g.lineTo(x1 + ancho(y), y + 2); g.stroke();
+  }
+  /* las estacas del borde de pista */
+  for(let k = 0; k < 7; k++){
+    const y = al*0.06 + k*al*0.14;
+    const x1 = px0 + Math.sin(y/al*3.1)*an*0.02 + ancho(y);
+    g.fillStyle = "#00000026"; g.beginPath(); g.ellipse(x1+1, y+1, 2.6, 1.2, 0, 0, 7); g.fill();
+    g.fillStyle = "#E0685D"; g.fillRect(x1 - 1, y - 9, 2, 10);
+    g.fillStyle = "#F4F1E8"; g.fillRect(x1 - 1, y - 6, 2, 3);
+  }
+
+  /* las rocas asomando, arriba, donde el viento barre la nieve */
+  for(let k = 0; k < 9; k++){
+    const rx = rnd(k, 13, 1) * an, ry = rnd(k, 5, 4) * al * 0.42;
+    const rr2 = 4 + rnd(k, 7, 8) * 7;
+    g.fillStyle = oscuro ? "#6E6A72" : "#8A8F9A";
+    g.beginPath(); g.ellipse(rx, ry, rr2, rr2*0.62, rnd(k,3,2)*2, 0, 7); g.fill();
+    g.fillStyle = "#FFFFFF55";
+    g.beginPath(); g.ellipse(rx - rr2*0.2, ry - rr2*0.22, rr2*0.6, rr2*0.3, 0, 0, 7); g.fill();
+  }
+
+  /* el bosque: abajo y a la derecha, donde la nieve se termina. Menos arriba
+     —ahí ya no crece nada— así que la línea del bosque se lee sola. */
+  for(let i = 0; i < 52; i++){
     const bx = rnd(i, 7, 2) * an;
-    const by = al*0.46 + rnd(i, 3, 9) * al*0.54;
-    const h = 14 + rnd(i, 11, 5) * 16;
-    const w2 = h * 0.42;
-    g.fillStyle = "#00000018";
-    g.beginPath(); g.ellipse(bx, by + 1.5, w2*0.8, 2.4, 0, 0, 7); g.fill();
-    g.fillStyle = "#5A4028"; g.fillRect(bx - 1.3, by - h*0.22, 2.6, h*0.24);
-    for(let k = 0; k < 3; k++){                        // tres faldones
-      const yy = by - h*0.18 - k*h*0.26;
+    /* el sesgo: cuadrado el azar y lo mando abajo, así se apilan en el faldeo */
+    const t = rnd(i, 3, 9);
+    const by = al * (0.30 + t*t * 0.66);
+    const h = 11 + rnd(i, 11, 5) * 15;
+    const w2 = h * 0.40;
+    g.fillStyle = "rgba(" + (th.sombra || "40,58,86") + ",.13)";
+    g.beginPath(); g.ellipse(bx + w2*0.5, by + 2, w2*0.95, 2.6, 0, 0, 7); g.fill();
+    g.fillStyle = "#5A4028"; g.fillRect(bx - 1.2, by - h*0.20, 2.4, h*0.22);
+    for(let k = 0; k < 3; k++){
+      const yy = by - h*0.16 - k*h*0.25;
       const ww = w2 * (1 - k*0.22);
       g.fillStyle = k === 2 ? "#2E6B45" : k === 1 ? "#2A6140" : "#24563A";
-      g.beginPath(); g.moveTo(bx, yy - h*0.42);
+      g.beginPath(); g.moveTo(bx, yy - h*0.40);
       g.lineTo(bx + ww, yy); g.lineTo(bx - ww, yy); g.closePath(); g.fill();
-      g.fillStyle = "#FFFFFF66";                        // la nieve encima
-      g.beginPath(); g.moveTo(bx, yy - h*0.42);
-      g.lineTo(bx + ww*0.44, yy - h*0.20); g.lineTo(bx - ww*0.44, yy - h*0.20);
+      g.fillStyle = "#FFFFFF5E";
+      g.beginPath(); g.moveTo(bx, yy - h*0.40);
+      g.lineTo(bx + ww*0.42, yy - h*0.19); g.lineTo(bx - ww*0.42, yy - h*0.19);
       g.closePath(); g.fill();
     }
+  }
+
+  /* y el polvo de nieve suelta, que le saca lo plano al blanco */
+  for(let k = 0; k < 120; k++){
+    g.fillStyle = rnd(k, 17, 6) > .5 ? "#FFFFFF66" : "rgba(" + (th.sombra || "40,58,86") + ",.07)";
+    g.fillRect(rnd(k, 11, 3) * an, rnd(k, 5, 12) * al, 1.4, 1.4);
   }
 }
 
@@ -8671,7 +8739,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "cf6b36d04f";
+const VERSION = "35a3a78a94";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
