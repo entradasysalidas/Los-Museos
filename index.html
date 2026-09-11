@@ -414,15 +414,13 @@
   .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:1}
 
   .tapa{position:relative}
-  /* «tocá de nuevo para entrar»: sale sólo en la tapa marcada. Es la única
-     forma de que el segundo toque se descubra sin tener que explicarlo. */
-  .tapa .otravez{position:absolute;left:50%;transform:translateX(-50%);
-    bottom:-6px;white-space:nowrap;opacity:0;pointer-events:none;
-    background:var(--brass);color:var(--bg);border-radius:999px;
-    padding:4px 11px;font:700 10px/1 "Archivo",sans-serif;letter-spacing:.06em;
-    text-transform:uppercase;box-shadow:0 6px 16px #00000055;transition:.16s ease}
-  .tapa.elegida .otravez{opacity:1;bottom:-12px}
-  .tapa.cerrada .otravez{background:var(--dim)}
+  /* «tocá de nuevo para entrar» va en el renglón chico de la tapa marcada.
+     Flotando debajo de la tapa caía justo encima del título de la de abajo,
+     y con seis tapas en dos columnas eso pasa siempre. Acá no se encima con
+     nada y está donde el ojo ya está mirando. */
+  /* la ayuda va en voz baja: más chica que la bajada y sin negrita. Es una
+     ayuda para el que no cayó, no un anuncio. */
+  .tapa.elegida .rotulo small{color:var(--brass);font-size:8px;opacity:.8}
   .tapa .sello{position:absolute;left:0;right:0;top:44%;
     background:var(--brass);color:#14120E;text-align:center;
     font:700 clamp(9px,1.7vw,12px)/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
@@ -1319,40 +1317,34 @@
   <div class="tapas">
     <button class="tapa elegida" id="tapa1" onclick="tocarTapa(1)" aria-pressed="true">
       <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos</b><small>10 salas · listo para jugar</small></span>
     </button>
     <button class="tapa cerrada" id="tapa2" onclick="tocarTapa(2)" aria-pressed="false">
       <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
       <span class="sello" id="sello2">🔒 Cerrado</span>
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
     <button class="tapa cerrada" id="tapa3" onclick="tocarTapa(3)" aria-pressed="false">
       <img src="caja3.jpg" alt="Los Museos 3 · Vacaciones en la playa">
       <span class="sello" id="sello3">🔒 Cerrado</span>
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 3</b><small>Vacaciones en la playa</small></span>
     </button>
     <button class="tapa cerrada" id="tapa4" onclick="tocarTapa(4)" aria-pressed="false">
       <img src="caja4.jpg" alt="Los Museos 4 · En el espacio"
            onerror="this.remove()">
       <span class="sello" id="sello4">🔒 Cerrado</span>
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 4</b><small>En el espacio</small></span>
     </button>
     <button class="tapa cerrada" id="tapa5" onclick="tocarTapa(5)" aria-pressed="false">
       <img src="caja5.jpg" alt="Los Museos 5 · Escapan de la montaña"
            onerror="this.remove()">
       <span class="sello" id="sello5">🔒 Cerrado</span>
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 5</b><small>Escapan de la montaña</small></span>
     </button>
     <button class="tapa cerrada" id="tapa6" onclick="tocarTapa(6)" aria-pressed="false">
       <img src="caja6.jpg" alt="Los Museos 6 · Escapan de la ciudad"
            onerror="this.remove()">
       <span class="sello" id="sello6">🔒 Cerrado</span>
-      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
     </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
@@ -9155,6 +9147,14 @@ function elegirJuego(n){
     if(!t) continue;
     t.classList.toggle("elegida", ELEGIDO === i);
     t.setAttribute("aria-pressed", ELEGIDO === i ? "true" : "false");
+    /* el renglón chico de la elegida dice cómo entrar; los otros vuelven a
+       su bajada. La original se guarda la primera vez que se toca. */
+    const chico = t.querySelector && t.querySelector(".rotulo small");
+    if(chico){
+      if(chico.dataset && chico.dataset.sub === undefined) chico.dataset.sub = chico.textContent;
+      const suyo = (chico.dataset && chico.dataset.sub) || "";
+      chico.textContent = ELEGIDO === i ? "tocá de nuevo" : suyo;
+    }
   }
   sellarTapas();
   /* la casilla de la clave sale sólo si el juego elegido está cerrado */
@@ -9202,7 +9202,13 @@ function prepararPortal(){
   sellarTapas();
   pintarFranjaDiaria();
   pintarNovedad();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
-  if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
+  /* El foco va sin mover la página: con siete tapas el campo del nombre
+     quedó tan abajo que pedirle el foco arrastraba la portada hasta él y
+     la primera fila de tapas arrancaba cortada. Y por las dudas, arriba. */
+  if(inp && inp.focus){
+    try{ inp.focus({preventScroll:true}); }catch(e){ try{ inp.focus(); }catch(e2){} }
+  }
+  if(typeof scrollTo === "function"){ try{ scrollTo(0, 0); }catch(e){} }
 }
 
 /* La palabra que hay que decir en la puerta. Ojo: esto es un portero, no una
@@ -9397,7 +9403,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "ee8b1dd55c";
+const VERSION = "6672a22fac";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
