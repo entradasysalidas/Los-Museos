@@ -537,8 +537,11 @@
     text-transform:uppercase;color:var(--dim);margin-bottom:5px}
   .lv .num{font:400 24px/.8 "Archivo Black","Archivo",sans-serif;color:var(--ac);
     letter-spacing:-.04em;margin-bottom:5px}
+  /* con break-word "Oficinas administrativas" quedaba ADMINISTRATI/VAS. Con
+     guiones corta donde corta el idioma, y si no entra se achica sola. */
   .lv b{font:400 12px/1.16 "Archivo Black","Archivo",sans-serif;color:var(--ink);
-    text-transform:uppercase;letter-spacing:-.01em;overflow-wrap:break-word}
+    text-transform:uppercase;letter-spacing:-.02em;
+    overflow-wrap:normal;word-break:normal;hyphens:auto;font-size:clamp(10px,1.05vw,12px)}
 
   /* quién la juega y contra quién: a todo el ancho, para que el nombre entre */
   .lv .quien .cara{background:transparent}
@@ -745,9 +748,12 @@
     text-transform:uppercase;color:var(--brass);margin-right:auto}
   .calcab .v{font-size:12px;color:var(--dim)}
   .calcab .v b{color:var(--ink);font-weight:700}
-  .calgrilla{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  /* chiquito, como el de las contribuciones: la gracia es ver el mes
+     entero de un vistazo, no leer los números */
+  .calgrilla{display:grid;grid-template-columns:repeat(7,18px);gap:3px;
+    justify-content:center}
   .cd{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-    border-radius:5px;font:600 11px/1 "IBM Plex Mono",monospace;
+    border-radius:4px;font:600 9px/1 "IBM Plex Mono",monospace;
     color:var(--dim);background:var(--sunk)}
   .cd.cab{background:none;color:var(--hair);font-size:9px;letter-spacing:.06em}
   .cd.vacia{background:none}
@@ -1488,9 +1494,10 @@ const JERGA = {
      ["terminás en tu baño","terminás en la ducha"],
      ["Te teletransporta a tu baño.","Te teletransporta a la ducha."],
      ["parado en un baño: el tuyo o el suyo","parado en una ducha: la tuya o la suya"],
-     ["Piezas · salen de las vitrinas","Heladeritas · salen de las sombrillas"],
+     ["Piezas · salen de las vitrinas","Heladeritas"],
      ["Objetos · te los dan los cómplices","Objetos · te los dan los amigos"],
      ["en la vitrina","en la sombrilla"],
+     ["en la sombrilla","sombrilla"],
      ["Mate de la mochila","Birra de la mochila"],
      ["🖼️ Sacaste","🧊 Levantaste"],
      ["La próxima vitrina que abras","La próxima heladerita que abras"],
@@ -2187,13 +2194,16 @@ const RANGOS = [
 const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping", 3:"De vacaciones"};
 const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping", 3:"Dueño del parador"};
 
-function rangoActual(){
-  const n = salasHechas();
+/* El rango que te toca con tantas salas hechas en tal edición. Va con la
+   edición adentro porque la portada habla de la tapa elegida, que no es
+   necesariamente la que se venía jugando. */
+function rangoDe(n, juego){
   let r = RANGOS[0][1];
-  for(const [min, nom] of RANGOS) if(n >= min) r = nom;
+  for(const par of RANGOS) if(n >= par[0]) r = par[1];
   const tope = RANGOS[RANGOS.length - 1][0];
-  return n >= tope ? (RANGO_MAXIMO[JUEGO] || r) : r;
+  return n >= tope ? (RANGO_MAXIMO[juego] || r) : r;
 }
+function rangoActual(){ return rangoDe(salasHechas(), JUEGO); }
 
 /* ---------- un consejo por sala ----------
    Cada antagonista hace una trampa distinta y no siempre se deduce jugando.
@@ -2412,7 +2422,7 @@ const LUZ_SEMANA = [
 
 /* el amarillo del post-it: el desafío diario se reconoce por ese color, como
    el museo por el latón y el shopping por el celeste */
-const ACENTO_DIARIO = ["#E8B93B","#8A6B18","#3A2F10"];
+const ACENTO_DIARIO = ["#E8B93B","#8A6B18","#FBF0D6"];
 
 /* Un generador con semilla: la misma entrada da siempre la misma salida.
    No se puede usar Math.random en ningún lado de acá adentro. */
@@ -3278,7 +3288,12 @@ const DIFICULTADES = [
 ];
 let DIFICULTAD = 1;
 function difActual(){ return DIFICULTADES.find(d => d.id === DIFICULTAD) || DIFICULTADES[0]; }
+/* ¿elegiste vos la dificultad en este rato? Si la elegiste, manda la tuya:
+   arrancar la sala en «la que te falta» estaría contradiciendo al menú, que
+   te muestra marcada la que pediste. */
+let DIF_A_MANO = false;
 function ponerDificultad(n, callado){
+  if(!callado) DIF_A_MANO = true;
   DIFICULTAD = (n === 2 || n === 3) ? n : 1;
   LEGAJO.dif = DIFICULTAD;
   guardarLegajo(LEGAJO);
@@ -5808,6 +5823,14 @@ function tintaSobre(hex){
   return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#14161C" : "#FFFFFF";
 }
 
+/* dd/mm, para el encabezado del desafío diario */
+function fechaCorta(d){
+  const f = d || new Date();
+  const dd = String(f.getDate()).padStart(2, "0");
+  const mm = String(f.getMonth() + 1).padStart(2, "0");
+  return dd + "/" + mm;
+}
+
 function syncUI(){
   if(!S) return;
   // las salas de piso gris llevan interfaz clara; las de madera, oscura
@@ -5831,11 +5854,16 @@ function syncUI(){
     cuerpo.style.setProperty("--afuera", (S.th && S.th.fondo) || "transparent");
   }
 
-  $("numnivel").textContent = S.sala.num===0 ? "0" : String(S.sala.num);
+  /* el diario no es un nivel más: no lleva número de sala sino el día */
+  const esDiaria = typeof enDiaria === "function" && enDiaria();
+  $("numnivel").textContent = esDiaria ? String(new Date().getDate())
+                            : (S.sala.num===0 ? "0" : String(S.sala.num));
   $("kicker").textContent = enMaraton()
     ? "Maratón · sala " + (MARATON.i+1) + " de 10 · " + "♥".repeat(MARATON.vidas) + " · " + (MARATON.rondas + S.round) + " rondas"
-    : (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing +
-      (DIFICULTAD > 1 ? " · " + difActual().corta : "");
+    : esDiaria
+      ? "Desafío diario · " + fechaCorta() + (DIFICULTAD > 1 ? " · " + difActual().corta : "")
+      : (S.sala.num===0 ? "Tutorial" : "Nivel "+S.sala.num) + " · " + S.sala.wing +
+        (DIFICULTAD > 1 ? " · " + difActual().corta : "");
   $("salatitulo").textContent = S.sala.name;
 
   drawRetrato();
@@ -6669,8 +6697,10 @@ function difQueFalta(salaKey){
 function startSala(k, deMaraton){
   if(!deMaraton){
     cortarMaraton();                   // elegir a mano corta la corrida
-    const falta = difQueFalta(k);
-    if(falta && falta !== DIFICULTAD) ponerDificultad(falta, true);
+    if(!DIF_A_MANO){
+      const falta = difQueFalta(k);
+      if(falta && falta !== DIFICULTAD) ponerDificultad(falta, true);
+    }
   }
   newGame(k);
   closeModal(true);
@@ -6742,7 +6772,7 @@ function menu(){
         '</span>' +
         '<span class="txt">' +
           '<span class="ala">'+v.wing+'</span>' +
-          '<span class="num">'+(v.num===0?"·":v.num)+'</span>' +
+          '<span class="num">'+v.num+'</span>' +
           '<b>'+v.name+'</b>' +
           '<span class="sellos">' + sellos + '</span>' +
           (marca ? '<span class="mejor">' + marca.rondas + ' rondas' +
@@ -7057,7 +7087,7 @@ function textoDelPie(){
     return;
   }
   pie.innerHTML = LEGAJO.nombre
-    ? (n ? "Volvés como <b>" + rangoActual() + "</b> · " + n + " de 10 salas resueltas"
+    ? (n ? "Volvés como <b>" + rangoDe(n, ELEGIDO) + "</b> · " + n + " de " + total + " salas resueltas"
          : "Te estábamos esperando, <b>" + textoSeguro(LEGAJO.nombre) + "</b>")
     : "Se guarda en este dispositivo, no hace falta cuenta.";
 }
@@ -7238,7 +7268,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "46bc06efc3";
+const VERSION = "5a20c674a5";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
@@ -7397,19 +7427,21 @@ function ficha(){
   /* El legajo guarda los dos juegos, pero la ficha muestra sólo el que estás
      jugando. Sin esta tira, entrar al shopping con el museo terminado se lee
      como si hubieras perdido todo: 0 de 10 y de vuelta a Pasante. */
-  const otro = JUEGO === 1 ? 2 : 1;
-  const clavesOtro = Object.keys(JUEGOS[otro].salas);
-  const hechasOtro = clavesOtro.filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
-  const marOtro = (LEGAJO.maratones || {})[otro];
-  const seVe = otro === 1 || elDosEstaAbierto();
-  const tiraOtro = !seVe ? "" :
-    '<div class="fotro">' +
+  /* las otras dos ediciones, no una: con tres juegos, mostrar sólo una dejaba
+     la playa afuera de la ficha. Las cerradas no se nombran. */
+  const tiraOtro = [1, 2, 3].filter(o => o !== JUEGO).map(otro => {
+    if(!elJuegoEstaAbierto(otro)) return "";
+    const claves = Object.keys(JUEGOS[otro].salas);
+    const hechas = claves.filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
+    const mar = (LEGAJO.maratones || {})[otro];
+    return '<div class="fotro">' +
       '<span class="l">' + NOMBRE_JUEGO[otro] + '</span>' +
-      '<span class="v"><b>' + hechasOtro + '</b>/' + clavesOtro.length + ' salas</span>' +
-      '<span class="v">' + (marOtro
-        ? 'maratón <b>' + marOtro.salas + '</b>/' + clavesOtro.length + (marOtro.completa ? ' · completo' : '')
-        : (hechasOtro ? 'sin maratón' : 'te espera')) + '</span>' +
+      '<span class="v"><b>' + hechas + '</b>/' + claves.length + ' salas</span>' +
+      '<span class="v">' + (mar
+        ? 'maratón <b>' + mar.salas + '</b>/' + claves.length + (mar.completa ? ' · completo' : '')
+        : (hechas ? 'sin maratón' : 'te espera')) + '</span>' +
     '</div>';
+  }).join("");
 
   /* Una fila por sala, siempre con las mismas tres columnas: número, nombre y
      marca. Las que faltan se apagan en vez de cambiar de forma, así la columna
