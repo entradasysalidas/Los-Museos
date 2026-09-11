@@ -9202,10 +9202,14 @@ function prepararPortal(){
   sellarTapas();
   pintarFranjaDiaria();
   pintarNovedad();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
-  /* El foco va sin mover la página: con siete tapas el campo del nombre
-     quedó tan abajo que pedirle el foco arrastraba la portada hasta él y
-     la primera fila de tapas arrancaba cortada. Y por las dudas, arriba. */
-  if(inp && inp.focus){
+  /* En el teléfono no se pide el foco. Pedirlo abre el teclado, y con el
+     teclado abierto iOS scrollea hasta el campo aunque le pidas
+     preventScroll: la portada arrancaba con la primera fila cortada. Y
+     aunque no scrolleara, el teclado te tapa media portada apenas entrás.
+     En pantalla con mouse sí, que ahí no molesta y ahorra un clic. */
+  const tactil = typeof matchMedia === "function" &&
+                 matchMedia("(pointer:coarse)").matches;
+  if(inp && inp.focus && !tactil){
     try{ inp.focus({preventScroll:true}); }catch(e){ try{ inp.focus(); }catch(e2){} }
   }
   if(typeof scrollTo === "function"){ try{ scrollTo(0, 0); }catch(e){} }
@@ -9403,7 +9407,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "6672a22fac";
+const VERSION = "2a9371afbe";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
