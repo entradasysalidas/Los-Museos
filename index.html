@@ -319,7 +319,10 @@
     color:var(--brass);font-size:13px;display:none;font-weight:600}
   .hintbar.on{display:flex;flex-wrap:wrap;gap:7px 10px;
     align-items:center;justify-content:center}
-  .hintbar .p{display:inline-flex;align-items:center;gap:5px}
+  /* inline, no inline-flex: con flex cada <b> y cada pedazo de texto eran
+     items separados por el gap, y quedaban espacios de más alrededor de las
+     negritas -y hasta antes del punto final-. */
+  .hintbar .p{display:inline}
   /* cuando la ronda espera una decisión tuya, late */
   .hintbar.urgente{animation:pideAccion 1.5s ease-in-out infinite}
   @keyframes pideAccion{
@@ -1502,6 +1505,9 @@ const JERGA = {
      ["🖼️ Sacaste","🧊 Levantaste"],
      ["La próxima vitrina que abras","La próxima heladerita que abras"],
      ["Con los guantes puestos la vitrina","Con los guantes puestos la heladerita"],
+     ["Mate: recuperaste","Birra: recuperaste"],
+     ["Volvió a su vitrina","Volvió a su sombrilla"],
+     ["vuelven a sus puestos","vuelven a sus toallas"],
      ["Vitrina vacía","Heladerita vacía"],
      ["Tomar el mate","Tomar la birra"],
      ["Ya tomaste tres mates en esta ronda.","Ya te tomaste tres birras en esta ronda."],
@@ -3067,7 +3073,7 @@ function drinkMate(){
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
     S.busy=true; return luego(endMovement, TUNE.moveMs+110);
   }
-  say(`🧉 Mate: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`,"g");
+  say(enJerga(`🧉 Mate: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`),"g");
   syncUI();
 }
 function finishRound(){
@@ -3496,7 +3502,7 @@ function nextRound(){
       banner("Se disparó el temporizador · alerta " + S.alert, "#E0685D");
       say(`⏱️ <b>Sonó el temporizador</b> de ${PIE[id].name} ${PIE[id].sym}: <b>alerta ${S.alert}</b>.`,"r");
     } else {
-      say(`⏱️ Quedan <b>${S.reloj.quedan} rondas</b> para entregar ${PIE[S.reloj.id].name}.`,"y");
+      say(`⏱️ Queda${S.reloj.quedan===1 ? "" : "n"} <b>${S.reloj.quedan} ronda${S.reloj.quedan===1 ? "" : "s"}</b> para entregar ${PIE[S.reloj.id].name}.`,"y");
     }
   }
   S.mp = TUNE.steps - (S.resbalon || 0);   // la cáscara de la ronda pasada
@@ -3536,7 +3542,7 @@ function losePiece(id){
     if(cerca ? dd<best : dd>best){ best=dd; pick=v; }
   }
   if(pick){ S.grid[pick.y][pick.x].alarm=0; S.grid[pick.y][pick.x].piece=id; }
-  say(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a su vitrina y los dos vuelven a sus puestos.`,"r");
+  say(enJerga(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a su vitrina y los dos vuelven a sus puestos.`),"r");
   if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas.`);
   resetPositions();
 }
@@ -5697,9 +5703,22 @@ function frame(now){
 
   if(S.celular) inCell(ctx, S.celular.x, S.celular.y, g=>drawCelular(g));
 
+  /* Si alguien cae encima de una toalla o de una heladerita, los dos dibujos
+     ocupan el mismo lugar y se leen como uno solo mal hecho. Al que está
+     parado ahí se lo sube un poco: se ve que está adelante, y abajo sigue
+     asomando lo que hay en la casilla. */
+  const seLevanta = (x, y) => {
+    const c = inside(x, y) ? S.grid[y][x] : null;
+    if(!c) return 0;
+    return (c.type === "complice" || c.type === "vitrina") ? 7 : 0;
+  };
   const actors = [
-    {py:S.player.py, f:()=>atPos(ctx,S.player.px,S.player.py,g=>drawPerson(g,S.hero,S.player.bob))},
-    ...S.foes.map(f=>({py:f.py, f:()=>atPos(ctx,f.px,f.py,g=>drawFoe(g,f.bob,S.foe.look))})),
+    {py:S.player.py, f:()=>atPos(ctx,S.player.px,
+       S.player.py - seLevanta(S.player.x,S.player.y),
+       g=>drawPerson(g,S.hero,S.player.bob))},
+    ...S.foes.map(f=>({py:f.py, f:()=>atPos(ctx,f.px,
+       f.py - seLevanta(f.x,f.y),
+       g=>drawFoe(g,f.bob,S.foe.look))})),
   ].sort((a,b)=>a.py-b.py);
   actors.forEach(a=>a.f());
 
@@ -5919,11 +5938,13 @@ function syncUI(){
            '<div class="ic">'+iconoDeCarta(c)+'</div>'+
            '<div><div class="tt">'+c.n+'</div><div class="dd">'+c.d+'</div></div>'+
          '</div>'
-       : '<div class="deckcard vacia"><div class="ic">·</div>'+
-         '<div class="tt">Todavía no jugó</div></div>');
+       : '<div class="deckcard vacia"><div class="ic">'+
+           (S.deck.length ? '·' : '🃏')+'</div>'+
+         '<div class="tt">'+(S.deck.length ? 'Todavía no jugó'
+                              : 'Se acabó el mazo')+'</div></div>');
   $("quedan").textContent = S.deck.length;
   $("mazototal").textContent = DECK.length;
-  $("mazoaviso").textContent = S.deck.length<=2 ? "al agotarse sube la alerta" : "";
+  $("mazoaviso").textContent = S.deck.length<=2 ? " · al agotarse sube la alerta" : "";
 
   $("pieceslots").innerHTML = PIECES.map(p=>{
     if(S.delivered.includes(p.id))
@@ -7268,7 +7289,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "5a20c674a5";
+const VERSION = "acf5f0bd3f";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
