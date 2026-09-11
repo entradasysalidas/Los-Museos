@@ -1334,6 +1334,12 @@
       <span class="sello" id="sello5">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 5</b><small>Escapan de la montaña</small></span>
     </button>
+    <button class="tapa cerrada" id="tapa6" onclick="elegirJuego(6)" aria-pressed="false">
+      <img src="caja6.jpg" alt="Los Museos 6 · Escapan de la ciudad"
+           onerror="this.remove()">
+      <span class="sello" id="sello6">🔒 Cerrado</span>
+      <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
+    </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
       <img src="diario.jpg" alt="Desafío diario">
       <span class="rotulo"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
@@ -1510,6 +1516,36 @@ const POWERS = {
 /* Lo que cambia de nombre en cada juego. Se traduce al mostrarlo, no al
    guardarlo: el codigo sigue hablando de vitrinas y de mates. */
 const JERGA = {
+  /* En la ciudad el fernet no se traduce: es de acá. Se va el mate. */
+  6:[["la pieza más lejana a la vitrina vacía más cercana",
+      "el cuadro más lejano al puesto vacío más cercano"],
+     ["Piezas · salen de las vitrinas","Cuadros"],
+     ["Objetos · te los dan los cómplices","Objetos · te los dan los amigos"],
+     ["de una planta","de un árbol"],
+     ["una pieza ya en la mano","un cuadro ya en la mano"],
+     ["ninguna pieza","ningún cuadro"],
+     ["cualquier pieza","cualquier cuadro"],
+     ["cómplice","amigo"],
+     ["un mate en la mochila","un cortado en la mochila"],
+     ["los del tablero los podés repetir","los de la vereda los podés repetir"],
+     ["en la vitrina","en el puesto"],
+     ["Vitrina vacía","Puesto vacío"],
+     ["Tomar el mate","Tomar el cortado"],
+     ["Ya tomaste tres mates en esta ronda.","Ya tomaste tres cortados en esta ronda."],
+     ["El mate te devuelve los pasos","El cortado te devuelve los pasos"],
+     ["Este mate ya lo tomaste en esta ronda.","Este cortado ya lo tomaste en esta ronda."],
+     ["Mate: recuperaste","Cortado: recuperaste"],
+     ["Mate de la mochila","Cortado de la mochila"],
+     ["Volvió a su vitrina","Volvió a su puesto"],
+     ["vuelven a sus puestos","vuelven a sus paradas"],
+     ["La próxima vitrina que abras","El próximo puesto que abras"],
+     ["Con los guantes puestos la vitrina","Con los guantes puestos el puesto"],
+     ["si después tomás un mate","si después tomás un cortado"],
+     ["contando los del tablero","contando los de la vereda"],
+     ["terminás en tu baño","terminás en el baño del bar"],
+     ["Te teletransporta a tu baño.","Te teletransporta al baño del bar."],
+     ["Mate","Cortado"],
+     ["🧉","☕"]],
   /* En la montaña el mate no se traduce: se toma mate de verdad. */
   5:[["la pieza más lejana a la vitrina vacía más cercana",
       "la tabla más lejana al locker vacío más cercano"],
@@ -2325,9 +2361,10 @@ const RANGOS = [
 /* Cada juego tiene su nombre corto y su rango máximo: "Dueño del museo" no
    quiere decir nada en el shopping. */
 const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping", 3:"De vacaciones",
-                      4:"En el espacio", 5:"En la montaña"};
+                      4:"En el espacio", 5:"En la montaña", 6:"En la ciudad"};
 const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping", 3:"Dueño del parador",
-                      4:"Dueño de la estación", 5:"Dueño del cerro"};
+                      4:"Dueño de la estación", 5:"Dueño del cerro",
+                      6:"Dueño de la avenida"};
 
 /* El rango que te toca con tantas salas hechas en tal edición. Va con la
    edición adentro porque la portada habla de la tapa elegida, que no es
@@ -3330,6 +3367,181 @@ const DECK_5 = [
   {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los pinos no te salvan.", k:"rush", ic:"🏃"},
 ];
 
+/* ---------- Los Museos 6: escapan de la ciudad ----------
+   En el medio de la 9 de Julio. Acá el fernet no cambia —es de Buenos Aires,
+   se queda— y el que cambia es el mate, que pasa a ser el cortado de la
+   esquina: también te devuelve los pasos que ya diste. Es al revés que en la
+   montaña, donde el mate se quedaba y el fernet se iba.
+
+   Y dos que caen solas: la boca del subte es la escalera mecánica —bajás por
+   una y salís por otra— y la baldosa floja es la cáscara de banana.
+
+   Las diez losetas son las del museo espejadas de arriba abajo. La salida
+   está siempre arriba y tu mesa abajo, así que dar vuelta la loseta cambia
+   todas las rutas: lo que tenías a mano para salir queda del lado de tu
+   mesa. Y como voltear no toca la conectividad ni las cuentas, sigue
+   garantizado que las diez se pueden ganar. Las del manual no se tocan. */
+const PIEZAS_6 = [
+  {id:"rombo",     sym:"◆", name:"Cuadro azul",    color:"#4F8FE0"},
+  {id:"triangulo", sym:"▲", name:"Cuadro rojo",    color:"#D4534A"},
+  {id:"circulo",   sym:"●", name:"Cuadro naranja", color:"#E09A3C"},
+];
+
+/* La vereda de día y la de noche, cuando la avenida se prende. Las paredes
+   son el cerco de obra: en la calle lo que te corta el paso es una valla, no
+   una pared blanca. */
+const THEMES_C = {
+  vereda :{ oscuro:false, piso:["#D8D6D0","#D0CEC8"], patron:"vereda", junta:"#00000018",
+            luz:"#FFF6E0", luzA:.16, pared:"#B9A05A", void:"#8E9298", vineta:.08,
+            fondo:"#8E9298", alto:"#9AA0A6", bajo:"#7A7E84", sombra:"30,32,38",
+            luces:false, neon:null, cartel:.5 },
+  baldosa:{ oscuro:true,  piso:["#3A3C42","#34363C"], patron:"vereda", junta:"#00000030",
+            luz:"#FFD9A0", luzA:.26, pared:"#8A7440", void:"#1C1E24", vineta:.30,
+            fondo:"#1C1E24", alto:"#24262C", bajo:"#14161A", sombra:"0,0,0",
+            luces:true, neon:"#F0A02C", cartel:1 },
+};
+
+const FOES_6 = {
+  turista    :{n:"El Turista Perdido", look:"overol", d:"Camina y nada más. Es la vereda de práctica."},
+  trapito    :{n:"El Trapito",        look:"saco",
+               d:"Cada puesto que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
+  transito   :{n:"El de Tránsito",    look:"guardia",
+               d:"Si terminás a dos casilleros o menos en su línea recta, sin nada en el medio, te agarra la cámara y avanza uno extra.", twist:"linterna"},
+  estatua    :{n:"La Estatua Viviente", look:"overol",
+               d:"No te persigue: deambula sin rumbo, y cuando te descuidás se mueve. No hay camino seguro.", twist:"azar"},
+  perroplaza :{n:"El Perro de la Plaza", look:"perro", d:"Te huele igual: meterte atrás de un árbol no sirve.", twist:"olfato"},
+  taxista    :{n:"El Taxista",        look:"traje",  d:"Te vio y no te suelta. El perseguidor clásico, sin trucos."},
+  guia       :{n:"La Guía del Museo", look:"guardapolvo",
+               d:"Una vez por partida te deshace una entrega: el cuadro vuelve a su puesto. Al reentregarlo, tu amigo te convida otra vez.", twist:"reponeCerca"},
+  ambulante  :{n:"El Vendedor Ambulante", look:"gabardina",
+               d:"Cada vez que pasa por una parada acomoda la mercadería: dos cuadros cambian de puesto.", twist:"cambia"},
+  sube       :{n:"El de la SUBE",     look:"procurador",
+               d:"Anota cada objeto ruidoso que usás; al segundo, sube la alerta. El cortado no cuenta.", twist:"anota"},
+  anticuario :{n:"El Anticuario",     look:"gala",
+               d:"Te persigue y aparece en los puestos, no en las paradas.", twist:"vitrinas"},
+};
+
+const SALAS_6 = {
+  c0:{ num:0, name:"La vereda del museo", wing:"Salida del museo", piso:"vereda", afuera:"avenida",
+    ac:["#4B44B8","#9A95E2","#EAE8FB"],
+    hero:"negro", foe:"turista", comps:["hippie","chuna","chupa"],
+    e:L(`T..PP.
+         .M.M..
+         .C.D.P
+         A....A`),
+    w:[""],
+    v:[] },
+  c1:{ num:1, name:"Plaza Lavalle", wing:"Salida del museo", piso:"vereda", afuera:"avenida",
+    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
+    hero:"hippie", foe:"trapito", comps:["lamber","chupa","damian"],
+    e:L(`C.TM..
+         .A..P.
+         ..A.M.
+         D.P.P.`),
+    w:[""],
+    v:[] },
+  c2:{ num:2, name:"Avenida de Mayo", wing:"Microcentro", piso:"vereda", afuera:"avenida",
+    ac:["#B4531A","#E0A077","#FBEDE3"],
+    hero:"damian", foe:"estatua", comps:["matxi","hippie","chuna"],
+    e:L(`M..C.D
+         T.A...
+         ..A...
+         MPP..P`),
+    w:[""],
+    v:[] },
+  c3:{ num:3, name:"El Obelisco", wing:"Microcentro", piso:"vereda", afuera:"avenida",
+    ac:["#2A5CA8","#91B2DE","#E6EDF8"],
+    hero:"kzk", foe:"anticuario", comps:["negro","chuna","chupa"],
+    e:L(`P.TMPA
+         ......
+         .C....
+         .AD.MP`),
+    w:[""],
+    v:[] },
+  c4:{ num:4, name:"La feria de San Telmo", wing:"El sur", piso:"vereda", afuera:"avenida",
+    ac:["#A81E6E","#DE8FBC","#FAE6F1"],
+    hero:"lamber", foe:"perroplaza", comps:["kzk","chupa","hippie"],
+    e:L(`.TPA.C
+         .M..A.
+         P...M.
+         ...DP.`),
+    w:[""],
+    v:[] },
+  c5:{ num:5, name:"El subte B", wing:"El sur", piso:"baldosa", afuera:"avenida",
+    ac:["#4FC3D9","#2C6B78","#0E2429"],
+    hero:"chuna", foe:"ambulante", comps:["matxi","hippie","lamber"],
+    e:L(`D..M..
+         ..L...
+         ...PAP
+         LTP.AC`),
+    w:[""],
+    v:[] },
+  c6:{ num:6, name:"Puerto Madero", wing:"La ribera", piso:"baldosa", afuera:"avenida",
+    ac:["#6FCB6A","#3A6E38","#10240F"],
+    hero:"tomy", foe:"taxista", comps:["negro","lamber","chupa"],
+    e:L(`M..PAC
+         .DL...
+         A.....
+         P.P.LT`),
+    w:[""],
+    v:[] },
+  c7:{ num:7, name:"La Boca", wing:"La ribera", piso:"baldosa", afuera:"avenida",
+    ac:["#E8A33C","#8A6118","#241C0C"],
+    hero:"matxi", foe:"sube", comps:["kzk","chupa","hippie"],
+    e:L(`P.A.PD
+         ..L...
+         T.L.PC
+         .M...A`),
+    w:[""],
+    v:[] },
+  c8:{ num:8, name:"Retiro", wing:"La avenida", piso:"baldosa", afuera:"avenida",
+    ac:["#C6D94F","#6C7629","#1F220C"],
+    hero:"chupa", foe:"transito", comps:["tomy","hippie","lamber"],
+    e:L(`.P.T.P
+         M..L.A
+         .LC.D.
+         P.A...`),
+    w:[""],
+    v:[] },
+  c9:{ num:9, name:"La 9 de Julio", wing:"La avenida", piso:"baldosa", afuera:"avenida",
+    ac:["#E0B44C","#8A6B31","#241C0C"],
+    hero:"marian", foe:"guia", comps:["negro","lamber","matxi"],
+    e:L(`.LL..D
+         P.T.M.
+         P.C...
+         .A.A.P`),
+    w:[""],
+    v:[] },
+};
+
+/* Un consejo por sala: la mitad del que te persigue y la otra del poder del
+   que la protagoniza. */
+const CONSEJOS_6 = {
+  c0:"El Turista Perdido camina y nada más, así que es la vereda para probar. Arrancás con un <b>fernet</b> en la mochila: tocalo y ese turno cortás en diagonal. Y el <b>cortado</b> de la esquina te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
+  c1:"Cada puesto que abrís hace avanzar al Trapito al instante, así que no abras de gusto. Tu poder te esconde también en la casilla de al lado de un árbol, y escondido no te agarra ni «¡Se acerca!».",
+  c2:"La Estatua Viviente deambula sin rumbo: no hay ruta segura, hay que mirarla cada ronda. Arrancás con un cuadro ya en la mano, así que la primera entrega la podés hacer sin abrir nada.",
+  c3:"El Anticuario aparece en los puestos, no en las paradas: el que estás por abrir puede tenerlo encima. Guardá el <b>F</b> para cuando quede uno solo y esté lejos.",
+  c4:"El Perro de la Plaza te huele igual, así que el árbol no te esconde acá. Con <b>F</b> cualquier amigo te acepta cualquier cuadro, y te lo acepta desde la parada de al lado.",
+  c5:"El Vendedor Ambulante cambia dos cuadros de puesto cada vez que pasa por una parada, así que la ruta que armaste puede dejar de servir. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida.",
+  c6:"El Taxista no tiene trucos, pero es constante. Arrancás con un cortado en la mochila y los de la vereda los podés repetir: son pasos de más para no quedar nunca a tiro.",
+  c7:"El de la SUBE anota cada objeto ruidoso que usás y al segundo sube la alerta: guardalos para la corrida final al colectivo. Y la primera vez que te agarren no te saca ningún cuadro, así que podés arriesgar uno.",
+  c8:"El de Tránsito te ve por la cámara en línea recta y ella gira un cuarto de vuelta por ronda. El vidrio te corta el paso pero no te tapa: no termines el turno en su línea aunque haya uno en el medio. Empezás con un objeto extra.",
+  c9:"La Guía del Museo te va a deshacer una entrega, pero al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida. Ves su próxima acción antes de moverte: usalo para no gastar el turno en falso.",
+};
+
+const DECK_6 = [
+  {n:"Va a la parada del azul",    d:"Aparece donde está tu amigo ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Va a la parada del rojo",    d:"Aparece donde está tu amigo ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Va a la parada del naranja", d:"Aparece donde está tu amigo ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Va al baño del bar",     d:"Entra al bar de la esquina y te deja respirar.", k:"bath", ic:"🚻"},
+  {n:"Se para a mirar vidrieras", d:"Se distrae en una vidriera.",     k:"exit", ic:"🛍️"},
+  {n:"Se para a mirar vidrieras", d:"Se distrae en una vidriera.",     k:"exit", ic:"🛍️"},
+  {n:"Te espera en tu mesa",   d:"Se planta donde dejaste todo.",      k:"mydesk", ic:"☕"},
+  {n:"Vuelve a su esquina",    d:"Se acuerda de que dejó el puesto.",  k:"home", ic:"🚦"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los árboles no te salvan.", k:"rush", ic:"🏃"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los árboles no te salvan.", k:"rush", ic:"🏃"},
+];
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
@@ -3344,6 +3556,9 @@ const JUEGOS = {
   5: { n:"Los Museos en la montaña", salas:SALAS_5, foes:FOES_5, themes:THEMES_M,
        deck:DECK_5, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_5,
        piezas:PIEZAS_5 },
+  6: { n:"Los Museos en la ciudad", salas:SALAS_6, foes:FOES_6, themes:THEMES_C,
+       deck:DECK_6, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_6,
+       piezas:PIEZAS_6 },
   /* El desafío diario vive en el 9, apartado de los juegos de verdad: no es
      uno más de la lista, es otra cosa que se sirve del mismo motor. */
   9: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
@@ -3370,6 +3585,7 @@ function cargarJuego(n){
     document.body.classList.toggle("juego3", n === 3);
     document.body.classList.toggle("juego4", n === 4);
     document.body.classList.toggle("juego5", n === 5);
+    document.body.classList.toggle("juego6", n === 6);
     /* Y la piel de la edición: clara u oscura según su sala cero. El menú de
        las diez salas se ve antes de que exista una partida, así que sin esto
        heredaba la piel de la sala que venías jugando —del espacio al menú de
@@ -8494,7 +8710,7 @@ function sellarTapas(){
   /* Las cuatro que se abren, en un solo lugar. Vaciarle el texto al sello no
      alcanza: la franja tiene fondo propio y sigue pintada, así que hay que
      esconderla. Y la clase «cerrada» es la que deja la tapa apagada. */
-  for(const n of [2, 3, 4, 5]){
+  for(const n of [2, 3, 4, 5, 6]){
     const abierto = elJuegoEstaAbierto(n);
     const tapa = document.getElementById("tapa" + n);
     if(tapa && tapa.classList) tapa.classList.toggle("cerrada", !abierto);
@@ -8511,8 +8727,8 @@ function sellarTapas(){
    si lo hacía, quedaba media pantalla de cada juego. */
 let ELEGIDO = 1;
 function elegirJuego(n){
-  ELEGIDO = (n >= 2 && n <= 5) ? n : 1;
-  for(const i of [1, 2, 3, 4, 5]){
+  ELEGIDO = (n >= 2 && n <= 6) ? n : 1;
+  for(const i of [1, 2, 3, 4, 5, 6]){
     const t = document.getElementById("tapa" + i);
     if(!t) continue;
     t.classList.toggle("elegida", ELEGIDO === i);
@@ -8575,6 +8791,7 @@ const PALABRA = "candombe";      // abre el shopping
 const PALABRA_3 = "caipirinha";  // abre las vacaciones
 const PALABRA_4 = "ingravidez";  // abre el espacio
 const PALABRA_5 = "chocolate";   // abre la montaña
+const PALABRA_6 = "obelisco";    // abre la ciudad
 
 /* El shopping se lo gana el que termino Los Museos. La palabra clave es para
    el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
@@ -8583,6 +8800,11 @@ const PALABRA_5 = "chocolate";   // abre la montaña
 function elTresEstaAbierto(){
   if(LEGAJO.clave3) return true;
   return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
+}
+
+function elSeisEstaAbierto(){
+  if(LEGAJO.clave6) return true;
+  return Object.keys(JUEGOS[5].salas).every(k => hechaEn(k, 1));
 }
 
 function elCincoEstaAbierto(){
@@ -8599,7 +8821,8 @@ function elJuegoEstaAbierto(n){
   return n === 2 ? elDosEstaAbierto()
        : n === 3 ? elTresEstaAbierto()
        : n === 4 ? elCuatroEstaAbierto()
-       : n === 5 ? elCincoEstaAbierto() : true;
+       : n === 5 ? elCincoEstaAbierto()
+       : n === 6 ? elSeisEstaAbierto() : true;
 }
 
 function elDosEstaAbierto(){
@@ -8622,12 +8845,14 @@ function entrar(){
   /* Cada juego cerrado tiene su palabra. La de siempre abre el shopping y la
      nueva las vacaciones; una no sirve para el otro. */
   if(!elJuegoEstaAbierto(ELEGIDO)){
-    const suya = ELEGIDO === 5 ? PALABRA_5 : ELEGIDO === 4 ? PALABRA_4
+    const suya = ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
+               : ELEGIDO === 4 ? PALABRA_4
                : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
     if(dicha === suya){
       /* ya no hace falta pedirla de nuevo */
-      if(ELEGIDO === 5)      LEGAJO.clave5 = true;
+      if(ELEGIDO === 6)      LEGAJO.clave6 = true;
+      else if(ELEGIDO === 5) LEGAJO.clave5 = true;
       else if(ELEGIDO === 4) LEGAJO.clave4 = true;
       else if(ELEGIDO === 3) LEGAJO.clave3 = true;
       else                   LEGAJO.clave2 = true;
@@ -8636,7 +8861,8 @@ function entrar(){
         ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
         : ({3:"Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave.",
             4:"El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.",
-            5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave."}[ELEGIDO]
+            5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave.",
+            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave."}[ELEGIDO]
            || "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
         if(cla.focus) { try{ cla.focus(); }catch(e){} }
@@ -8749,7 +8975,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "288e351d75";
+const VERSION = "53e25f5511";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
