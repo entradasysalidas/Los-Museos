@@ -414,6 +414,15 @@
   .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:1}
 
   .tapa{position:relative}
+  /* «tocá de nuevo para entrar»: sale sólo en la tapa marcada. Es la única
+     forma de que el segundo toque se descubra sin tener que explicarlo. */
+  .tapa .otravez{position:absolute;left:50%;transform:translateX(-50%);
+    bottom:-6px;white-space:nowrap;opacity:0;pointer-events:none;
+    background:var(--brass);color:var(--bg);border-radius:999px;
+    padding:4px 11px;font:700 10px/1 "Archivo",sans-serif;letter-spacing:.06em;
+    text-transform:uppercase;box-shadow:0 6px 16px #00000055;transition:.16s ease}
+  .tapa.elegida .otravez{opacity:1;bottom:-12px}
+  .tapa.cerrada .otravez{background:var(--dim)}
   .tapa .sello{position:absolute;left:0;right:0;top:44%;
     background:var(--brass);color:#14120E;text-align:center;
     font:700 clamp(9px,1.7vw,12px)/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
@@ -1308,36 +1317,42 @@
 
 <div id="portal">
   <div class="tapas">
-    <button class="tapa elegida" id="tapa1" onclick="elegirJuego(1)" aria-pressed="true">
+    <button class="tapa elegida" id="tapa1" onclick="tocarTapa(1)" aria-pressed="true">
       <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos</b><small>10 salas · listo para jugar</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa2" onclick="elegirJuego(2)" aria-pressed="false">
+    <button class="tapa cerrada" id="tapa2" onclick="tocarTapa(2)" aria-pressed="false">
       <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
       <span class="sello" id="sello2">🔒 Cerrado</span>
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa3" onclick="elegirJuego(3)" aria-pressed="false">
+    <button class="tapa cerrada" id="tapa3" onclick="tocarTapa(3)" aria-pressed="false">
       <img src="caja3.jpg" alt="Los Museos 3 · Vacaciones en la playa">
       <span class="sello" id="sello3">🔒 Cerrado</span>
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 3</b><small>Vacaciones en la playa</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa4" onclick="elegirJuego(4)" aria-pressed="false">
+    <button class="tapa cerrada" id="tapa4" onclick="tocarTapa(4)" aria-pressed="false">
       <img src="caja4.jpg" alt="Los Museos 4 · En el espacio"
            onerror="this.remove()">
       <span class="sello" id="sello4">🔒 Cerrado</span>
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 4</b><small>En el espacio</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa5" onclick="elegirJuego(5)" aria-pressed="false">
+    <button class="tapa cerrada" id="tapa5" onclick="tocarTapa(5)" aria-pressed="false">
       <img src="caja5.jpg" alt="Los Museos 5 · Escapan de la montaña"
            onerror="this.remove()">
       <span class="sello" id="sello5">🔒 Cerrado</span>
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 5</b><small>Escapan de la montaña</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa6" onclick="elegirJuego(6)" aria-pressed="false">
+    <button class="tapa cerrada" id="tapa6" onclick="tocarTapa(6)" aria-pressed="false">
       <img src="caja6.jpg" alt="Los Museos 6 · Escapan de la ciudad"
            onerror="this.remove()">
       <span class="sello" id="sello6">🔒 Cerrado</span>
+      <span class="otravez">Tocá de nuevo para entrar</span>
       <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
     </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
@@ -9111,6 +9126,28 @@ function sellarTapas(){
    tablas y el dibujo juntos. Tocar una tapa sin entrar no puede cambiarla:
    si lo hacía, quedaba media pantalla de cada juego. */
 let ELEGIDO = 1;
+
+/* El toque en una tapa. La primera vez la marca; tocar de nuevo la que ya
+   está marcada entra. Con seis ediciones el botón de Entrar quedó lejos, y
+   bajar a buscarlo cada vez era una vuelta de más.
+   elegirJuego queda aparte y sin efectos: prepararPortal la usa para marcar
+   la edición en curso al abrir la portada, y eso no puede entrar a nada. */
+function tocarTapa(n){
+  if(ELEGIDO === n) return entrar();
+  elegirJuego(n);
+  /* Bajar a los campos sólo si hacen falta: si ya tenés nombre y la edición
+     está abierta, el segundo toque entra y no hay nada que completar, así
+     que moverle la pantalla sería sacarle las tapas de la vista de gusto.
+     Y cuando hace falta, se corre lo mínimo: con block:"end" se iba tan
+     abajo que no veías cuál habías elegido. */
+  const falta = !(LEGAJO && LEGAJO.nombre) || !elJuegoEstaAbierto(n);
+  if(!falta) return;
+  const campos = document.getElementById("filaclave") || document.getElementById("nombre");
+  if(campos && campos.scrollIntoView){
+    try{ campos.scrollIntoView({block:"nearest", behavior:"smooth"}); }catch(e){}
+  }
+}
+
 function elegirJuego(n){
   ELEGIDO = (n >= 2 && n <= 6) ? n : 1;
   for(const i of [1, 2, 3, 4, 5, 6]){
@@ -9360,7 +9397,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "cbf72943fc";
+const VERSION = "ee8b1dd55c";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
