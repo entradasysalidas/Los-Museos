@@ -1693,13 +1693,28 @@ const CHOCOLATE = {ic:"☕", n:"Chocolate",
              '<path d="M8.4 6.4c1-1 .2-2 .2-2.8M11.6 6.2c1-1 .2-2 .2-2.8" fill="none" stroke="#C9C4B9" stroke-width="1.1" stroke-linecap="round" opacity=".8"/>' +
            '</svg>'};
 const OBJETOS_5 = { fernet:CHOCOLATE };
+
+/* En la ciudad el fernet se queda —es de acá— y el que cambia es el mate,
+   que pasa a ser el cortado del bar de la esquina. */
+const CORTADO = {ic:"☕", n:"Cortado",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<ellipse cx="11" cy="20" rx="9.4" ry="2.4" fill="#E8E4DA"/>' +
+             '<rect x="4.6" y="7.4" width="12.8" height="11.4" rx="2.4" fill="#F4F1E8"/>' +
+             '<rect x="4.6" y="7.4" width="12.8" height="2.4" rx="1.2" fill="#E4DFD2"/>' +
+             '<ellipse cx="11" cy="9" rx="5.2" ry="1.6" fill="#8A5A34"/>' +
+             '<ellipse cx="9.6" cy="8.8" rx="2.2" ry=".8" fill="#C9A46E"/>' +
+             '<path d="M17.4 10.6h1.4a2.4 2.4 0 0 1 0 4.8h-1.4" fill="none" stroke="#F4F1E8" stroke-width="1.8"/>' +
+             '<path d="M8 5.2c.9-.9.2-1.8.2-2.6M12 5c.9-.9.2-1.8.2-2.6" fill="none" stroke="#C9C4B9" stroke-width="1.1" stroke-linecap="round" opacity=".75"/>' +
+           '</svg>'};
+const OBJETOS_6 = { mate1:CORTADO, mate2:CORTADO };
 function objetoDe(id){
   const o = OBJECTS[id];
   if(!o || !JERGA[JUEGO]) return o;
   /* la piel manda sobre el nombre y el dibujo; el resto pasa por la jerga
      —el nombre incluido, que era justo lo que quedaba afuera: la montaña
      cambia el fernet por el chocolate sin piel y seguía diciendo Fernet. */
-  const piel = JUEGO === 5 ? OBJETOS_5[id]
+  const piel = JUEGO === 6 ? OBJETOS_6[id]
+             : JUEGO === 5 ? OBJETOS_5[id]
              : JUEGO === 4 ? OBJETOS_4[id]
              : JUEGO === 3 ? OBJETOS_3[id] : null;
   const n = enJerga(o.n), d = enJerga(o.d), aviso = enJerga(o.aviso);
@@ -2048,7 +2063,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero))), power = poderDe(sala.hero);
+  const hero = deCiudad(deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero)))), power = poderDe(sala.hero);
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -3775,7 +3790,8 @@ function drinkMate(){
   if(!S||S.over||S.busy||!canDrinkHere()) return;
   S.drunk.add(key(S.player.x,S.player.y));
   S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
-  float(S.player.x,S.player.y, JUEGO === 3 ? "+BIRRA" : JUEGO === 4 ? "+O₂" : "+MATE", acentoSala());
+  float(S.player.x,S.player.y, JUEGO === 3 ? "+BIRRA" : JUEGO === 4 ? "+O₂" : JUEGO === 6 ? "+CAFÉ"
+      : "+MATE", acentoSala());
   if(S.matesTurn>=TUNE.matesPerTurn){
     say("🧉 Tercer mate del turno… terminás en tu baño.","r");
     S.player.x=S.bath.x; S.player.y=S.bath.y; S.mp=0;
@@ -4856,7 +4872,7 @@ function drawAfuera(g, th){
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
     cubiculos: drawCubiculos, mar: drawMar, estrellas: drawEstrellas,
-    cerro: drawCerro,
+    cerro: drawCerro, avenida: drawAvenida,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -5178,6 +5194,73 @@ function buildFloorLayer(){
 
 /* Lo que se ve más allá de la loseta: el mar arriba, con la espuma en la
    orilla, y la arena seca a los costados y abajo. */
+/* La 9 de Julio, desde arriba: el asfalto, los carriles, la senda peatonal y
+   los autos vistos de planta. Desde acá arriba el Obelisco es un cuadrado
+   blanco con una sombra larga, que es exactamente lo que se ve en las fotos
+   aéreas y lo que lo hace reconocible sin salir de la proyección. */
+function drawAvenida(g, th){
+  const an = W*CS, al = H*CS;
+  const noche = !!th.oscuro;
+  g.fillStyle = th.fondo || (noche ? "#1C1E24" : "#8E9298");
+  g.fillRect(0, 0, an, al);
+  /* el asfalto, con su grano */
+  g.fillStyle = noche ? "#00000030" : "#00000018";
+  for(let i = 0; i < 200; i++)
+    g.fillRect(rnd(i,11,3)*an, rnd(i,5,9)*al, 1.6, 1.6);
+  /* los carriles: líneas cortadas, en las dos columnas del vacío */
+  const carril = (cx) => {
+    g.fillStyle = noche ? "#C9C4B9" : "#F2F0EA";
+    for(let y = 4; y < al; y += 26) g.fillRect(cx - 1.6, y, 3.2, 15);
+  };
+  carril(an*0.055); carril(an*0.135);
+  carril(an*0.865); carril(an*0.945);
+  /* la senda peatonal, cruzando arriba */
+  g.fillStyle = noche ? "#D8D4C8" : "#F6F4EE";
+  /* la senda va del lado derecho nada más: del izquierdo se pisa con el
+     Obelisco y quedaban dos cosas blancas encimadas */
+  for(let k = 0; k < 6; k++) g.fillRect(an - 90 + k*14, al*0.055, 9, CS*0.55);
+  /* los autos y el colectivo, de planta */
+  const auto = (cx, cy, largo, ancho, col, techo) => {
+    g.fillStyle = "#00000038";
+    rr(g, cx - ancho/2 + 2, cy - largo/2 + 3, ancho, largo, 4); g.fill();
+    g.fillStyle = col; rr(g, cx - ancho/2, cy - largo/2, ancho, largo, 4); g.fill();
+    g.fillStyle = techo; rr(g, cx - ancho/2 + 2.5, cy - largo/2 + largo*0.22,
+                            ancho - 5, largo*0.42, 2.5); g.fill();
+    g.fillStyle = "#FFFFFF22";
+    rr(g, cx - ancho/2 + 2.5, cy - largo/2 + 2.5, ancho - 5, largo*0.14, 2); g.fill();
+  };
+  auto(an*0.095, al*0.30, 52, 26, "#E0553F", "#3A3F4A");      // el colectivo
+  g.fillStyle = "#F2C14E";
+  g.fillRect(an*0.095 - 13, al*0.30 - 6, 26, 4);
+  auto(an*0.095, al*0.72, 34, 22, "#2E333C", "#1C2028");      // un auto
+  auto(an*0.905, al*0.46, 34, 22, "#2A2E36", "#F2C14E");      // el taxi
+  auto(an*0.905, al*0.86, 40, 23, "#3F7FD6", "#2C5FA8");
+  /* el Obelisco: desde arriba es un cuadrado, y lo que lo delata es la sombra */
+  /* al vacío de arriba a la izquierda: en el medio de la avenida lo tapaba
+     la vereda del marco y no se veía nunca */
+  const ox = an*0.085, oy = al*0.10;
+  g.fillStyle = "rgba(0,0,0,.30)";
+  g.beginPath(); g.moveTo(ox - 7, oy + 7); g.lineTo(ox + 7, oy + 7);
+  g.lineTo(ox + 30, oy + 58); g.lineTo(ox + 14, oy + 58); g.closePath(); g.fill();
+  g.fillStyle = noche ? "#E8E4DA" : "#F6F4EE";
+  rr(g, ox - 8, oy - 8, 16, 16, 1.5); g.fill();
+  g.fillStyle = "#00000026"; rr(g, ox - 4, oy - 4, 8, 8, 1); g.fill();
+  g.fillStyle = noche ? "#FFF3D0" : "#FFFFFF"; rr(g, ox - 2, oy - 2, 4, 4, .8); g.fill();
+  /* y las luces de la calle, de noche */
+  if(noche){
+    for(const lx of [an*0.16, an*0.84]){
+      for(let k = 0; k < 4; k++){
+        const ly = al*0.14 + k*al*0.24;
+        const halo = g.createRadialGradient(lx, ly, 2, lx, ly, 34);
+        halo.addColorStop(0, "rgba(255,216,140,.30)");
+        halo.addColorStop(1, "rgba(255,216,140,0)");
+        g.fillStyle = halo; g.beginPath(); g.arc(lx, ly, 34, 0, 7); g.fill();
+        g.fillStyle = "#FFD88C"; g.beginPath(); g.arc(lx, ly, 2.6, 0, 7); g.fill();
+      }
+    }
+  }
+}
+
 /* Lo que hay afuera del refugio: la ladera, vista desde arriba igual que el
    tablero. Nada de cielo ni de cumbres paradas: el tablero es planta pura y
    una vista de costado atrás se lee como un telón colgado. El relieve se hace
@@ -5436,6 +5519,39 @@ function drawPiso(g,x,y,th){
   /* En la montaña la loseta es nieve pisada y el marco es el deck de madera
      del refugio. Igual que el muelle y la pasarela: separa de un vistazo lo
      que se juega de lo que no. */
+  /* En la ciudad la loseta es la vereda y el marco es el asfalto del cordón
+     para adentro. La baldosa de Buenos Aires son cuatro cuadraditos por
+     paño, y eso es lo que la hace vereda y no piso de oficina. */
+  if(JUEGO === 6){
+    const enLaCalle = x < CX0 || x >= CX0 + CW || y < CY0 || y >= CY0 + CH;
+    if(enLaCalle){
+      g.fillStyle = (x + y) % 2 ? "#4A4E56" : "#44484F";
+      g.fillRect(px,py,CS,CS);
+      g.fillStyle = "#00000022";
+      for(let k = 0; k < 5; k++)
+        g.fillRect(px + rnd(x,y,k+2)*CS, py + rnd(x,y,k+7)*CS, 3 + rnd(x,y,k+4)*4, 1.4);
+      g.fillStyle = "#FFFFFF0E"; g.fillRect(px, py, CS, 1);
+      return;
+    }
+    g.fillStyle = (x+y)%2 ? th.piso[0] : th.piso[1];
+    g.fillRect(px,py,CS,CS);
+    /* los cuatro cuadraditos de la baldosa, con su junta */
+    const m = CS/2;
+    g.fillStyle = th.junta || "#00000018";
+    g.fillRect(px + m - 1, py, 2, CS); g.fillRect(px, py + m - 1, CS, 2);
+    g.fillStyle = th.oscuro ? "#FFFFFF0C" : "#FFFFFF55";
+    g.fillRect(px + m + 1, py, 1, CS); g.fillRect(px, py + m + 1, CS, 1);
+    for(const q of [[0,0],[m,0],[0,m],[m,m]]){       // el relieve de cada uno
+      g.fillStyle = th.oscuro ? "#FFFFFF08" : "#FFFFFF3A";
+      g.fillRect(px + q[0] + 2, py + q[1] + 2, m - 5, 1);
+      g.fillStyle = "#00000010";
+      g.fillRect(px + q[0] + 2, py + q[1] + m - 4, m - 5, 1);
+    }
+    g.fillStyle = th.oscuro ? "#00000020" : "#00000012";
+    for(let k = 0; k < 10; k++)                      // el granito de la baldosa
+      g.fillRect(px + rnd(x,y,k+30)*CS, py + rnd(x,y,k+45)*CS, 1.2, 1.2);
+    return;
+  }
   if(JUEGO === 5){
     const enElDeck = x < CX0 || x >= CX0 + CW || y < CY0 || y >= CY0 + CH;
     if(enElDeck){
@@ -5794,6 +5910,41 @@ function drawParedes(){
 /* La sombrilla, y abajo la heladerita. Lo que en el museo es una vitrina con
    la pieza adentro acá es una sombrilla ajena con la conservadora debajo: la
    lucecita de alarma pasa a ser si el dueño se despertó. */
+/* El puesto de la feria: el tablón con el cuadro apoyado y el toldo a rayas.
+   Vacío queda el caballete solo. */
+function drawPuestoFeria(g,c){
+  const on = !c.alarm;
+  const col = (on && c.piece && PIE[c.piece]) ? PIE[c.piece].color : "#6E7480";
+  g.fillStyle="#00000033"; rr(g,6,38,36,6,2); g.fill();
+  /* el toldo */
+  for(let k = 0; k < 5; k++){
+    g.fillStyle = k % 2 ? "#F4F1E8" : (on ? "#4FA85F" : "#8A9099");
+    g.beginPath(); g.moveTo(4 + k*8, 13); g.lineTo(12 + k*8, 13);
+    g.lineTo(11 + k*8, 4); g.lineTo(5 + k*8, 4); g.closePath(); g.fill();
+  }
+  g.fillStyle="#6E5638"; g.fillRect(3,3,42,2);
+  g.fillStyle="#5A4630"; g.fillRect(5,13,2.6,26); g.fillRect(40.4,13,2.6,26);
+  /* el tablón */
+  g.fillStyle="#8A6B4A"; rr(g,5,30,38,8,1.5); g.fill();
+  g.fillStyle="#6E5638"; g.fillRect(5,30,38,2);
+  if(on && c.piece){
+    /* el cuadro, apoyado con su marco dorado */
+    g.fillStyle="#00000030"; rr(g,14,17,22,15,1); g.fill();
+    g.fillStyle="#D2A24C"; rr(g,13,16,22,15,1); g.fill();
+    g.fillStyle=col;       rr(g,16,19,16,9,.8); g.fill();
+    g.fillStyle="#FFFFFF33";
+    g.beginPath(); g.moveTo(16,28); g.lineTo(22,19); g.lineTo(26,28); g.closePath(); g.fill();
+    g.fillStyle="#FFFFFF55"; g.beginPath(); g.arc(28,22,2,0,7); g.fill();
+  }else{
+    g.fillStyle="#5A4630"; g.fillRect(22,18,3,13);        // el caballete vacío
+    g.fillStyle="#4A3A26"; g.fillRect(17,29,13,2);
+  }
+  if(!on){
+    g.fillStyle="#E0685D"; g.beginPath(); g.arc(38,36,2.4,0,7); g.fill();
+    g.fillStyle="#E0685D33"; g.beginPath(); g.arc(38,36,6,0,7); g.fill();
+  }
+}
+
 /* El locker del guardaesquíes: la puerta abierta y la tabla adentro. Vacío
    queda el hueco y el candado colgando. */
 function drawLocker(g,c){
@@ -5903,6 +6054,7 @@ function drawVitrina(g,c){
   if(JUEGO === 3) return drawHeladera(g,c);
   if(JUEGO === 4) return drawCapsula(g,c);
   if(JUEGO === 5) return drawLocker(g,c);
+  if(JUEGO === 6) return drawPuestoFeria(g,c);
   const on = !c.alarm;
   g.fillStyle="#00000035"; rr(g,9,36,30,6,3); g.fill();
   g.fillStyle="#2E3440"; rr(g,9,30,30,10,2); g.fill();       // base
@@ -6008,6 +6160,7 @@ function drawPlanta(g){
   if(JUEGO === 3) return drawSombrillaPlaya(g);
   if(JUEGO === 4) return drawCultivo(g);
   if(JUEGO === 5) return drawPino(g);
+  if(JUEGO === 6) return drawArbol(g);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,42,15,5,0,0,7); g.fill();
   g.fillStyle="#A8623C"; rr(g,13,27,22,16,3); g.fill();          // maceta
   g.fillStyle="#BA7047"; g.fillRect(11,25,26,5);
@@ -6059,6 +6212,7 @@ function drawCamara(g, c, x, y){
   if(JUEGO === 3) return drawFaro(g, ang);
   if(JUEGO === 4) return drawDron(g, ang);
   if(JUEGO === 5) return drawReflector(g, ang);
+  if(JUEGO === 6) return drawCamaraTransito(g, ang);
   g.save();
   g.translate(24, 20);
   g.fillStyle="#00000028"; g.beginPath(); g.ellipse(0,17,10,3.4,0,0,7); g.fill();
@@ -6071,6 +6225,45 @@ function drawCamara(g, c, x, y){
   g.restore();
 }
 
+
+/* La baldosa floja: la cáscara de banana de Buenos Aires. La pisás, salta el
+   agua podrida y perdés un movimiento. */
+function drawBaldosa(g){
+  g.fillStyle="#00000022"; rr(g,8,14,32,22,1); g.fill();
+  g.fillStyle="#9AA0A6"; rr(g,9,13,30,21,1); g.fill();            // la baldosa
+  g.fillStyle="#8A9099"; g.fillRect(9,23,30,1.6); g.fillRect(23.2,13,1.6,21);
+  g.fillStyle="#3A3F48";                                          // el agua abajo
+  g.beginPath(); g.ellipse(24,32,14,5,0,0,7); g.fill();
+  g.fillStyle="#5A6068"; g.beginPath(); g.ellipse(24,31,11,3.6,0,0,7); g.fill();
+  /* las gotas saltando, que es lo que la hace floja */
+  g.fillStyle="#8FA8B8";
+  for(const d of [[12,22,2],[36,20,1.7],[16,12,1.4],[33,11,1.2]]){
+    g.beginPath(); g.arc(d[0],d[1],d[2],0,7); g.fill();
+  }
+  g.fillStyle="#D8DEE6"; g.font="bold 9px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText("!", 24, 22);
+}
+
+/* El cortado: el mate de la ciudad. Parado encima te devuelve los pasos. */
+function drawCortado(g){
+  g.fillStyle="#00000030"; g.beginPath(); g.ellipse(24,38,13,4,0,0,7); g.fill();
+  g.fillStyle="#F4F1E8"; g.beginPath(); g.ellipse(24,34,13,5,0,0,7); g.fill();  // el plato
+  g.fillStyle="#E4DFD2"; g.beginPath(); g.ellipse(24,33,9,3.4,0,0,7); g.fill();
+  g.fillStyle="#F4F1E8"; rr(g,16,16,16,16,3); g.fill();           // la taza
+  g.fillStyle="#E4DFD2"; rr(g,16,16,16,3,2); g.fill();
+  g.fillStyle="#8A5A34"; g.beginPath(); g.ellipse(24,18,6.6,2.4,0,0,7); g.fill();
+  g.fillStyle="#C9A46E"; g.beginPath(); g.ellipse(22.5,17.6,3,1.2,0,0,7); g.fill();
+  g.strokeStyle="#F4F1E8"; g.lineWidth=2.4;                       // la oreja
+  g.beginPath(); g.arc(33,24,4,-1.1,1.1); g.stroke();
+  g.fillStyle="#D2A24C";                                          // la medialuna al lado
+  g.beginPath(); g.arc(13,31,4.2,Math.PI*.15,Math.PI*1.15); g.fill();
+  g.fillStyle="#C9C4B9"; g.globalAlpha=.5;                        // el vapor
+  for(let k=0;k<2;k++){
+    g.beginPath(); g.arc(22 + k*4, 11 - k*2, 1.8 + k*.4, 0, 7); g.fill();
+  }
+  g.globalAlpha=1;
+}
 
 /* El hielo: la cáscara de banana de la montaña. Pisarlo cuesta un paso. */
 function drawHielo(g){
@@ -6089,6 +6282,64 @@ function drawHielo(g){
   g.fillStyle="#3A6E88"; g.font="bold 9px system-ui";
   g.textAlign="center"; g.textBaseline="middle";
   g.fillText("!", 24, 28);
+}
+
+/* El árbol de la vereda: donde te escondés en la ciudad. Con su cazuela de
+   baldosas, que es como están en la calle. */
+function drawArbol(g){
+  g.fillStyle="#00000026"; g.beginPath(); g.ellipse(24,38,14,4,0,0,7); g.fill();
+  g.fillStyle="#5A5E66"; rr(g,9,28,30,12,2); g.fill();            // la cazuela
+  g.fillStyle="#3E2E1E"; rr(g,11,30,26,8,1.5); g.fill();          // la tierra
+  g.fillStyle="#5A4028"; g.fillRect(22,20,4,12);                  // el tronco
+  g.fillStyle="#6E5638"; g.fillRect(22,20,1.6,12);
+  /* la copa: tres bollos, como el jacarandá de la vereda */
+  for(const b of [[24,12,13],[15,17,9],[33,17,9]]){
+    g.fillStyle="#2E6B45"; g.beginPath(); g.arc(b[0],b[1],b[2],0,7); g.fill();
+  }
+  for(const b of [[21,10,7],[29,14,6],[18,15,5]]){
+    g.fillStyle="#4FA85F"; g.beginPath(); g.arc(b[0],b[1],b[2],0,7); g.fill();
+  }
+  g.fillStyle="#6FCB8A"; g.beginPath(); g.arc(20,9,4,0,7); g.fill();
+}
+
+/* La boca del subte: bajás por una y salís por otra, igual que la escalera. */
+function drawSubte(g){
+  g.fillStyle="#3A3F48"; rr(g,6,8,36,34,2); g.fill();             // el hueco
+  g.fillStyle="#1C2028"; rr(g,9,11,30,28,1.5); g.fill();
+  /* los escalones bajando, cada uno más oscuro */
+  for(let k = 0; k < 5; k++){
+    const t = k/5;
+    g.fillStyle = "rgba(" + Math.round(150 - t*110) + "," +
+                  Math.round(155 - t*115) + "," + Math.round(165 - t*120) + ",1)";
+    rr(g, 11 + k*2, 13 + k*5, 26 - k*4, 4.4, 1); g.fill();
+  }
+  /* la baranda */
+  g.strokeStyle="#8A9099"; g.lineWidth=2; g.lineCap="round";
+  g.beginPath(); g.moveTo(10,12); g.lineTo(20,38); g.stroke();
+  g.beginPath(); g.moveTo(38,12); g.lineTo(28,38); g.stroke();
+  /* el cartel del subte */
+  g.fillStyle="#F2C14E"; rr(g,14,2,20,9,1.5); g.fill();
+  g.fillStyle="#1C2028"; g.font="bold 7px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText("SUBTE", 24, 6.8);
+}
+
+/* La cámara de tránsito: la cámara de la ciudad, y acá es literal. Gira un
+   cuarto de vuelta por ronda, igual que el faro y el dron. */
+function drawCamaraTransito(g, ang){
+  g.fillStyle="#00000026"; g.beginPath(); g.ellipse(24,41,9,3,0,0,7); g.fill();
+  g.fillStyle="#4A4E56"; rr(g,20,34,8,7,2); g.fill();             // la base
+  g.fillStyle="#6E7480"; g.fillRect(22.6,12,2.8,23);              // el poste
+  g.fillStyle="#8A9099"; g.fillRect(22.6,12,1,23);
+  g.save();
+  g.translate(24, 11); g.rotate(ang);
+  g.fillStyle="#5A5E66"; g.fillRect(-2,-1.6,7,3.2);               // el brazo
+  g.fillStyle="#3A3F48"; rr(g,4,-4.4,9,8.8,2); g.fill();          // el cuerpo
+  g.fillStyle="#2A2E36"; g.beginPath(); g.arc(13,0,3.2,0,7); g.fill();
+  g.fillStyle="#8FD3E4"; g.beginPath(); g.arc(13.4,-.4,1.6,0,7); g.fill();
+  g.fillStyle="#E0685D"; g.beginPath(); g.arc(5.5,-2.6,1.2,0,7); g.fill();
+  g.fillStyle="#3A3F48"; rr(g,3,-6,10,2.4,1); g.fill();           // la visera
+  g.restore();
 }
 
 /* El pino: donde te escondés en la montaña. Es la planta, y con nieve. */
@@ -6269,6 +6520,7 @@ function drawEscalera(g){
   if(JUEGO === 3) return drawCarpa(g);
   if(JUEGO === 4) return drawEsclusa(g);
   if(JUEGO === 5) return drawTelesilla(g);
+  if(JUEGO === 6) return drawSubte(g);
   g.save();
   g.fillStyle="#00000022"; rr(g,6,8,36,32,3); g.fill();
   g.fillStyle="#7E8695";
@@ -6391,6 +6643,7 @@ function drawSalida(g,open){
   if(JUEGO === 3) return drawPuestoPlaya(g,open);
   if(JUEGO === 4) return drawNave(g,open);
   if(JUEGO === 5) return drawRefugio(g,open);
+  if(JUEGO === 6) return drawColectivo(g,open);
   g.fillStyle="#232830"; g.fillRect(0,0,48,48);
   g.fillStyle=open?"#2C4A3A":"#2E333C"; g.fillRect(8,12,32,36);         // puerta
   g.strokeStyle=open?"#79AE9E":"#4A505C"; g.lineWidth=2; g.strokeRect(8,12,32,36);
@@ -6403,6 +6656,87 @@ function drawSalida(g,open){
   g.fillText(open?"SALIDA":"CERRADO",24,6);
   if(open){ const p=(Math.sin(performance.now()/260)+1)/2;
     g.fillStyle=`rgba(121,174,158,${.10+p*.20})`; g.fillRect(0,0,48,48); }
+}
+
+/* El colectivo: adonde te subís para escaparte. Con las tres entregadas
+   abre la puerta y prende el cartel. Visto de planta, como todo. */
+function drawColectivo(g,open){
+  g.fillStyle= open ? "#3A3F48" : "#33383F"; g.fillRect(0,0,48,48);
+  g.fillStyle="#00000038"; rr(g,7,7,36,38,4); g.fill();
+  g.fillStyle= open ? "#E0553F" : "#8A5148"; rr(g,6,5,36,38,4); g.fill();
+  g.fillStyle= open ? "#C2422F" : "#79443C"; rr(g,8,7,32,10,3); g.fill();  // el techo
+  /* la franja y el número de línea */
+  g.fillStyle="#F2C14E"; g.fillRect(6,19,36,5);
+  g.fillStyle="#1C2028"; g.font="bold 7px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText("29", 24, 21.8);
+  /* las ventanillas */
+  g.fillStyle= open ? "#BFE0F0" : "#4A525F";
+  rr(g,9,26,12,9,1.5); g.fill(); rr(g,27,26,12,9,1.5); g.fill();
+  g.fillStyle="#FFFFFF33"; rr(g,10,27,5,7,1); g.fill();
+  /* la puerta: cerrada es una línea, abierta se corre y se ve adentro */
+  if(open){
+    g.fillStyle="#1C2028"; rr(g,19,26,10,14,1.5); g.fill();
+    g.fillStyle="#FFD88C"; rr(g,20.5,27.5,7,11,1); g.fill();
+    g.fillStyle="#2A5C3E"; rr(g,13,38,22,7,1.5); g.fill();
+    g.fillStyle="#EAFFF5"; g.font="bold 6px system-ui";
+    g.fillText("SUBÍ", 24, 41.6);
+    const p=(Math.sin(performance.now()/260)+1)/2;
+    g.fillStyle=`rgba(121,174,158,${.06+p*.12})`; g.fillRect(0,0,48,48);
+  }else{
+    g.fillStyle="#4A525F"; rr(g,19,26,10,14,1.5); g.fill();
+    g.fillStyle="#33383F"; g.fillRect(23.4,26,1.2,14);
+    g.fillStyle="#6E6A64"; rr(g,13,38,22,7,1.5); g.fill();
+    g.fillStyle="#C9C4BC"; g.font="bold 6px system-ui";
+    g.fillText("NO PARA", 24, 41.6);
+  }
+  g.fillStyle="#2A2E36"; g.fillRect(6,43,7,3); g.fillRect(35,43,7,3);   // las ruedas
+}
+
+/* La mesa del bar: la tuya y la de él. Con el cortado servido, que en la
+   ciudad es lo que hay sobre la mesa. */
+function drawMesaBar(g,mine){
+  g.fillStyle="#00000030"; rr(g,5,15,38,27,3); g.fill();
+  g.fillStyle="#3A3F48"; rr(g,17,3,14,12,3); g.fill();            // la silla
+  g.fillStyle="#4A4E56"; rr(g,19,5,10,9,2); g.fill();
+  /* la mesa redonda de bar */
+  g.fillStyle= mine ? "#8A6B4A" : "#6E4A3A";
+  g.beginPath(); g.ellipse(24,28,18,13,0,0,7); g.fill();
+  g.fillStyle= mine ? "#9A7A54" : "#7E5644";
+  g.beginPath(); g.ellipse(24,26.5,18,13,0,0,7); g.fill();
+  g.fillStyle="#00000014"; g.beginPath(); g.ellipse(24,26.5,13,9,0,0,7); g.fill();
+  /* el cortado y la medialuna */
+  g.fillStyle="#F4F1E8"; g.beginPath(); g.ellipse(19,25,6,4,0,0,7); g.fill();
+  g.fillStyle="#E8E4DA"; g.beginPath(); g.arc(19,24,4.2,0,7); g.fill();
+  g.fillStyle="#8A5A34"; g.beginPath(); g.arc(19,24,3,0,7); g.fill();
+  g.fillStyle="#C9A46E"; g.beginPath(); g.arc(19,24,1.4,0,7); g.fill();
+  g.fillStyle="#D2A24C";
+  g.beginPath(); g.arc(31,27,4.4,Math.PI*.15,Math.PI*1.15); g.fill();
+  if(mine){
+    g.fillStyle="#D9D4C7"; rr(g,4,34,13,7,1); g.fill();
+    g.fillStyle="#3A3F4A"; g.font="bold 6px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText((S.hero.n.replace("El ","")[0]||"").toUpperCase(), 10.5, 38);
+  }else{
+    g.fillStyle="#8A3A34"; rr(g,4,34,20,7,1); g.fill();
+    g.fillStyle="#F2E6E4"; g.font="bold 5px system-ui";
+    g.textAlign="center"; g.textBaseline="middle";
+    g.fillText("RESERVADA", 14, 38);
+  }
+}
+
+/* El baño del bar: la puerta con el cartelito y nada más. */
+function drawBanioBar(g){
+  g.fillStyle="#00000028"; rr(g,12,36,24,5,2); g.fill();
+  g.fillStyle="#5A4630"; rr(g,12,6,24,32,2); g.fill();            // el marco
+  g.fillStyle="#6E5638"; rr(g,14,8,20,28,1.5); g.fill();          // la puerta
+  g.fillStyle="#00000022"; g.fillRect(14,21,20,1.4);
+  g.fillStyle="#8A6B4A"; rr(g,16,10,16,9,1); g.fill();
+  g.fillStyle="#F4F1E8"; rr(g,18,12,12,5,1); g.fill();            // el cartelito
+  g.fillStyle="#3A3F4A"; g.font="bold 5px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText("BAÑO", 24, 14.6);
+  g.fillStyle="#D2A24C"; g.beginPath(); g.arc(31,27,1.6,0,7); g.fill();  // el picaporte
 }
 
 /* El refugio: adonde entrás a entrar en calor. Cerrado hasta que entregues
@@ -6567,6 +6901,7 @@ function drawPuesto(g,mine){
   if(JUEGO === 3) return drawReposera(g,mine);
   if(JUEGO === 4) return drawConsola(g,mine);
   if(JUEGO === 5) return drawMesaRefugio(g,mine);
+  if(JUEGO === 6) return drawMesaBar(g,mine);
   g.fillStyle="#00000030"; rr(g,4,12,40,30,3); g.fill();
   // silla, asomando por detrás
   g.fillStyle="#39404D"; rr(g,17,2,14,13,4); g.fill();
@@ -6644,6 +6979,7 @@ function drawCabina(g){
 }
 
 function drawBanio(g){
+  if(JUEGO === 6) return drawBanioBar(g);
   if(JUEGO === 4) return drawCabina(g);
   if(JUEGO === 3) return drawDucha(g);
   g.fillStyle="#00000030"; rr(g,13,34,22,6,3); g.fill();
@@ -6655,10 +6991,19 @@ function drawBanio(g){
 
 function drawComplice(g,c){
   const quien = compOf(c.want);
-  const who = deMontania(deEspacio(deVacaciones(CREW[quien], quien))), piece = PIE[c.want];
+  const who = deCiudad(deMontania(deEspacio(deVacaciones(CREW[quien], quien)))), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
-  if(JUEGO === 5){
+  if(JUEGO === 6){
+    /* la parada: el banco y el cartel de la línea, con el color del cuadro
+       que pide, que es lo que dice a quién le toca */
+    g.fillStyle="#4A4E56"; rr(g,8,26,32,10,2); g.fill();
+    g.fillStyle="#5A5E66"; rr(g,8,26,32,3,2); g.fill();
+    g.fillStyle="#00000026"; g.fillRect(11,36,3,5); g.fillRect(34,36,3,5);
+    g.fillStyle="#6E7480"; g.fillRect(38,10,2.6,26);           // el poste
+    g.fillStyle=piece.color; rr(g,33,6,12,9,1.5); g.fill();    // el cartel
+    g.fillStyle="#FFFFFF55"; rr(g,34,7,10,2,.8); g.fill();
+  }else if(JUEGO === 5){
     /* el banco de madera, con la nieve arriba del respaldo */
     g.fillStyle="#6E5638"; rr(g,8,20,32,16,2); g.fill();
     g.fillStyle="#8A6B4A"; rr(g,8,20,32,4,2); g.fill();
@@ -6714,6 +7059,13 @@ const PLAYEROS = {
    chiste. */
 /* En la montaña se abrigan todos: gorro, bufanda y la campera acolchada.
    Como el traje del espacio, va puesto al mostrarlo y no se guarda. */
+/* En la ciudad van con mochila, que es con lo que corren en la tapa. Como el
+   traje del espacio y el abrigo de la montaña: se pone al mostrarlo. */
+function deCiudad(look){
+  if(JUEGO !== 6 || !look) return look;
+  return Object.assign({}, look, {calle:true});
+}
+
 function deMontania(look){
   if(JUEGO !== 5 || !look) return look;
   return Object.assign({}, look, {nieve:true});
@@ -6758,6 +7110,17 @@ function drawPerson(g, look, bob, alpha){
       g.fillStyle=piel0;
       g.fillRect(-9.5,-8+bob,3.2,7); g.fillRect(6.3,-8+bob,3.2,7);
     }
+  }
+  if(look.calle){
+    /* los tirantes de la mochila, cruzando el pecho, y la hebilla. La mochila
+       misma va a la espalda y no se ve: lo que se ve de frente son las tiras,
+       que es justo lo que alcanza para leerlo. */
+    g.fillStyle = "#2E333C";
+    g.fillRect(-7.2, -8 + bob, 2.8, 12); g.fillRect(4.4, -8 + bob, 2.8, 12);
+    g.fillStyle = "#4A4E56";
+    g.fillRect(-7.2, -8 + bob, 1, 12); g.fillRect(4.4, -8 + bob, 1, 12);
+    g.fillStyle = "#2E333C"; g.fillRect(-7.2, -2.4 + bob, 14.4, 2.2);
+    g.fillStyle = "#D2A24C"; rr(g, -2.2, -3 + bob, 4.4, 3.4, .8); g.fill();
   }
   if(look.nieve){
     /* la campera acolchada: los canutos horizontales, que es lo que la hace
@@ -7087,6 +7450,7 @@ const FOE_PLAYA = {
 function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
   const enTraje = JUEGO === 4;
   const abrigado = JUEGO === 5;
+  const deCalle  = JUEGO === 6;
   const playa = JUEGO === 3 ? FOE_PLAYA[look] : null;
   const body = playa ? playa.c : (FOE_BODY[look] || "#262B38");
   const oscuro = look!=="guardapolvo";
@@ -7163,6 +7527,21 @@ function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
   }
 
   g.fillStyle="#E8B98A"; g.beginPath(); g.arc(0,-16+bob,8.6,0,7); g.fill();
+  if(deCalle){
+    /* la gorra con visera y los anteojos de sol: el uniforme de todo el que
+       te para en la calle, del trapito al de tránsito */
+    const y = -16 + bob;
+    g.fillStyle="#2E333C";
+    g.beginPath(); g.arc(0, y - 1.4, 8.8, Math.PI, 0); g.fill();
+    g.fillRect(-8.8, y - 2, 17.6, 2.8);
+    g.fillRect(-13, y - 2.4, 9, 2.6);                          // la visera
+    g.fillStyle="#00000026"; g.fillRect(-8.8, y + .2, 17.6, 1.2);
+    g.fillStyle="#1C2028"; rr(g, -7.4, y - .6, 14.8, 4, 1.6); g.fill();  // los anteojos
+    g.fillStyle="#3A3F48"; g.fillRect(-1, y - .2, 2, 3.2);
+    g.fillStyle="#FFFFFF26";
+    g.beginPath(); g.moveTo(-6.4, y + 3); g.lineTo(-3, y - .4);
+    g.lineTo(-1.4, y - .4); g.lineTo(-6.4, y + 3.4); g.closePath(); g.fill();
+  }
   if(abrigado){
     /* el gorro y el cuello de piel del jefe: oscuro, para que se distinga del
        de los nueve, que van de color */
@@ -7319,9 +7698,11 @@ function frame(now){
     const c=S.grid[y][x];
     switch(c.type){
       case "vitrina":  inCell(ctx,x,y,g=>{ drawVitrina(g,c); if(c.reloj) drawRelojito(g,c); }); break;
-      case "mate":     inCell(ctx,x,y,g=>(JUEGO === 4 ? drawTubo(g) : drawMate(g))); break;
+      case "mate":     inCell(ctx,x,y,g=>(JUEGO === 4 ? drawTubo(g)
+                                        : JUEGO === 6 ? drawCortado(g) : drawMate(g))); break;
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
-      case "banana":   inCell(ctx,x,y,g=>(JUEGO === 5 ? drawHielo(g) : drawMojado(g))); break;
+      case "banana":   inCell(ctx,x,y,g=>(JUEGO === 5 ? drawHielo(g)
+                                        : JUEGO === 6 ? drawBaldosa(g) : drawMojado(g))); break;
       case "camara":   inCell(ctx,x,y,g=>drawCamara(g,c,x,y)); break;
       case "escalera": inCell(ctx,x,y,g=>drawEscalera(g)); break;
       case "salida":   inCell(ctx,x,y,g=>drawSalida(g,open)); break;
@@ -7651,7 +8032,7 @@ function syncUI(){
       const tomar = canDrinkHere() ? "drinkMate()" : (iM >= 0 ? "useObject(" + iM + ")" : null);
       ele.innerHTML =
         (tomar ? '<button class="ele si" title="' + enJerga("Tomar el mate") +
-                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : JUEGO === 4 ? "🫧" : "🧉") + '</button>' : "") +
+                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : JUEGO === 4 ? "🫧" : JUEGO === 6 ? "☕" : "🧉") + '</button>' : "") +
         '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
       /* Pegado a vos, medido sobre el lienzo. El marco incluye el cartel y
          la barra de abajo, así que un porcentaje del marco no cae donde uno
@@ -7895,7 +8276,7 @@ function dibujarCara(el, heroKey, disfrazId){
   g.scale(1.35,1.35);
   /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
      mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
-  let look = deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey)));
+  let look = deCiudad(deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey))));
   if(disfrazId === undefined) look = conDisfraz(look);
   else if(disfrazId && DISFRACES[disfrazId]){
     const d = DISFRACES[disfrazId];
@@ -7935,7 +8316,11 @@ function temaDeSala(sala){
      dejaba de leerse como metal. El color de la sala vive en el borde de la
      tarjeta, el número y las bolitas. */
   const arena = base.patron === "arena";
-  const propio = arena || base.patron === "rejilla" || base.patron === "nieve";
+  /* Cuarta vez que aparece esto: arena, metal, nieve y ahora la baldosa
+     tienen color propio y el acento de la sala los desfigura —la vereda
+     salía verde en Plaza Lavalle—. Los pisos genéricos (gris, madera,
+     alfombra) sí se tiñen: ahí el tinte ES la identidad de la sala. */
+  const propio = arena || ["rejilla","nieve","vereda"].indexOf(base.patron) >= 0;
   const kPiso  = propio ? 0.05 : (oscuro ? 0.13 : 0.24);
   const kLuz   = arena ? 0.12 : (oscuro ? 0.30 : 0.45);
   const kPared = arena ? 0.04 : (oscuro ? 0.05 : 0.09);
@@ -8975,7 +9360,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "53e25f5511";
+const VERSION = "cbf72943fc";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
