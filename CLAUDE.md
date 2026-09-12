@@ -24,6 +24,28 @@ Dos cosas que ya se verificaron y son intencionales:
 - El nivel 2 tiene un mate encerrado sin acceso.
 - Las cinco salas de parquet (5 a 9) no tienen ningún mate.
 
+### Por qué hay un mate encerrado
+
+El juego de mesa **no trae diez tableros**: trae **seis losetas de cartón impresas de
+los dos lados**, un lado fácil y el otro difícil. Los mapas se arman acomodando esas
+mismas seis losetas de distintas maneras, y cada nivel del manual es una disposición
+distinta de las mismas piezas.
+
+Eso quiere decir que **las paredes de cada loseta están dibujadas para encastrar con
+la loseta de al lado**, no para cerrar una sala que se juega sola. El mate encerrado
+del nivel 2 no es una decisión de diseño: es lo que queda cuando una loseta pensada
+para tener compañía se transcribe tal cual. En el juego de mesa, esa pared da contra
+la loseta vecina y el mate se alcanza desde el otro lado.
+
+Por eso no se toca. Y por eso, si aparece otra rareza parecida —una casilla que no se
+alcanza, una pared que no cierra nada—, lo más probable es que sea lo mismo y no un
+error de transcripción.
+
+Lo que sí es un error y hay que arreglar: que quede suelto algo **que haga falta para
+ganar** —una vitrina, un cómplice, la salida o tu puesto—. Eso rompe la sala. La
+prueba de las ediciones hace justo esa distinción: una casilla encerrada de las que no
+hacen falta se reporta como nota, y una imprescindible falla.
+
 ## Cómo está armado el tablero
 
 - Grilla de 8×8. El núcleo jugable es de 6×4 y arranca en `CX0=1, CY0=2`.
