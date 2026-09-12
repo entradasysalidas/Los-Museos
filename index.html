@@ -5486,15 +5486,44 @@ function drawEstrellas(g, th){
       g.fillRect(sx - 4, sy - .4, 8, .8); g.fillRect(sx - .4, sy - 4, .8, 8);
     }
   }
-  /* la Tierra, asomando abajo a la derecha */
+  /* Marte, asomando abajo a la derecha. La Tierra a este tamaño no se leía:
+     un borrón azul con una mancha verde. Marte se reconoce con tres cosas y
+     nada más —el óxido, el casquete polar y las manchas oscuras— y además
+     pega mejor con una estación que está lejos de casa. */
   const cx = an * 1.02, cy = al * 1.18, R = al * 0.62;
-  const tierra = g.createRadialGradient(cx - R*.45, cy - R*.5, R*.1, cx, cy, R);
-  tierra.addColorStop(0, "#6FA8D8"); tierra.addColorStop(.55, "#2F6BB8");
-  tierra.addColorStop(1, "#12294A");
-  g.fillStyle = tierra; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
-  g.fillStyle = "#4F8F5A55";                         // un par de continentes
-  g.beginPath(); g.ellipse(cx - R*.55, cy - R*.34, R*.20, R*.12, .5, 0, 7); g.fill();
-  g.beginPath(); g.ellipse(cx - R*.28, cy - R*.62, R*.13, R*.09, -.3, 0, 7); g.fill();
+  const marte = g.createRadialGradient(cx - R*.42, cy - R*.48, R*.08, cx, cy, R);
+  marte.addColorStop(0, "#E8A472");                  // donde le pega el sol
+  marte.addColorStop(.45, "#C96A3C");
+  marte.addColorStop(.82, "#9A4526");
+  marte.addColorStop(1, "#5E2616");                  // el borde, ya en sombra
+  g.fillStyle = marte; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+  /* las manchas oscuras: son lo que hace que se lea «Marte» y no «una pelota
+     naranja». Van del lado iluminado, si no no se ven. */
+  g.save();
+  g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
+  g.fillStyle = "#00000030";
+  g.beginPath(); g.ellipse(cx - R*.50, cy - R*.30, R*.26, R*.15, .55, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(cx - R*.20, cy - R*.58, R*.17, R*.10, -.35, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(cx - R*.62, cy - R*.02, R*.13, R*.08, .2, 0, 7); g.fill();
+  g.fillStyle = "#00000022";                         // el valle, una raya larga
+  g.beginPath(); g.ellipse(cx - R*.34, cy - R*.20, R*.34, R*.035, .18, 0, 7); g.fill();
+  /* el casquete polar: blanco sucio, achatado contra el borde */
+  g.fillStyle = "#F2ECE4";
+  g.beginPath(); g.ellipse(cx - R*.30, cy - R*.90, R*.22, R*.10, .42, 0, 7); g.fill();
+  g.fillStyle = "#FFFFFF66";
+  g.beginPath(); g.ellipse(cx - R*.32, cy - R*.92, R*.14, R*.06, .42, 0, 7); g.fill();
+  /* un par de cráteres, apenas */
+  for(let k = 0; k < 7; k++){
+    const a = 2.1 + rnd(k, 9, 4) * 1.5, d = R * (.25 + rnd(k, 5, 7) * .6);
+    g.fillStyle = rnd(k, 3, 2) > .5 ? "#00000018" : "#FFFFFF12";
+    g.beginPath();
+    g.arc(cx + Math.cos(a)*d, cy + Math.sin(a)*d, R*.03 + rnd(k,7,1)*R*.03, 0, 7);
+    g.fill();
+  }
+  g.restore();
+  /* la atmósfera: en Marte es un hilo de polvo, no el halo azul de la Tierra */
+  g.strokeStyle = "#E8A47240"; g.lineWidth = R*.035;
+  g.beginPath(); g.arc(cx, cy, R + R*.018, 0, 7); g.stroke();
   /* Los paneles solares, a los dos costados del módulo: es lo que hace que
      esto flote en vez de estar apoyado en algo. Van en el vacío, fuera de
      la loseta, así que no tapan nada de lo que se juega. */
@@ -9536,7 +9565,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "8ce70751d3";
+const VERSION = "6d75632d6e";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
