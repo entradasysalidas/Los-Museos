@@ -1386,6 +1386,12 @@
       <span class="sello" id="sello6">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
     </button>
+    <button class="tapa cerrada" id="tapa7" onclick="tocarTapa(7)" aria-pressed="false">
+      <img src="caja7.jpg" alt="Los Museos 7 · Total disociación"
+           onerror="this.remove()">
+      <span class="sello" id="sello7">🔒 Cerrado</span>
+      <span class="rotulo"><b>Los Museos 7</b><small>Total disociación</small></span>
+    </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
       <img src="diario.jpg" alt="Desafío diario">
       <span class="rotulo"><b>Desafío diario</b><small id="diariapie">Una sala nueva por día</small></span>
@@ -1569,6 +1575,42 @@ const POWERS = {
 /* Lo que cambia de nombre en cada juego. Se traduce al mostrarlo, no al
    guardarlo: el codigo sigue hablando de vitrinas y de mates. */
 const JERGA = {
+  /* En el viaje lo que te saca es lo concreto: el mate es el vaso de agua
+     y el fernet es salir a tomar aire. Y las vitrinas son remolinos, que
+     es de donde hay que sacar lo que uno perdió. */
+  7:[["la pieza más lejana a la vitrina vacía más cercana",
+      "lo más lejano que te queda al remolino vacío más cercano"],
+     ["Piezas · salen de las vitrinas","Tus cosas"],
+     ["Objetos · te los dan los cómplices","Objetos · te los dan tus amigos"],
+     ["de una planta","de una manta"],
+     ["una pieza ya en la mano","una de tus cosas ya en la mano"],
+     ["ninguna pieza","nada"],
+     ["cualquier pieza","cualquier cosa"],
+     ["cómplice","amigo"],
+     ["un mate en la mochila","un vaso de agua en la mochila"],
+     ["los del tablero los podés repetir","los del piso los podés repetir"],
+     ["en la vitrina","en el remolino"],
+     ["Vitrina vacía","Remolino vacío"],
+     ["Volvió a su vitrina","Volvió al remolino"],
+     ["vuelven a sus puestos","vuelven a sus sillones"],
+     ["La próxima vitrina que abras","El próximo remolino que abras"],
+     ["Con los guantes puestos la vitrina","Con los guantes puestos el remolino"],
+     ["Tomar el mate","Tomar el agua"],
+     ["Ya tomaste tres mates en esta ronda.","Ya tomaste tres vasos en esta ronda."],
+     ["El mate te devuelve los pasos","El agua te devuelve los pasos"],
+     ["Este mate ya lo tomaste en esta ronda.","Este vaso ya te lo tomaste en esta ronda."],
+     ["Mate: recuperaste","Agua: recuperaste"],
+     ["Mate de la mochila","Vaso de la mochila"],
+     ["si después tomás un mate","si después tomás agua"],
+     ["contando los del tablero","contando los del piso"],
+     ["terminás en tu baño","terminás en el baño"],
+     ["Te teletransporta a tu baño.","Te teletransporta al baño."],
+     ["parado en un baño: el tuyo o el suyo","parado en un baño: el tuyo o el suyo"],
+     ["Mate","Vaso de agua"],
+     ["🧉","💧"],
+     ["Fernet","Aire"],
+     ["fernet","aire"],
+     ["🥃","🌬️"]],
   /* En la ciudad el fernet no se traduce: es de acá. Se va el mate. */
   6:[["la pieza más lejana a la vitrina vacía más cercana",
       "el cuadro más lejano al puesto vacío más cercano"],
@@ -1760,13 +1802,33 @@ const CORTADO = {ic:"☕", n:"Cortado",
              '<path d="M8 5.2c.9-.9.2-1.8.2-2.6M12 5c.9-.9.2-1.8.2-2.6" fill="none" stroke="#C9C4B9" stroke-width="1.1" stroke-linecap="round" opacity=".75"/>' +
            '</svg>'};
 const OBJETOS_6 = { mate1:CORTADO, mate2:CORTADO };
+
+/* En el viaje cambian los dos, y son lo más mundano que hay: un vaso de agua
+   y salir a tomar aire. Ésa es la idea de toda la edición —de lo irreal se
+   sale agarrándose de lo concreto—, así que los objetos la dicen primero. */
+const VASO = {ic:"💧", n:"Vaso de agua",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<path d="M7 4h10l-1.2 15.4a2 2 0 0 1-2 1.85h-3.6a2 2 0 0 1-2-1.85Z" fill="#E8F4FA" opacity=".92"/>' +
+             '<path d="M7.75 10.6h8.5l-.75 8.8a2 2 0 0 1-2 1.85h-3a2 2 0 0 1-2-1.85Z" fill="#5FC8E8"/>' +
+             '<ellipse cx="12" cy="10.6" rx="4.25" ry=".95" fill="#9FE0F2"/>' +
+             '<path d="M9.1 12.4l-.35 6.2" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
+             '<path d="M7 4h10" stroke="#BFD8E2" stroke-width="1" fill="none"/>' +
+           '</svg>'};
+const AIRE = {ic:"🌬️", n:"Aire",
+           dib:'<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+             '<path d="M2.5 8.5h9.2a2.6 2.6 0 1 0-2.6-2.6" fill="none" stroke="#9FE0F2" stroke-width="1.9" stroke-linecap="round"/>' +
+             '<path d="M2.5 12.6h13a2.9 2.9 0 1 1-2.9 2.9" fill="none" stroke="#E8F4FA" stroke-width="1.9" stroke-linecap="round"/>' +
+             '<path d="M3.5 16.9h6.2" fill="none" stroke="#9FE0F2" stroke-width="1.7" stroke-linecap="round" opacity=".75"/>' +
+           '</svg>'};
+const OBJETOS_7 = { mate1:VASO, mate2:VASO, fernet:AIRE };
 function objetoDe(id){
   const o = OBJECTS[id];
   if(!o || !JERGA[JUEGO]) return o;
   /* la piel manda sobre el nombre y el dibujo; el resto pasa por la jerga
      —el nombre incluido, que era justo lo que quedaba afuera: la montaña
      cambia el fernet por el chocolate sin piel y seguía diciendo Fernet. */
-  const piel = JUEGO === 6 ? OBJETOS_6[id]
+  const piel = JUEGO === 7 ? OBJETOS_7[id]
+             : JUEGO === 6 ? OBJETOS_6[id]
              : JUEGO === 5 ? OBJETOS_5[id]
              : JUEGO === 4 ? OBJETOS_4[id]
              : JUEGO === 3 ? OBJETOS_3[id] : null;
@@ -2124,7 +2186,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = deCiudad(deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero)))), power = poderDe(sala.hero);
+  const hero = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero))))), power = poderDe(sala.hero);
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -2449,10 +2511,11 @@ const RANGOS = [
 /* Cada juego tiene su nombre corto y su rango máximo: "Dueño del museo" no
    quiere decir nada en el shopping. */
 const NOMBRE_JUEGO = {1:"Los Museos", 2:"Escape del shopping", 3:"De vacaciones",
-                      4:"En el espacio", 5:"En la montaña", 6:"En la ciudad"};
+                      4:"En el espacio", 5:"En la montaña", 6:"En la ciudad",
+                      7:"Total disociación"};
 const RANGO_MAXIMO = {1:"Dueño del museo", 2:"Dueño del shopping", 3:"Dueño del parador",
                       4:"Dueño de la estación", 5:"Dueño del cerro",
-                      6:"Dueño de la avenida"};
+                      6:"Dueño de la avenida", 7:"Dueño del lunes"};
 
 /* El rango que te toca con tantas salas hechas en tal edición. Va con la
    edición adentro porque la portada habla de la tapa elegida, que no es
@@ -3630,6 +3693,189 @@ const DECK_6 = [
   {n:"¡Se acerca!",            d:"Va derecho hacia vos. Los árboles no te salvan.", k:"rush", ic:"🏃"},
 ];
 
+/* ---------- Los Museos 7: Total disociación ----------
+   Cada sala es un viaje del que hay que salir, y el eje es disociar de la
+   disociación: lo irreal te retiene —el remolino, el ojo, el déjà vu— y lo
+   que te saca es lo más mundano que hay. El mate pasa a ser el vaso de agua
+   y el fernet, salir a tomar aire. Las tres piezas son el celular, las
+   llaves y la campera, justo las tres cosas que uno pierde: las recuperás,
+   se las das a tus amigos tirados en el sillón para no volver a perderlas,
+   y recién ahí se abre la cama.
+
+   Las diez van ordenadas por la dificultad real de cada viaje, y cada trampa
+   sale del viaje y no al revés: la paranoia te ve en línea recta, la merca
+   no para, los hongos te cambian las cosas de lugar, el LSD deambula sin
+   rumbo, la keta aparece adentro de los remolinos.
+
+   La última es el lunes, que es de donde salió todo esto: el juego de mesa
+   que se adapta acá se llama LUNES. La séptima edición vuelve al principio,
+   y el lunes te encuentra te escondas donde te escondas.
+
+   Las diez losetas son las del shopping espejadas de izquierda a derecha,
+   que era la transformación que quedaba sin usar: el marco es simétrico en x
+   —arriba ocupa 2..5 y abajo 3..4— pero NO en y, y dar vuelta de arriba
+   abajo parte las salas. Eso ya lo aprendimos con la ciudad. */
+const PIEZAS_7 = [
+  {id:"rombo",     sym:"◆", name:"El celular",  color:"#5FD8E8"},
+  {id:"triangulo", sym:"▲", name:"Las llaves",  color:"#F2C14E"},
+  {id:"circulo",   sym:"●", name:"La campera",  color:"#E0685D"},
+];
+
+/* El viaje arriba y el bajón abajo. El piso no se queda quieto: el patrón
+   «vibra» le mete a cada casilla un latido de color propio, así que el
+   tablero respira en vez de ser un damero. */
+const THEMES_T = {
+  viaje:{ oscuro:false, piso:["#F2E6D2","#ECDFC8"], patron:"vibra", junta:"#00000014",
+          luz:"#FFF3D0", luzA:.22, pared:"#B98CFF", void:"#E4CFAE", vineta:.06,
+          fondo:"#E4CFAE", alto:"#F0DCBC", bajo:"#D8C09C", sombra:"90,60,40",
+          luces:true, neon:"#FF7FD0", cartel:.7 },
+  bajon:{ oscuro:true,  piso:["#281C38","#221830"], patron:"vibra", junta:"#00000030",
+          luz:"#B98CFF", luzA:.26, pared:"#7FD6EE", void:"#140B20", vineta:.34,
+          fondo:"#140B20", alto:"#1E1230", bajo:"#0E0718", sombra:"0,0,0",
+          luces:true, neon:"#FF7FD0", cartel:1 },
+};
+
+const FOES_7 = {
+  mareo    :{n:"El Mareo",          look:"overol", d:"Da vueltas y nada más. Es el viaje de práctica."},
+  lengua   :{n:"La Lengua Trabada", look:"saco",
+             d:"Cada remolino que abrís lo hace avanzar un casillero al instante.", twist:"alarma"},
+  paranoia :{n:"La Paranoia",       look:"guardia",
+             d:"No te persigue: aparece de cualquier lado y nunca de donde la esperabas. No podés anticiparla, así que no hay camino seguro.", twist:"azar"},
+  sueno    :{n:"El Sueño",          look:"traje",  d:"Te vio y no te suelta. El perseguidor clásico, sin trucos."},
+  noPara   :{n:"El Que No Para",    look:"procurador",
+             d:"Anota cada objeto ruidoso que usás; al segundo, se acelera. El agua no cuenta.", twist:"anota"},
+  abrazo   :{n:"El Abrazo",         look:"guardapolvo",
+             d:"Una vez por partida te deshace una entrega: te abraza y tu cosa vuelve a un remolino. Al reentregarla, tu amigo te convida otra vez.", twist:"reponeCerca"},
+  bosque   :{n:"El Bosque",         look:"gabardina",
+             d:"Cada vez que pasa por un sillón acomoda todo: dos de tus cosas cambian de remolino.", twist:"cambia"},
+  patron   :{n:"El Patrón",         look:"overol",
+             d:"Te encuentra la mirada en línea recta y gira un cuarto de vuelta por ronda. Si terminás el turno en su línea, avanza uno extra.", twist:"linterna"},
+  agujero  :{n:"El Agujero",        look:"gala",
+             d:"Te persigue y te encuentra igual: en el agujero no hay dónde meterse y la manta no te esconde.", twist:"olfato"},
+  lunes    :{n:"El Lunes",          look:"perro", d:"Te encuentra igual: la manta no te esconde.", twist:"olfato"},
+};
+
+const SALAS_7 = {
+  t0:{ num:0, name:"La birra de más", wing:"El previo", piso:"viaje", afuera:"niebla",
+    ac:["#E8A33C","#F2CE93","#FDF1DE"],
+    hero:"negro", foe:"mareo", comps:["hippie","chuna","chupa"],
+    e:L(`..K..P
+         ....M.
+         .C.T..
+         P.P..D`),
+    w:["h:2:1","h:3:1","v:4:3","h:3:3","v:1:5","h:5:2"],
+    v:["v:5:4","h:4:3","v:2:2"] },
+  t1:{ num:1, name:"El fernet", wing:"El previo", piso:"viaje", afuera:"niebla",
+    ac:["#C7563F","#E8A08C","#FBE8E2"],
+    hero:"marian", foe:"lengua", comps:["lamber","chupa","damian"],
+    e:L(`P....E
+         .M.TA.
+         D...C.
+         P.E..P`),
+    w:["h:2:1","h:3:1","v:5:2","h:4:3","v:2:2","h:2:4"],
+    v:["v:3:4","h:5:2","v:1:3"] },
+  t2:{ num:2, name:"El porro", wing:"La joda", piso:"viaje", afuera:"niebla",
+    ac:["#4FA85F","#A6D8AE","#EBF7ED"],
+    hero:"kzk", foe:"paranoia", comps:["matxi","hippie","chuna"],
+    e:L(`P.K..P
+         ...T..
+         .D..C.
+         PA...M`),
+    w:["h:2:1","h:3:1","v:4:4","h:3:2","v:1:5","h:6:2"],
+    v:["v:3:5","h:2:4","v:5:3"] },
+  t3:{ num:3, name:"El vino", wing:"La joda", piso:"viaje", afuera:"niebla",
+    ac:["#8A2E4A","#C98AA0","#F6E6EB"],
+    hero:"damian", foe:"sueno", comps:["negro","chuna","chupa"],
+    e:L(`P..K.P
+         ....E.
+         ..E...
+         PC.T.D`),
+    w:["h:2:1","h:3:1","v:3:2","h:6:3","v:1:4","h:4:5"],
+    v:["v:5:2","h:3:3","v:4:5"] },
+  t4:{ num:4, name:"La merca", wing:"La madrugada", piso:"viaje", afuera:"niebla",
+    ac:["#5B6B8A","#AEB8CC","#EDF0F6"],
+    hero:"lamber", foe:"noPara", comps:["kzk","chupa","hippie"],
+    e:L(`P.K.P.
+         ....L.
+         .D.C..
+         M.T..P`),
+    w:["h:2:1","h:3:1","v:4:2","h:4:3","v:1:4","h:6:4"],
+    v:["v:2:2","h:2:3","v:3:5"] },
+  t5:{ num:5, name:"El MD", wing:"La madrugada", piso:"bajon", afuera:"niebla",
+    ac:["#E0553F","#8A2E20","#2A1512"],
+    hero:"chupa", foe:"abrazo", comps:["matxi","hippie","lamber"],
+    e:L(`P....Q
+         ..T.E.
+         .E.C..
+         .D...P`),
+    w:["h:2:1","h:3:1","v:5:3","h:5:2","v:2:5","h:2:4"],
+    v:["v:4:4","h:3:2","v:3:2"] },
+  t6:{ num:6, name:"Los hongos", wing:"El after", piso:"bajon", afuera:"niebla",
+    ac:["#6FCB8A","#2E6B45","#0D2418"],
+    hero:"tomy", foe:"bosque", comps:["negro","lamber","chupa"],
+    e:L(`P..K.Q
+         ..A.E.
+         .C.T..
+         D.E..P`),
+    w:["h:2:1","h:3:1","v:4:3","h:2:3","v:2:2","h:6:5"],
+    v:["v:3:5","h:4:2","v:1:4"] },
+  t7:{ num:7, name:"El LSD", wing:"El after", piso:"bajon", afuera:"niebla",
+    ac:["#B98CFF","#5B3E8A","#170F26"],
+    hero:"hippie", foe:"patron", comps:["kzk","chupa","damian"],
+    e:L(`Q..A.P
+         ....K.
+         .T.CA.
+         .D...P`),
+    w:["h:2:1","h:3:1","v:3:3","h:5:4","v:1:2","h:3:5"],
+    v:["v:5:5","h:4:2","v:4:2"] },
+  t8:{ num:8, name:"La keta", wing:"El agujero", piso:"bajon", afuera:"niebla",
+    ac:["#5FD8E8","#2C6B78","#0E2429"],
+    hero:"chuna", foe:"agujero", comps:["tomy","hippie","lamber"],
+    e:L(`...K.Q
+         .P..E.
+         .C.T..
+         D.E..P`),
+    w:["h:2:1","h:3:1","v:5:2","h:4:4","v:2:3","h:2:2"],
+    v:["v:3:3","h:5:3","v:1:4"] },
+  t9:{ num:9, name:"El lunes", wing:"El agujero", piso:"bajon", afuera:"niebla",
+    ac:["#D2A24C","#8A6B31","#241C0C"],
+    hero:"matxi", foe:"lunes", comps:["negro","lamber","chuna"],
+    e:L(`P.M..Q
+         ...C..
+         .A..T.
+         KD...P`),
+    w:["h:2:1","h:3:1","v:4:2","h:5:4","v:1:3","h:3:4"],
+    v:["v:3:2","h:2:2","v:5:5"] },
+};
+
+/* Un consejo por sala: la mitad del viaje que te toca y la otra del poder
+   del que la protagoniza. */
+const CONSEJOS_7 = {
+  t0:"El Mareo camina y nada más, así que es el lugar para agarrarle la mano. Arrancás con <b>aire</b> en la mochila: tocalo y ese turno te movés también en diagonal. Y el <b>vaso de agua</b> del piso te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
+  t1:"Cada remolino que abrís hace avanzar a La Lengua Trabada al instante, así que no abras de gusto. Ves su próxima acción antes de moverte: usalo para no abrir justo cuando te conviene estar quieto.",
+  t2:"La Paranoia aparece de cualquier lado y nunca de donde la esperabas: no hay ruta segura, hay que mirarla cada ronda. Con <b>F</b>, una vez por partida, traés lo que quedó más lejos al remolino vacío más cercano.",
+  t3:"El Sueño no tiene trucos, pero no te suelta: no hay vuelta que dar, hay que ser más rápido. Arrancás con una de tus cosas ya en la mano, así que la primera entrega la hacés sin abrir nada.",
+  t4:"El Que No Para anota cada objeto ruidoso que usás y al segundo se acelera: guardalos para la corrida final a la cama. Con <b>F</b> cualquier amigo te acepta cualquier cosa, y te la acepta desde el sillón de al lado.",
+  t5:"El Abrazo te va a deshacer una entrega: te abraza y tu cosa vuelve a un remolino. Al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida. Empezás con un objeto extra, que es justo lo que hace falta cuando algo se deshace.",
+  t6:"El Bosque acomoda todo cada vez que pasa por un sillón: dos de tus cosas cambian de remolino y la ruta que armaste puede dejar de servir. Arrancás con un vaso de agua en la mochila y los del piso los podés repetir.",
+  t7:"El Patrón te encuentra la mirada en línea recta y gira un cuarto de vuelta por ronda: no termines el turno en su línea aunque haya algo en el medio, porque el vidrio te corta el paso pero no te tapa. Tu poder te esconde también en la casilla de al lado de una manta, y escondido no te agarra ni «¡Se acerca!».",
+  t8:"El Agujero te encuentra igual: acá la manta deja de esconderte, y de acá hasta el final no vuelve a servir. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida, que es lo único que te queda cuando esconderse no es una opción.",
+  t9:"El Lunes te encuentra igual: la manta no te esconde acá, y no hay nada que puedas hacer para que no te vea. La primera vez que te agarre no te saca nada, y ése es todo el margen que tenés.",
+};
+
+const DECK_7 = [
+  {n:"Va al sillón del celular", d:"Aparece donde está tu amigo ◆.", k:"desk", t:"rombo",     ic:"◆"},
+  {n:"Va al sillón de las llaves", d:"Aparece donde está tu amigo ▲.", k:"desk", t:"triangulo", ic:"▲"},
+  {n:"Va al sillón de la campera", d:"Aparece donde está tu amigo ●.", k:"desk", t:"circulo",   ic:"●"},
+  {n:"Se encierra en el baño", d:"Se mete en el baño y te deja respirar.", k:"bath", ic:"🚪"},
+  {n:"Se queda mirando la pared", d:"Se pierde en una mancha de humedad.", k:"exit", ic:"🌀"},
+  {n:"Se queda mirando la pared", d:"Se pierde en una mancha de humedad.", k:"exit", ic:"🌀"},
+  {n:"Se tira en tu cama",     d:"Se planta donde dejaste todo.",          k:"mydesk", ic:"🛏️"},
+  {n:"Vuelve a su rincón",     d:"Se acuerda de dónde estaba.",            k:"home", ic:"🕳️"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. La manta no te salva.", k:"rush", ic:"🏃"},
+  {n:"¡Se acerca!",            d:"Va derecho hacia vos. La manta no te salva.", k:"rush", ic:"🏃"},
+];
+
 const JUEGOS = {
   1: { n:"Los Museos", salas:SALAS, foes:FOES, themes:THEMES, deck:DECK,
        frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS },
@@ -3647,6 +3893,9 @@ const JUEGOS = {
   6: { n:"Los Museos en la ciudad", salas:SALAS_6, foes:FOES_6, themes:THEMES_C,
        deck:DECK_6, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_6,
        piezas:PIEZAS_6 },
+  7: { n:"Los Museos: Total disociación", salas:SALAS_7, foes:FOES_7, themes:THEMES_T,
+       deck:DECK_7, frameDef:FRAME_DEF, frameWalls:FRAME_WALLS, consejos:CONSEJOS_7,
+       piezas:PIEZAS_7 },
   /* El desafío diario vive en el 9, apartado de los juegos de verdad: no es
      uno más de la lista, es otra cosa que se sirve del mismo motor. */
   9: { n:"Desafío diario", salas:SALAS_DIA, foes:Object.assign({}, FOES, FOES_2),
@@ -3674,6 +3923,7 @@ function cargarJuego(n){
     document.body.classList.toggle("juego4", n === 4);
     document.body.classList.toggle("juego5", n === 5);
     document.body.classList.toggle("juego6", n === 6);
+    document.body.classList.toggle("juego7", n === 7);
     /* Y la piel de la edición: clara u oscura según su sala cero. El menú de
        las diez salas se ve antes de que exista una partida, así que sin esto
        heredaba la piel de la sala que venías jugando —del espacio al menú de
@@ -3864,6 +4114,7 @@ function drinkMate(){
   S.drunk.add(key(S.player.x,S.player.y));
   S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
   float(S.player.x,S.player.y, JUEGO === 3 ? "+BIRRA" : JUEGO === 4 ? "+O₂" : JUEGO === 6 ? "+CAFÉ"
+      : JUEGO === 7 ? "+AGUA"
       : "+MATE", acentoSala());
   if(S.matesTurn>=TUNE.matesPerTurn){
     say("🧉 Tercer mate del turno… terminás en tu baño.","r");
@@ -4950,6 +5201,38 @@ function repartirAlto(paso, alto){
   return ys;
 }
 
+/* Lo de afuera del viaje: niebla. No hay pasillo, no hay atrio, no hay calle
+   —no hay nada—, y ésa es la idea: adentro del tablero todavía hay reglas y
+   afuera ya no. Se dibuja como capas de humo que se pisan, con unos destellos
+   sueltos que podrían ser luces o podrían no ser nada. */
+function drawNiebla(g, th){
+  const an = W*CS, al = H*CS;
+  g.fillStyle = th.fondo;
+  g.fillRect(0, 0, an, al);
+  /* las capas: manchones grandes y muy transparentes, uno encima del otro */
+  for(let i = 0; i < 26; i++){
+    const cx = rnd(i, 7, 3) * an, cy = rnd(i, 11, 5) * al;
+    const r  = an * (.10 + rnd(i, 5, 9) * .22);
+    const h  = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const tono = i % 3 === 0 ? (th.neon || "#FF7FD0")
+               : i % 3 === 1 ? (th.pared || "#B98CFF")
+               : (th.oscuro ? "#FFFFFF" : "#FFF3D0");
+    h.addColorStop(0, tono + (th.oscuro ? "16" : "22"));
+    h.addColorStop(1, tono + "00");
+    g.fillStyle = h;
+    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+  }
+  /* los destellos: chiquitos, desparejos, sin explicación */
+  for(let i = 0; i < 60; i++){
+    const sx = rnd(i, 13, 2) * an, sy = rnd(i, 3, 17) * al;
+    const t = rnd(i, 9, 6);
+    g.fillStyle = th.oscuro ? "#FFFFFF" + (t > .8 ? "70" : "30")
+                            : "#FFFFFF" + (t > .8 ? "90" : "50");
+    g.beginPath(); g.arc(sx, sy, t > .8 ? 1.8 : 1, 0, 7); g.fill();
+  }
+  velo(g, th, .10);
+}
+
 function drawAfuera(g, th){
   g.fillStyle = th.fondo;
   g.fillRect(0, 0, W*CS, H*CS);
@@ -4957,7 +5240,7 @@ function drawAfuera(g, th){
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
     cubiculos: drawCubiculos, mar: drawMar, estrellas: drawEstrellas,
-    cerro: drawCerro, avenida: drawAvenida,
+    cerro: drawCerro, avenida: drawAvenida, niebla: drawNiebla,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -5740,7 +6023,29 @@ function drawPiso(g,x,y,th){
     g.fillStyle = "#00000026"; g.fillRect(px, py + CS - 1.2, CS, 1.2);
     return;
   }
-  if(th.patron==="arena"){
+  if(th.patron==="vibra"){
+    /* El piso del viaje. Cada casilla saca su propio latido del generador
+       determinista, así que el tablero respira y nunca dos casillas iguales,
+       pero es siempre el mismo: se dibuja una vez y queda cacheado.
+       Encima van las ondas concéntricas, que son lo que hace que el piso
+       parezca que se mueve aunque esté quieto. */
+    const late = rnd(x,y,3);
+    g.fillStyle = th.oscuro
+      ? (late > .5 ? "#FFFFFF0C" : "#00000022")
+      : (late > .5 ? "#FFFFFF3A" : "#0000001A");
+    g.fillRect(px, py, CS, CS);
+    const ox = px + CS*(.2 + rnd(x,y,7)*.6), oy = py + CS*(.2 + rnd(x,y,11)*.6);
+    g.strokeStyle = th.oscuro ? "#FFFFFF14" : "#00000012";
+    g.lineWidth = 1.3;
+    for(let k = 1; k <= 4; k++){
+      g.beginPath(); g.arc(ox, oy, k * CS * .17, 0, 7); g.stroke();
+    }
+    /* y el grano, que le saca lo digital */
+    for(let k = 0; k < 10; k++){
+      g.fillStyle = rnd(x,y,k+40) > .5 ? "#FFFFFF22" : "#00000018";
+      g.fillRect(px + rnd(x,y,k+50)*CS, py + rnd(x,y,k+60)*CS, 1.6, 1.6);
+    }
+  }else if(th.patron==="arena"){
     /* Arena lisa: sólo el grano. Los surcos van en las paredes, que es donde
        el agua los deja de verdad; dibujados en el piso parecían un piso de
        tablas, porque lo que hace que algo se lea como madera es la línea larga
@@ -5860,8 +6165,13 @@ function drawParedes(){
      como el borde de un deck. */
   const esPlaya = JUEGO === 3;
   const esNave  = JUEGO === 4;
-  const tc = esPlaya ? t * 1.5 : esNave ? t * 1.6 : t;
-  ctx.fillStyle = esPlaya ? "#8A5F32" : esNave ? "#1E242F" : th.pared;
+  /* En el viaje el contorno es el borde de lo que todavía es real: contra
+     la niebla de afuera tiene que cortar, así que va más grueso y del
+     neón de la sala. */
+  const esViaje = JUEGO === 7;
+  const tc = esPlaya ? t * 1.5 : esNave ? t * 1.6 : esViaje ? t * 1.35 : t;
+  ctx.fillStyle = esPlaya ? "#8A5F32" : esNave ? "#1E242F"
+                : esViaje ? (th.neon || th.pared) : th.pared;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     if(!playable(x,y)) continue;
     if(!playable(x+1,y)) ctx.fillRect((x+1)*CS - tc/2, y*CS - tc/2, tc, CS + tc);
@@ -6167,7 +6477,173 @@ function drawSombrillaPlaya(g){
   g.fillStyle = "#B98A52"; g.beginPath(); g.arc(cx, cy, 2.2, 0, 7); g.fill();
 }
 
+/* EL REMOLINO. Es la vitrina del viaje y es el corazón de la edición: tus
+   cosas no están guardadas, están adentro de algo que gira. Se dibuja como un
+   embudo de anillos que se van cerrando, girando de verdad —es lo único del
+   tablero que no para— y la cosa que perdiste flotando justo en el medio,
+   quieta, esperándote. Cerrado el remolino se apaga y se pone gris: el color
+   es lo primero que se va. */
+function drawRemolino(g,c){
+  const on = !c.alarm;
+  const neon = (typeof S !== "undefined" && S && S.th && S.th.neon) || "#FF7FD0";
+  const t = (typeof performance !== "undefined" ? performance.now() : 0) / 1400;
+  g.save();
+  g.translate(24, 24);
+  /* el pozo */
+  const pozo = g.createRadialGradient(0, 0, 1, 0, 0, 21);
+  pozo.addColorStop(0, "#000000");
+  pozo.addColorStop(.55, on ? "#1A0E2A" : "#23262C");
+  pozo.addColorStop(1, "#00000000");
+  g.fillStyle = pozo; g.beginPath(); g.arc(0, 0, 21, 0, 7); g.fill();
+  /* los brazos: tres espirales, cada una corrida un tercio de vuelta */
+  g.lineCap = "round";
+  for(let b = 0; b < 3; b++){
+    g.strokeStyle = on ? (b === 1 ? neon : "#B98CFF") : "#6E7480";
+    g.globalAlpha = on ? .85 : .45;
+    g.lineWidth = 2.4;
+    g.beginPath();
+    for(let k = 0; k <= 34; k++){
+      const u = k / 34;
+      const a = (on ? t : 0) + b * 2.094 + u * 5.6;
+      const r = 3 + u * 18;
+      const px = Math.cos(a) * r, py = Math.sin(a) * r;
+      if(k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  g.restore();
+  /* y lo que perdiste, flotando en el centro y sin girar: es lo concreto */
+  if(on && c.piece) drawGema(g, c.piece, 24, 24, 1);
+  if(!on){
+    g.fillStyle = "#E0685D"; g.beginPath(); g.arc(38,38,2.4,0,7); g.fill();
+    g.fillStyle = "#E0685D33"; g.beginPath(); g.arc(38,38,6,0,7); g.fill();
+  }
+}
+
+/* EL VASO DE AGUA. El mate del viaje, y a propósito lo más sobrio que hay en
+   el tablero: no gira, no brilla, no late. Tomarlo es lo que te devuelve los
+   pasos, que acá quiere decir volver en vos. */
+function drawVaso(g){
+  g.fillStyle="#00000030"; g.beginPath(); g.ellipse(24,38,11,3.5,0,0,7); g.fill();
+  g.fillStyle="#DCEAF2"; rr(g,16,10,16,28,3); g.fill();            // el vidrio
+  g.fillStyle="#5FC8E8"; rr(g,17.4,20,13.2,17,2.4); g.fill();      // el agua
+  g.fillStyle="#9FE0F2"; g.beginPath(); g.ellipse(24,20,6.6,2,0,0,7); g.fill();
+  g.fillStyle="#FFFFFF80"; g.fillRect(19,13,2.4,22);               // el reflejo
+  g.fillStyle="#FFFFFF40"; g.fillRect(28.4,13,1.4,22);
+  g.fillStyle="#BFD8E2"; g.beginPath(); g.ellipse(24,10.4,8,2.2,0,0,7); g.fill();
+}
+
+/* LA MANTA. Es la planta: adonde te metés a que no te vean. Un bollo de tela
+   en el piso, con los pliegues marcados —es lo que la hace manta y no mancha. */
+function drawManta(g){
+  g.fillStyle="#00000028";
+  g.beginPath(); g.ellipse(24,36,18,5,0,0,7); g.fill();
+  /* el bulto: un contorno irregular, que es lo que separa una manta tirada de
+     una alfombra. Con borde recto leía como felpudo. */
+  g.fillStyle="#7E4062";
+  g.beginPath();
+  g.moveTo(5,28);
+  g.bezierCurveTo(3,17, 13,10, 22,13);
+  g.bezierCurveTo(31,8, 44,14, 43,24);
+  g.bezierCurveTo(46,32, 38,39, 29,37);
+  g.bezierCurveTo(18,41, 6,37, 5,28);
+  g.closePath(); g.fill();
+  /* la parte de arriba del bulto, más clara: le da el volumen */
+  g.fillStyle="#A85C84";
+  g.beginPath();
+  g.moveTo(8,26);
+  g.bezierCurveTo(7,17, 15,13, 23,16);
+  g.bezierCurveTo(31,12, 40,17, 39,25);
+  g.bezierCurveTo(30,30, 17,31, 8,26);
+  g.closePath(); g.fill();
+  /* las arrugas, saliendo del bulto y no de lado a lado */
+  g.strokeStyle="#67304E"; g.lineWidth=1.6; g.lineCap="round";
+  g.beginPath(); g.moveTo(13,24); g.quadraticCurveTo(19,28, 17,34); g.stroke();
+  g.beginPath(); g.moveTo(24,26); g.quadraticCurveTo(27,31, 25,36); g.stroke();
+  g.beginPath(); g.moveTo(34,24); g.quadraticCurveTo(36,29, 33,34); g.stroke();
+  g.strokeStyle="#C98AA0"; g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(12,20); g.quadraticCurveTo(23,17, 35,21); g.stroke();
+  /* y la punta doblada, arriba a la derecha: el detalle que la termina */
+  g.fillStyle="#C98AA0";
+  g.beginPath(); g.moveTo(34,14); g.lineTo(43,17); g.lineTo(37,22); g.closePath(); g.fill();
+  g.fillStyle="#00000020";
+  g.beginPath(); g.moveTo(34,14); g.lineTo(37,22); g.lineTo(35,18); g.closePath(); g.fill();
+  /* el fleco, desparejo */
+  g.strokeStyle="#C98AA0"; g.lineWidth=1.4;
+  for(let k = 0; k < 8; k++){
+    const fx = 9 + k*4.2;
+    g.beginPath(); g.moveTo(fx, 34 + (k%2)*1.6);
+    g.lineTo(fx - 1 + (k%3), 39 + (k%2)*1.4); g.stroke();
+  }
+}
+
+/* EL OJO. Es la cámara: lo que te mira en línea recta. Pupila dilatada, que es
+   de lo que se trata, y gira como gira la cámara. */
+function drawOjo(g, ang){
+  g.save(); g.translate(24,24); g.rotate(ang);
+  const t = (typeof performance !== "undefined" ? performance.now() : 0) / 500;
+  g.fillStyle="#00000038"; g.beginPath(); g.ellipse(0,3,15,10,0,0,7); g.fill();
+  g.fillStyle="#F4EDE2";                                    // la esclerótica
+  g.beginPath(); g.ellipse(0,0,15,9.5,0,0,7); g.fill();
+  g.fillStyle="#C7563F"; g.lineWidth=1;                     // las venitas
+  for(let k = 0; k < 5; k++){
+    g.strokeStyle="#C7563F80"; g.beginPath();
+    const a = 2.6 + k*.9;
+    g.moveTo(Math.cos(a)*14, Math.sin(a)*8.6);
+    g.quadraticCurveTo(Math.cos(a)*8, Math.sin(a)*3, Math.cos(a)*7, 0);
+    g.stroke();
+  }
+  g.fillStyle="#4FA8C8"; g.beginPath(); g.arc(0,0,8,0,7); g.fill();   // el iris
+  g.fillStyle="#2C6B88"; g.beginPath(); g.arc(0,0,8,Math.PI*.2,Math.PI*.9); g.fill();
+  const r = 4.6 + Math.sin(t)*1.2;                          // la pupila, dilatada
+  g.fillStyle="#0B0E14"; g.beginPath(); g.arc(0,0,r,0,7); g.fill();
+  g.fillStyle="#FFFFFFCC"; g.beginPath(); g.arc(-2.6,-3,2,0,7); g.fill();
+  g.restore();
+}
+
+/* EL DÉJÀ VU. Es la escalera: entrás por uno y salís por otro, que es
+   exactamente lo que se siente. Tres casillas iguales, una encima de la otra,
+   cada una más tenue: la misma imagen repitiéndose. */
+function drawDejaVu(g){
+  const neon = (typeof S !== "undefined" && S && S.th && S.th.neon) || "#FF7FD0";
+  const t = (typeof performance !== "undefined" ? performance.now() : 0) / 900;
+  g.fillStyle="#00000030"; rr(g,7,7,34,34,5); g.fill();
+  for(let k = 2; k >= 0; k--){
+    const d = k * 4.5 + Math.sin(t + k) * 1.2;
+    g.globalAlpha = .30 + (2 - k) * .28;
+    g.strokeStyle = k === 0 ? "#FFFFFF" : neon;
+    g.lineWidth = 2;
+    g.beginPath();
+    const lado = 22 - k*1.5;
+    g.rect(24 - lado/2 + d, 24 - lado/2 - d, lado, lado);
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  g.fillStyle = "#FFFFFF"; g.font = "bold 9px system-ui";
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("↻", 24, 25);
+}
+
+/* EL BAJÓN. Es la cáscara de banana: la casilla que te frena. Una mancha
+   oscura que se come el piso, sin brillo y sin gracia. */
+function drawBajon(g){
+  g.fillStyle="#00000055";
+  g.beginPath();
+  g.moveTo(6,26);
+  g.bezierCurveTo(4,14, 18,8, 26,12);
+  g.bezierCurveTo(38,7, 45,20, 40,29);
+  g.bezierCurveTo(44,38, 30,44, 22,39);
+  g.bezierCurveTo(10,43, 3,35, 6,26);
+  g.fill();
+  g.fillStyle="#00000038";
+  g.beginPath(); g.ellipse(22,26,12,9,.3,0,7); g.fill();
+  g.fillStyle="#FFFFFF18";
+  g.beginPath(); g.ellipse(17,20,4,2.4,-.4,0,7); g.fill();
+}
+
 function drawVitrina(g,c){
+  if(JUEGO === 7) return drawRemolino(g,c);
   if(JUEGO === 3) return drawHeladera(g,c);
   if(JUEGO === 4) return drawCapsula(g,c);
   if(JUEGO === 5) return drawLocker(g,c);
@@ -6278,6 +6754,7 @@ function drawPlanta(g){
   if(JUEGO === 4) return drawCultivo(g);
   if(JUEGO === 5) return drawPino(g);
   if(JUEGO === 6) return drawArbol(g);
+  if(JUEGO === 7) return drawManta(g);
   g.fillStyle="#00000038"; g.beginPath(); g.ellipse(24,42,15,5,0,0,7); g.fill();
   g.fillStyle="#A8623C"; rr(g,13,27,22,16,3); g.fill();          // maceta
   g.fillStyle="#BA7047"; g.fillRect(11,25,26,5);
@@ -6330,6 +6807,7 @@ function drawCamara(g, c, x, y){
   if(JUEGO === 4) return drawDron(g, ang);
   if(JUEGO === 5) return drawReflector(g, ang);
   if(JUEGO === 6) return drawCamaraTransito(g, ang);
+  if(JUEGO === 7) return drawOjo(g, ang);
   g.save();
   g.translate(24, 20);
   g.fillStyle="#00000028"; g.beginPath(); g.ellipse(0,17,10,3.4,0,0,7); g.fill();
@@ -6638,6 +7116,7 @@ function drawEscalera(g){
   if(JUEGO === 4) return drawEsclusa(g);
   if(JUEGO === 5) return drawTelesilla(g);
   if(JUEGO === 6) return drawSubte(g);
+  if(JUEGO === 7) return drawDejaVu(g);
   g.save();
   g.fillStyle="#00000022"; rr(g,6,8,36,32,3); g.fill();
   g.fillStyle="#7E8695";
@@ -6756,7 +7235,61 @@ function drawPuestoPlaya(g,open){
   g.fillText("CERRADO", 24, 30.5);
 }
 
+/* LA CAMA. Es la salida, y es adónde va todo esto: con las tres cosas
+   entregadas se destiende sola y se prende el velador. Cerrada está hecha y
+   fría, que es como se ve una cama cuando todavía falta. */
+function drawCama(g,open){
+  g.fillStyle = open ? "#2A1F3A" : "#23262C"; g.fillRect(0,0,48,48);
+  /* el cartel va igual que el del museo: desde y=1 y el texto a la altura 6.
+     Pegado al borde de arriba la casilla se lo come. */
+  const gr=g.createLinearGradient(0,1,0,11);
+  gr.addColorStop(0,open?"#FFD88C":"#5A616D"); gr.addColorStop(1,open?"#C9A24C":"#454B56");
+  g.fillStyle=gr; rr(g,4,1,40,10,1); g.fill();
+  g.fillStyle=open?"#2A1F0A":"#9AA0AC"; g.font="bold 6px system-ui";
+  g.textAlign="center"; g.textBaseline="middle";
+  g.fillText(open?"LA CAMA":"TODAVÍA NO",24,6);
+  /* el respaldo de madera, que es lo que la hace cama y no colchón tirado */
+  g.fillStyle="#00000040"; rr(g,8,15,33,31,3); g.fill();
+  g.fillStyle= open ? "#8A6B4A" : "#5A4630"; rr(g,7,13,34,32,3); g.fill();
+  g.fillStyle= open ? "#6E5638" : "#4A3A26"; rr(g,7,13,34,5,2); g.fill();
+  /* las dos almohadas */
+  g.fillStyle="#F4F1E8"; rr(g,9,17,14,9,3); g.fill(); rr(g,25,17,14,9,3); g.fill();
+  g.fillStyle="#DCD8CC"; rr(g,10,18,12,2.6,1.3); g.fill(); rr(g,26,18,12,2.6,1.3); g.fill();
+  if(open){
+    /* destendida: el acolchado corrido para abajo y la sábana asomando */
+    g.fillStyle="#E8E4DA"; rr(g,9,26,30,17,2); g.fill();
+    g.fillStyle="#4FA8C8"; rr(g,9,31,30,12,2); g.fill();
+    g.fillStyle="#3E8CA8";
+    g.beginPath(); g.moveTo(9,31); g.lineTo(39,31); g.lineTo(33,26); g.lineTo(15,26); g.fill();
+    g.fillStyle="#00000018"; g.fillRect(10,36,28,1.2);
+    g.fillStyle="#FFD88C"; g.beginPath(); g.arc(43,20,3.4,0,7); g.fill();   // el velador
+    const p=(Math.sin(performance.now()/300)+1)/2;
+    g.fillStyle="rgba(255,216,140,"+(.08+p*.18)+")"; g.fillRect(0,0,48,48);
+  }else{
+    /* tendida y fría: el acolchado estirado hasta arriba, sin una arruga */
+    g.fillStyle="#4A525F"; rr(g,9,26,30,17,2); g.fill();
+    g.fillStyle="#3A414C"; rr(g,9,26,30,3,1.5); g.fill();
+    g.fillStyle="#00000020"; g.fillRect(23.4,29,1.2,14);
+  }
+}
+
+/* EL SILLÓN. Es tu puesto y el de tus amigos: el lugar del que no te podés
+   levantar. Visto de planta —los dos apoyabrazos y el almohadón hundido. */
+function drawSillon(g,mine){
+  g.fillStyle="#00000033"; rr(g,7,38,34,6,3); g.fill();
+  const tela = mine ? "#8A4A6E" : "#4E5A6E";
+  g.fillStyle= tela; rr(g,6,6,36,34,6); g.fill();                  // el respaldo
+  g.fillStyle= mine ? "#A85C84" : "#5E6C82"; rr(g,6,6,36,12,6); g.fill();
+  g.fillStyle="#00000022"; rr(g,11,18,26,18,4); g.fill();          // el almohadón hundido
+  g.fillStyle= mine ? "#9A5278" : "#566278"; rr(g,12,19,24,16,4); g.fill();
+  g.fillStyle="#00000018"; g.fillRect(13,26,22,1.4);
+  g.fillStyle= mine ? "#A85C84" : "#5E6C82";                       // los apoyabrazos
+  rr(g,4,16,9,24,4); g.fill(); rr(g,35,16,9,24,4); g.fill();
+  g.fillStyle="#FFFFFF14"; rr(g,5,17,7,8,3); g.fill(); rr(g,36,17,7,8,3); g.fill();
+}
+
 function drawSalida(g,open){
+  if(JUEGO === 7) return drawCama(g,open);
   if(JUEGO === 3) return drawPuestoPlaya(g,open);
   if(JUEGO === 4) return drawNave(g,open);
   if(JUEGO === 5) return drawRefugio(g,open);
@@ -7019,6 +7552,7 @@ function drawPuesto(g,mine){
   if(JUEGO === 4) return drawConsola(g,mine);
   if(JUEGO === 5) return drawMesaRefugio(g,mine);
   if(JUEGO === 6) return drawMesaBar(g,mine);
+  if(JUEGO === 7) return drawSillon(g,mine);
   g.fillStyle="#00000030"; rr(g,4,12,40,30,3); g.fill();
   // silla, asomando por detrás
   g.fillStyle="#39404D"; rr(g,17,2,14,13,4); g.fill();
@@ -7108,10 +7642,19 @@ function drawBanio(g){
 
 function drawComplice(g,c){
   const quien = compOf(c.want);
-  const who = deCiudad(deMontania(deEspacio(deVacaciones(CREW[quien], quien)))), piece = PIE[c.want];
+  const who = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[quien], quien))))), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
-  if(JUEGO === 6){
+  if(JUEGO === 7){
+    /* el sillón del amigo, con un almohadón del color de lo que te guarda:
+       es lo único que distingue a uno de otro cuando todo lo demás vibra */
+    g.fillStyle="#4E5A6E"; rr(g,6,8,36,30,6); g.fill();
+    g.fillStyle="#5E6C82"; rr(g,6,8,36,10,6); g.fill();
+    g.fillStyle="#00000022"; rr(g,11,18,26,16,4); g.fill();
+    g.fillStyle="#5E6C82"; rr(g,3,16,9,22,4); g.fill(); rr(g,36,16,9,22,4); g.fill();
+    g.fillStyle=piece.color; rr(g,32,10,11,10,2.5); g.fill();      // el almohadón
+    g.fillStyle="#FFFFFF33"; rr(g,33.5,11.5,8,3,1.2); g.fill();
+  }else if(JUEGO === 6){
     /* la parada: el banco y el cartel de la línea, con el color del cuadro
        que pide, que es lo que dice a quién le toca */
     g.fillStyle="#4A4E56"; rr(g,8,26,32,10,2); g.fill();
@@ -7178,6 +7721,13 @@ const PLAYEROS = {
    Como el traje del espacio, va puesto al mostrarlo y no se guarda. */
 /* En la ciudad van con mochila, que es con lo que corren en la tapa. Como el
    traje del espacio y el abrigo de la montaña: se pone al mostrarlo. */
+/* En el viaje todos andan con la manta encima: es lo que agarrás cuando te
+   agarra, y es la misma manta que en el tablero te esconde. */
+function deViaje(look){
+  if(JUEGO !== 7 || !look) return look;
+  return Object.assign({}, look, {viaje:true});
+}
+
 function deCiudad(look){
   if(JUEGO !== 6 || !look) return look;
   return Object.assign({}, look, {calle:true});
@@ -7238,6 +7788,22 @@ function drawPerson(g, look, bob, alpha){
     g.fillRect(-7.2, -8 + bob, 1, 12); g.fillRect(4.4, -8 + bob, 1, 12);
     g.fillStyle = "#2E333C"; g.fillRect(-7.2, -2.4 + bob, 14.4, 2.2);
     g.fillStyle = "#D2A24C"; rr(g, -2.2, -3 + bob, 4.4, 3.4, .8); g.fill();
+  }
+  if(look.viaje){
+    /* la manta sobre los hombros, caída de los dos lados. Es la misma que en
+       el tablero te esconde: acá la llevás puesta porque el que está volviendo
+       de un viaje siempre tiene una encima. */
+    g.fillStyle = "#8A4A6E";
+    g.beginPath();
+    g.moveTo(-10.5, -8.5 + bob);
+    g.lineTo(-5, -8.5 + bob); g.lineTo(-3.2, 6 + bob); g.lineTo(-10.5, 6 + bob);
+    g.closePath(); g.fill();
+    g.beginPath();
+    g.moveTo(10.5, -8.5 + bob);
+    g.lineTo(5, -8.5 + bob); g.lineTo(3.2, 6 + bob); g.lineTo(10.5, 6 + bob);
+    g.closePath(); g.fill();
+    g.fillStyle = "#A85C84"; g.fillRect(-10.5, -8.5 + bob, 19, 2.2);
+    g.fillStyle = "#00000020"; g.fillRect(-10.5, -6.3 + bob, 19, 1);
   }
   if(look.nieve){
     /* la campera acolchada: los canutos horizontales, que es lo que la hace
@@ -7557,6 +8123,14 @@ const FOE_BODY = {
 };
 
 /* De vacaciones ninguno anda de traje: color vivo y como lo lleva puesto. */
+/* En el viaje no son gente: son estados. Cada uno se lleva el color con el que
+   uno lo nombra —la paranoia verde, el bajón rojo, la keta celeste— y todos
+   van saturados, que es lo que los separa del piso. */
+const FOE_VIAJE = {
+  overol:"#E8A33C", saco:"#C7563F", traje:"#8A2E4A", guardia:"#4FA85F",
+  procurador:"#5B6B8A", guardapolvo:"#E0553F", gabardina:"#2E6B45", gala:"#5FD8E8",
+};
+
 const FOE_PLAYA = {
   overol:{c:"#2FA88C", t:"remera"},   saco:{c:"#E8A33C", t:"musculosa"},
   traje:{c:"#D8543F", t:"torso"},     guardia:{c:"#E0554F", t:"torso"},
@@ -7569,7 +8143,9 @@ function drawFoe(g,bob,look){  if(look==="perro") return drawPerro(g,bob);
   const abrigado = JUEGO === 5;
   const deCalle  = JUEGO === 6;
   const playa = JUEGO === 3 ? FOE_PLAYA[look] : null;
-  const body = playa ? playa.c : (FOE_BODY[look] || "#262B38");
+  const body = playa ? playa.c
+             : JUEGO === 7 ? (FOE_VIAJE[look] || "#B98CFF")
+             : (FOE_BODY[look] || "#262B38");
   const oscuro = look!=="guardapolvo";
   const PIEL = "#E8B98A";
 
@@ -7816,9 +8392,11 @@ function frame(now){
     switch(c.type){
       case "vitrina":  inCell(ctx,x,y,g=>{ drawVitrina(g,c); if(c.reloj) drawRelojito(g,c); }); break;
       case "mate":     inCell(ctx,x,y,g=>(JUEGO === 4 ? drawTubo(g)
+                                        : JUEGO === 7 ? drawVaso(g)
                                         : JUEGO === 6 ? drawCortado(g) : drawMate(g))); break;
       case "planta":   inCell(ctx,x,y,g=>drawPlanta(g)); break;
       case "banana":   inCell(ctx,x,y,g=>(JUEGO === 5 ? drawHielo(g)
+                                        : JUEGO === 7 ? drawBajon(g)
                                         : JUEGO === 6 ? drawBaldosa(g) : drawMojado(g))); break;
       case "camara":   inCell(ctx,x,y,g=>drawCamara(g,c,x,y)); break;
       case "escalera": inCell(ctx,x,y,g=>drawEscalera(g)); break;
@@ -8149,7 +8727,7 @@ function syncUI(){
       const tomar = canDrinkHere() ? "drinkMate()" : (iM >= 0 ? "useObject(" + iM + ")" : null);
       ele.innerHTML =
         (tomar ? '<button class="ele si" title="' + enJerga("Tomar el mate") +
-                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : JUEGO === 4 ? "🫧" : JUEGO === 6 ? "☕" : "🧉") + '</button>' : "") +
+                 '" onclick="' + tomar + '">' + (JUEGO === 3 ? "🍺" : JUEGO === 4 ? "🫧" : JUEGO === 6 ? "☕" : JUEGO === 7 ? "💧" : "🧉") + '</button>' : "") +
         '<button class="ele no" title="Cerrar la ronda" onclick="finishRound()">✕</button>';
       /* Pegado a vos, medido sobre el lienzo. El marco incluye el cartel y
          la barra de abajo, así que un porcentaje del marco no cae donde uno
@@ -8402,7 +8980,7 @@ function dibujarCara(el, heroKey, disfrazId){
   g.scale(1.35,1.35);
   /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
      mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
-  let look = deCiudad(deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey))));
+  let look = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey)))));
   if(disfrazId === undefined) look = conDisfraz(look);
   else if(disfrazId && DISFRACES[disfrazId]){
     const d = DISFRACES[disfrazId];
@@ -9221,7 +9799,7 @@ function sellarTapas(){
   /* Las cuatro que se abren, en un solo lugar. Vaciarle el texto al sello no
      alcanza: la franja tiene fondo propio y sigue pintada, así que hay que
      esconderla. Y la clase «cerrada» es la que deja la tapa apagada. */
-  for(const n of [2, 3, 4, 5, 6]){
+  for(const n of [2, 3, 4, 5, 6, 7]){
     const abierto = elJuegoEstaAbierto(n);
     const tapa = document.getElementById("tapa" + n);
     if(tapa && tapa.classList) tapa.classList.toggle("cerrada", !abierto);
@@ -9254,8 +9832,8 @@ function tocarTapa(n){
 }
 
 function elegirJuego(n){
-  ELEGIDO = (n >= 2 && n <= 6) ? n : 1;
-  for(const i of [1, 2, 3, 4, 5, 6]){
+  ELEGIDO = (n >= 2 && n <= 7) ? n : 1;
+  for(const i of [1, 2, 3, 4, 5, 6, 7]){
     const t = document.getElementById("tapa" + i);
     if(!t) continue;
     t.classList.toggle("elegida", ELEGIDO === i);
@@ -9377,6 +9955,7 @@ const PALABRA_3 = "caipirinha";  // abre las vacaciones
 const PALABRA_4 = "ingravidez";  // abre el espacio
 const PALABRA_5 = "chocolate";   // abre la montaña
 const PALABRA_6 = "obelisco";    // abre la ciudad
+const PALABRA_7 = "disociacion"; // abre el viaje
 
 /* El shopping se lo gana el que termino Los Museos. La palabra clave es para
    el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
@@ -9385,6 +9964,11 @@ const PALABRA_6 = "obelisco";    // abre la ciudad
 function elTresEstaAbierto(){
   if(LEGAJO.clave3) return true;
   return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
+}
+
+function elSieteEstaAbierto(){
+  if(LEGAJO.clave7) return true;
+  return Object.keys(JUEGOS[6].salas).every(k => hechaEn(k, 1));
 }
 
 function elSeisEstaAbierto(){
@@ -9407,7 +9991,8 @@ function elJuegoEstaAbierto(n){
        : n === 3 ? elTresEstaAbierto()
        : n === 4 ? elCuatroEstaAbierto()
        : n === 5 ? elCincoEstaAbierto()
-       : n === 6 ? elSeisEstaAbierto() : true;
+       : n === 6 ? elSeisEstaAbierto()
+       : n === 7 ? elSieteEstaAbierto() : true;
 }
 
 function elDosEstaAbierto(){
@@ -9436,13 +10021,15 @@ function entrar(){
     if(caja && caja.classList && caja.classList.contains("off")){
       pedirNombre("clave"); return;
     }
-    const suya = ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
+    const suya = ELEGIDO === 7 ? PALABRA_7
+               : ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
                : ELEGIDO === 4 ? PALABRA_4
                : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
     if(dicha === suya){
       /* ya no hace falta pedirla de nuevo */
-      if(ELEGIDO === 6)      LEGAJO.clave6 = true;
+      if(ELEGIDO === 7)      LEGAJO.clave7 = true;
+      else if(ELEGIDO === 6) LEGAJO.clave6 = true;
       else if(ELEGIDO === 5) LEGAJO.clave5 = true;
       else if(ELEGIDO === 4) LEGAJO.clave4 = true;
       else if(ELEGIDO === 3) LEGAJO.clave3 = true;
@@ -9453,7 +10040,8 @@ function entrar(){
         : ({3:"Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave.",
             4:"El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.",
             5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave.",
-            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave."}[ELEGIDO]
+            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave.",
+            7:"La disociación se abre <b>terminando las diez de la ciudad</b>, o con la palabra clave."}[ELEGIDO]
            || "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
         if(cla.focus) { try{ cla.focus(); }catch(e){} }
@@ -9568,7 +10156,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "114009a7fc";
+const VERSION = "90ffdd9846";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
