@@ -229,8 +229,11 @@
   .deckcard.rush .ic{color:var(--alarm)}
   .deckcard .tt{font:700 15px/1.2 "Archivo",sans-serif;color:var(--ink)}
   .deckcard .dd{font-size:12.5px;color:var(--dim);line-height:1.4;margin-top:4px}
-  .deckcard.vacia{border-style:dashed;border-color:var(--line);align-items:center}
-  .deckcard.vacia .tt{color:var(--dim);font-weight:500}
+  /* El fondo de la carta es el tercer acento de la sala, que en La Keta y en
+     Los Hongos es casi negro: «Todavía no jugó» en --dim quedaba del mismo
+     tono que el fondo. Texto en --body y el punteado en --hair. */
+  .deckcard.vacia{border-style:dashed;border-color:var(--hair);align-items:center}
+  .deckcard.vacia .tt{color:var(--body);font-weight:500}
   @keyframes flip{from{transform:translateY(-6px) scale(.97);opacity:0}}
   /* La pila asoma 6px por debajo de la carta, así que el pie necesita más
      que eso de aire o la esquina le toca el texto. */
@@ -417,28 +420,53 @@
   .novedad .muestra .bol.d3{background:var(--alarm);border-color:var(--alarm)}
   .novedad .btn{margin:0;align-self:flex-start}
 
-  /* el diario es una tapa más, pero la suya no se elige: se entra directo */
-  .diaria img{object-fit:cover}
-  .diaria .rotulo b{color:var(--ink)}
-  .diaria.hecho .rotulo small{color:var(--patina)}
-  .diaria.hecho img{outline:3px solid var(--patina);outline-offset:4px}
+  /* El diario no es una edición más: es otra forma de jugar. Estaba como
+     octava tapa, entre las ediciones, y encima su bajada —«una sala nueva, la
+     misma para todos»— se partía en tres renglones en la columna angosta.
+     Va en una franja propia a lo ancho, debajo de las tapas y separada por
+     una línea: la caja chica a la izquierda y el texto al lado. */
+  /* Con .diaria a secas perdia: el bloque de .tapa esta mas abajo en el
+     archivo y con la misma especificidad gana el ultimo. Va .tapa.diaria. */
+  .tapa.diaria{grid-column:1 / -1;flex-direction:row;align-items:center;gap:14px;
+    text-align:left;border-top:1px solid var(--line);padding-top:18px;margin-top:2px;
+    width:100%}
+  .tapa.diaria img{object-fit:cover;width:84px;flex:none;aspect-ratio:1;
+    box-shadow:0 8px 20px #00000055}
+  .tapa.diaria .rotulo{text-align:left;min-width:0}
+  .tapa.diaria .rotulo b{color:var(--ink)}
+  .tapa.diaria .rotulo small{letter-spacing:.12em;margin-top:4px}
+  .tapa.diaria.hecho .rotulo small{color:var(--patina)}
+  .tapa.diaria.hecho img{outline:3px solid var(--patina);outline-offset:4px}
+  @media (hover:hover){
+    .tapa.diaria:hover{transform:none}
+    .tapa.diaria:hover img{transform:translateY(-3px)}
+  }
   .tapa{background:none;border:0;padding:0;cursor:pointer;color:inherit;
     display:flex;flex-direction:column;gap:11px;align-items:center;
     width:100%;min-width:0;transition:.16s ease}
   .tapa img,.tapa .cajadibujada{display:block;width:100%;aspect-ratio:1;
     box-shadow:0 20px 44px #00000060;transition:.16s ease}
-  .tapa:hover{transform:translateY(-4px)}
-  .tapa:hover img,.tapa:hover .cajadibujada{box-shadow:0 26px 56px #00000075}
+  /* Detrás de (hover:hover) a propósito: en pantalla táctil el :hover se
+     queda pegado después del toque, y a la tapa que habías tocado antes le
+     quedaba la sombra grande y los 4px de subida como si siguiera elegida. */
+  @media (hover:hover){
+    .tapa:hover{transform:translateY(-4px)}
+    .tapa:hover img,.tapa:hover .cajadibujada{box-shadow:0 26px 56px #00000075}
+  }
   .tapa .rotulo{text-align:center}
   .tapa .rotulo b{display:block;font:400 15px/1.15 "Archivo Black","Archivo",sans-serif;
     color:var(--dim);text-transform:uppercase;letter-spacing:-.01em;transition:.16s}
-  .tapa .rotulo small{display:block;margin-top:5px;font:500 9px/1 "IBM Plex Mono",monospace;
-    letter-spacing:.16em;text-transform:uppercase;color:var(--hair)}
+  /* La bajada iba en --hair (#39404E) sobre casi negro y no se leía: es el
+     renglón que dice de qué es cada edición, así que tiene que leerse. */
+  .tapa .rotulo small{display:block;margin-top:5px;font:500 9px/1.3 "IBM Plex Mono",monospace;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
   .tapa.elegida .rotulo b{color:var(--ink)}
   .tapa.elegida img,.tapa.elegida .cajadibujada{outline:3px solid var(--brass);
     outline-offset:4px}
   .tapa:not(.elegida) img,.tapa:not(.elegida) .cajadibujada{opacity:.86}
-  .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:1}
+  @media (hover:hover){
+    .tapa:not(.elegida):hover img,.tapa:not(.elegida):hover .cajadibujada{opacity:1}
+  }
 
   .tapa{position:relative}
   /* «tocá de nuevo para entrar» va en el renglón chico de la tapa marcada.
@@ -586,11 +614,15 @@
     text-transform:uppercase;color:var(--dim);margin-bottom:5px}
   .lv .num{font:400 24px/.8 "Archivo Black","Archivo",sans-serif;color:var(--ac);
     letter-spacing:-.04em;margin-bottom:5px}
-  /* con break-word "Oficinas administrativas" quedaba ADMINISTRATI/VAS. Con
-     guiones corta donde corta el idioma, y si no entra se achica sola. */
+  /* Con break-word "Oficinas administrativas" quedaba ADMINISTRATI/VAS, así
+     que se pasó a guiones. Pero «El guardaesquíes» quedaba GUARDAES-QUIES y
+     eso se lee peor que un nombre un punto más chico: los que tienen una
+     palabra de más de once letras se achican y no se cortan. La clase la pone
+     el que arma la lista, que es el único que sabe cuánto mide el nombre. */
   .lv b{font:400 12px/1.16 "Archivo Black","Archivo",sans-serif;color:var(--ink);
     text-transform:uppercase;letter-spacing:-.02em;
     overflow-wrap:normal;word-break:normal;hyphens:auto;font-size:clamp(10px,1.05vw,12px)}
+  .lv b.largo{hyphens:manual;letter-spacing:-.04em;font-size:clamp(8.6px,.86vw,10px)}
 
   /* quién la juega y contra quién: a todo el ancho, para que el nombre entre */
   .lv .quien .cara{background:transparent}
@@ -1884,8 +1916,11 @@ function poderDe(quien){
   if(JUEGO === 7 && PODERES_7[quien]) return PODERES_7[quien];
   const p = POWERS[quien];
   if(!p) return p;
-  const d = enJerga(p.d);
-  return d === p.d ? p : {n:p.n, d:d};
+  /* El nombre también: «Siempre con el fernet» quedaba igual en el espacio,
+     donde el fernet es el propulsor. Es el mismo olvido que ya había pasado
+     con objetoDe y el chocolate de la montaña. */
+  const n = enJerga(p.n), d = enJerga(p.d);
+  return (n === p.n && d === p.d) ? p : {n:n, d:d};
 }
 
 
@@ -2282,6 +2317,7 @@ function newGame(salaKey){
   if(JUEGO === 7 && sala.hero === "damian") S.aguanta = 4;   // Todavía puedo
 
   fx.floats.length=0; fx.shake=0; fx.banner=null;
+  if(typeof limpiarCartel==="function") limpiarCartel();
   if(typeof limpiarRelato==="function") limpiarRelato();
   buildFloorLayer(); buildLegend();
   const cvEl=document.getElementById("c"); if(cvEl) cvEl.style.background=S.th.fondo;
@@ -3541,7 +3577,7 @@ const SALAS_5 = {
 /* Un consejo por sala: la mitad del jefe que te toca y la otra del poder del
    que la protagoniza. */
 const CONSEJOS_5 = {
-  m0:"El Novato camina y nada más, así que es la pista para aprender. Arrancás con un <b>chocolate caliente</b> en la mochila: mientras dure te movés también en diagonal. Y el <b>mate</b> de la nieve te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
+  m0:"El Novato camina y nada más, así que es la pista para aprender. Arrancás con un <b>chocolate caliente</b> en la mochila: mientras dure te movés también en diagonal. Y el <b>mate</b> que hay tirado en la nieve te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
   m1:"Cada locker que abrís hace avanzar a El de la Confitería al instante, así que no abras de gusto. Tu poder te esconde también en la casilla de al lado de un pino, y escondido no te agarra ni «¡Se acerca!».",
   m2:"El Snowboarder baja sin rumbo: no hay ruta segura, hay que mirarlo cada ronda. Arrancás con una tabla ya en la mano, así que la primera entrega la podés hacer sin abrir nada.",
   m3:"El Dueño del Cerro aparece en los lockers, no en los bancos: el que estás por abrir puede tenerlo encima. Guardá el <b>F</b> para cuando quede uno solo y esté lejos.",
@@ -4921,7 +4957,11 @@ function usarPoder(){
    partida caminar. Si ya no queda nada expuesto, te deja en el remolino más
    cerca de la cama. Una vez por partida. */
 function puedeElHueco(){
-  if(!S || S.powerUsed || S.over || S.busy || !S.mp) return null;
+  /* El viaje("hueco") no estaba y el botón de la barra de abajo llama a
+     meterseEnElHueco() derecho, sin pasar por usarPoder: en el museo
+     cualquiera se teletransportaba. Es el mismo olvido que los poderes
+     dobles de Chuna y Kzk —preguntar por el estado y no por quién juega—. */
+  if(!viaje("hueco") || S.powerUsed || S.over || S.busy || !S.mp) return null;
   const d = bfsFrom({x:S.player.x, y:S.player.y});
   const dist = v => { const n = d[key(v.x,v.y)]; return n < 0 ? -1 : n; };
   const llenas = S.marks.vitrinas.filter(v => S.grid[v.y][v.x].piece && dist(v) > 1);
@@ -4978,7 +5018,7 @@ function pasoAlAzar(f){
 
 /* Chuna estira las piernas: una vez por partida, dos pasos más en este turno. */
 function puedeCorrer(){
-  return !!(S && S.heroKey==="chuna" && !S.powerUsed && !S.over && !S.busy && S.mp>0);
+  return !!(S && clasico("chuna") && !S.powerUsed && !S.over && !S.busy && S.mp>0);
 }
 function correr(){
   if(!puedeCorrer()) return;
@@ -4992,7 +5032,7 @@ function correr(){
 
 /* Kzk recablea una vitrina vacía y se trae la pieza que le queda más lejos. */
 function puedeMudarPieza(){
-  if(!S || S.heroKey!=="kzk" || S.powerUsed) return null;
+  if(!clasico("kzk") || S.powerUsed) return null;
   const d = bfsFrom({x:S.player.x, y:S.player.y});
   const dist = v => { const n = d[key(v.x,v.y)]; return n<0 ? 1e9 : n; };
   const vacias = S.marks.vitrinas.filter(v=> S.grid[v.y][v.x].alarm)
@@ -9164,6 +9204,18 @@ function frame(now){
 /* cartel de fase: dice qué está pasando antes de que pase */
 /* El cartel vive abajo del tablero, en HTML. Adentro del lienzo no habia
    lugar: quedaba pegado al muro de abajo y tapaba las casillas del puesto. */
+/* El cartel de la sala anterior se quedaba puesto. La animación termina en
+   opacity 0, así que debería apagarse sola; pero si el tablero estaba tapado
+   cuando se puso, la animación nunca corrió, y al aparecer la sala nueva
+   arranca de cero y muestra el texto de la sala vieja. Se limpia al cargar. */
+function limpiarCartel(){
+  const el = document.getElementById("cartel");
+  if(!el) return;
+  el.textContent = "";
+  if(el.classList) el.classList.remove("on");
+  if(el.style){ el.style.color = ""; el.style.borderColor = ""; }
+}
+
 function pintarCartel(txt, color){
   const el=document.getElementById("cartel");
   if(!el || !el.style) return;
@@ -9230,12 +9282,29 @@ function drawOverlays(now){
     }
     llego.forEach((dist,kk)=>{
       const x=kk%W, y=(kk/W)|0;
+      /* El lavado es más flojo en las salas oscuras que antes: tapaba el
+         dibujo del piso —en el espacio es rejilla remachada— y la casilla
+         quedaba una placa lisa que se confundía con un dibujo que falta. Lo
+         que dice «acá podés pisar» son los esquineros, no el relleno. */
       ctx.fillStyle = !S.th.oscuro
         ? `rgba(255,255,255,${.30+p*.14})`
-        : `rgba(255,255,255,${.09+p*.06})`;
+        : `rgba(255,255,255,${.05+p*.05})`;
       rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill();
       ctx.strokeStyle=hexA(acentoSala(), .40+p*.25); ctx.lineWidth=1.6;
       rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.stroke();
+      /* los cuatro esquineros: un esquinero no se confunde nunca con una
+         casilla sin dibujar, y se leen igual en la sala más clara y en la
+         más oscura porque van del color de la sala y no de blanco. */
+      ctx.strokeStyle=hexA(acentoSala(), .80+p*.20); ctx.lineWidth=2.6;
+      ctx.lineCap="round";
+      const b0=5, b1=CS-5, br=CS*0.19;
+      for(const [ex,ey,sx,sy] of [[b0,b0,1,1],[b1,b0,-1,1],[b0,b1,1,-1],[b1,b1,-1,-1]]){
+        ctx.beginPath();
+        ctx.moveTo(x*CS+ex, y*CS+ey+sy*br);
+        ctx.lineTo(x*CS+ex, y*CS+ey);
+        ctx.lineTo(x*CS+ex+sx*br, y*CS+ey);
+        ctx.stroke();
+      }
       if(mouseCell&&mouseCell.x===x&&mouseCell.y===y){
         ctx.fillStyle=hexA(acentoSala(),.32); rr(ctx,x*CS+5,y*CS+5,CS-10,CS-10,3); ctx.fill(); }
     });
@@ -9422,7 +9491,10 @@ function syncUI(){
   }).join("");
 
   const lblS = $("lblsalida");
-  if(lblS) lblS.textContent = JUEGO === 3 ? "El puesto" : "Salida";
+  /* Adónde se llega, que no es «Salida» en todas: decía Salida hasta en el
+     viaje, donde lo que hay es una cama. */
+  if(lblS) lblS.textContent = {3:"El puesto", 4:"La nave", 5:"El refugio",
+                               6:"El colectivo", 7:"La cama"}[JUEGO] || "Salida";
 
   /* los dos títulos de las filas: están escritos a mano en el html y hay
      que traducirlos como el resto */
@@ -9512,6 +9584,17 @@ function syncUI(){
     pistas.push(
       "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"correr()\">" +
       "<b>F</b> · estirar las piernas: +2 pasos, una vez por partida</button>");
+  /* Los dos del viaje que se activan a mano. Iban acá y no estaban, así que
+     en el teléfono —donde no hay tecla F— eran inalcanzables, y encima la
+     barra ofrecía el poder de otra edición. */
+  if(typeof puedeElHueco==="function" && puedeElHueco())
+    pistas.push(
+      "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"meterseEnElHueco()\">" +
+      "<b>F</b> · el hueco: salís por el remolino de lo que te falta</button>");
+  if(typeof puedeDespertador==="function" && puedeDespertador())
+    pistas.push(
+      "<button class=\"hbtn\" style=\"padding:6px 12px;border:1px solid var(--brass);color:var(--brass)\" onclick=\"tocarElDespertador()\">" +
+      "<b>F</b> · el despertador: esta ronda no camina</button>");
   const mudanza = (typeof puedeMudarPieza==="function") ? puedeMudarPieza() : null;
   if(mudanza)
     pistas.push(
@@ -9530,7 +9613,8 @@ function syncUI(){
      diciendo lo mismo. Sólo cuando el botón está: si el poder todavía no se
      puede usar, el texto es lo único que lo explica. */
   S.poderAbajo = pistas.some(p =>
-    /offerDelivery()|correr()|fixVitrina()/.test(String(p)));
+    /offerDelivery\(\)|correr\(\)|fixVitrina\(\)|meterseEnElHueco\(\)|tocarElDespertador\(\)/
+      .test(String(p)));
   const poderAbajo = S.poderAbajo;
   const tarjeta = $("yopoder");
   if(tarjeta && tarjeta.classList) tarjeta.classList.toggle("yaabajo", poderAbajo);
@@ -10245,8 +10329,22 @@ function abandonarDiaria(){
   salirDelDiario();
 }
 
-/* La consigna del juego, que no es la misma en la playa que en el museo. */
+/* La consigna del juego. Una por edición: decía vitrinas y cómplices en las
+   siete, y en Total disociación queda directamente al revés —las cosas son
+   tuyas, no hay que robarlas sino recuperarlas—. */
 function LaConsigna(){
+  if(JUEGO === 7)
+    return 'Sacá <b>tus tres cosas</b> de los remolinos, dejáselas a tus amigos ' +
+           'para no volver a perderlas y llegá a <b>la cama</b> antes de que te agarre.';
+  if(JUEGO === 6)
+    return 'Descolgá los <b>tres cuadros</b> de los puestos, pasáselos a los amigos ' +
+           'que los piden y subite al <b>colectivo</b> antes de que te agarren.';
+  if(JUEGO === 5)
+    return 'Sacá las <b>tres tablas</b> de los lockers, pasáselas a los amigos que ' +
+           'las piden y llegá al <b>refugio</b> antes de que te agarren.';
+  if(JUEGO === 4)
+    return 'Sacá las <b>tres muestras</b> de las cápsulas, pasáselas a los tripulantes ' +
+           'que las piden y llegá a la <b>nave</b> antes de que te agarren.';
   if(JUEGO === 3)
     return 'Levantá las <b>tres heladeritas</b> de abajo de las sombrillas, ' +
            'llevásela a cada uno a su toalla y llegá al <b>puesto</b> antes de que te agarren.';
@@ -10282,7 +10380,10 @@ function menu(){
         '<span class="txt">' +
           '<span class="ala">'+v.wing+'</span>' +
           '<span class="num">'+v.num+'</span>' +
-          '<b>'+v.name+'</b>' +
+          /* los nombres con una palabra muy larga se achican en vez de
+             cortarse con guion: GUARDAES-QUIES se leía peor que chico */
+          '<b' + (v.name.split(/\s+/).some(p => p.length > 11) ? ' class="largo"' : '') +
+            '>'+v.name+'</b>' +
           '<span class="sellos">' + sellos + '</span>' +
           (marca ? '<span class="mejor">' + marca.rondas + ' rondas' +
                    (marca.limpia ? ' · limpia' : '') + '</span>' : '') +
@@ -10912,7 +11013,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "199a225f9d";
+const VERSION = "862a03d76b";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
