@@ -2186,7 +2186,7 @@ function newGame(salaKey){
   const sala = SALAS[salaKey];
   FRAME_MAP = loadFrame() || {...FRAME_DEF};
   const b = buildBoard(sala, salaKey);
-  const hero = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero))))), power = poderDe(sala.hero);
+  const hero = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(conDisfraz(CREW[sala.hero]), sala.hero)))), sala.hero), power = poderDe(sala.hero);
   const delMarco = loadFrameWalls(sala.piso) || FRAME_WALLS[sala.piso] || MARCO_BASE;
   const delNivel = (loadWalls(salaKey) || sala.w).filter(w=>!esParedDeMarco(w));
   const walls = new Set([...delMarco, ...delNivel]);
@@ -3721,18 +3721,68 @@ const PIEZAS_7 = [
   {id:"circulo",   sym:"●", name:"La campera",  color:"#E0685D"},
 ];
 
-/* El viaje arriba y el bajón abajo. El piso no se queda quieto: el patrón
-   «vibra» le mete a cada casilla un latido de color propio, así que el
-   tablero respira en vez de ser un damero. */
+/* Un tema por droga. Cada uno tiene su color, su patrón de piso y su cielo,
+   y el cielo es el del disco de la banda: celeste con recortes flotando.
+   `collage` dice qué recortes le tocan a esta sala; ninguna repite la lista.
+   El último es el remate de toda la edición: el piso del lunes es la
+   alfombra gris de oficina de Los Museos 1. Terminás el viaje y estás de
+   vuelta en el trabajo, que es de donde salió este juego.
+
+   Los diez patrones van en la lista de pisos con color propio (temaDeSala),
+   porque acá el piso YA es la identidad de la sala y teñirlo con el acento
+   los dejaba a los diez del mismo color. */
 const THEMES_T = {
-  viaje:{ oscuro:false, piso:["#F2E6D2","#ECDFC8"], patron:"vibra", junta:"#00000014",
-          luz:"#FFF3D0", luzA:.22, pared:"#B98CFF", void:"#E4CFAE", vineta:.06,
-          fondo:"#E4CFAE", alto:"#F0DCBC", bajo:"#D8C09C", sombra:"90,60,40",
-          luces:true, neon:"#FF7FD0", cartel:.7 },
-  bajon:{ oscuro:true,  piso:["#281C38","#221830"], patron:"vibra", junta:"#00000030",
-          luz:"#B98CFF", luzA:.26, pared:"#7FD6EE", void:"#140B20", vineta:.34,
-          fondo:"#140B20", alto:"#1E1230", bajo:"#0E0718", sombra:"0,0,0",
-          luces:true, neon:"#FF7FD0", cartel:1 },
+  birra :{ oscuro:false, piso:["#F0D486","#EACB78"], patron:"birra", junta:"#00000018",
+           luz:"#FFF3C8", luzA:.22, pared:"#C98A2E", void:"#7FC4E8", vineta:.05,
+           fondo:"#7FC4E8", alto:"#F4DE9E", bajo:"#DCBC66", sombra:"120,80,20",
+           luces:false, neon:null, cartel:.6,
+           cielo:["#5FB4E8","#BFE4F4"], collage:["globo","vaca","salvavidas","paloma"] },
+  fernet:{ oscuro:false, piso:["#8A4030","#7A3628"], patron:"fernet", junta:"#00000030",
+           luz:"#F0A070", luzA:.20, pared:"#D8905A", void:"#4A7FA8", vineta:.14,
+           fondo:"#4A7FA8", alto:"#9A4E3A", bajo:"#6A2E22", sombra:"40,12,8",
+           luces:false, neon:null, cartel:.7,
+           cielo:["#2E6B96","#8ABFDC"], collage:["telefono","reloj","triciclo","paloma"] },
+  porro :{ oscuro:false, piso:["#BFD8A8","#B2CE99"], patron:"porro", junta:"#00000016",
+           luz:"#EAFFD0", luzA:.24, pared:"#5E8A46", void:"#9ECFD8", vineta:.08,
+           fondo:"#9ECFD8", alto:"#CBE2B4",bajo:"#A6C48C", sombra:"40,70,30",
+           luces:false, neon:null, cartel:.6,
+           cielo:["#6FBFC8","#CDE8DC"], collage:["nube","barrilete","pez","globo"] },
+  vino  :{ oscuro:true,  piso:["#4A1E32","#421A2C"], patron:"vino", junta:"#00000034",
+           luz:"#E0809E", luzA:.22, pared:"#A8507A", void:"#2A1A3A", vineta:.26,
+           fondo:"#2A1A3A", alto:"#58263C", bajo:"#38142A", sombra:"0,0,0",
+           luces:true, neon:"#E0559B", cartel:1,
+           cielo:["#3A2050","#7E4A78"], collage:["busto","reloj","silla","paloma"] },
+  merca :{ oscuro:false, piso:["#F4F4F2","#E8E8E6"], patron:"merca", junta:"#00000022",
+           luz:"#FFFFFF", luzA:.30, pared:"#8E9298", void:"#BFD8E8", vineta:.04,
+           fondo:"#BFD8E8", alto:"#FFFFFF", bajo:"#D8D8D6", sombra:"60,64,70",
+           luces:false, neon:null, cartel:.5,
+           cielo:["#8FC8E8","#EAF6FC"], collage:["cono","reloj","telefono","triciclo"] },
+  md    :{ oscuro:true,  piso:["#5A2418","#4E1E14"], patron:"md", junta:"#00000028",
+           luz:"#FFB08C", luzA:.30, pared:"#E0705A", void:"#2A1008", vineta:.24,
+           fondo:"#2A1008", alto:"#6E2E1E", bajo:"#3E1610", sombra:"0,0,0",
+           luces:true, neon:"#FF9E7A", cartel:1,
+           cielo:["#8A3A2A","#E8A070"], collage:["globo","pez","barrilete","nube"] },
+  hongos:{ oscuro:true,  piso:["#1C3A28","#173222"], patron:"hongos", junta:"#00000030",
+           luz:"#8FE0A8", luzA:.24, pared:"#4FA868", void:"#0C1E16", vineta:.32,
+           fondo:"#0C1E16", alto:"#245030", bajo:"#12261A", sombra:"0,0,0",
+           luces:true, neon:"#6FCB8A", cartel:1,
+           cielo:["#0E3028","#3E7A62"], collage:["hongo","vaca","nube","pez"] },
+  lsd   :{ oscuro:true,  piso:["#2A1642","#231238"], patron:"lsd", junta:"#00000030",
+           luz:"#C79EFF", luzA:.28, pared:"#B98CFF", void:"#150A26", vineta:.30,
+           fondo:"#150A26", alto:"#3A1E58", bajo:"#1E0E30", sombra:"0,0,0",
+           luces:true, neon:"#FF7FD0", cartel:1,
+           cielo:["#2A1050","#8A4ABF"], collage:["barrilete","luna","globo","busto"] },
+  keta  :{ oscuro:true,  piso:["#0E2A32","#0B222A"], patron:"keta", junta:"#00000038",
+           luz:"#7FE0F0", luzA:.20, pared:"#2C8A9E", void:"#05121A", vineta:.42,
+           fondo:"#05121A", alto:"#143A44", bajo:"#081A20", sombra:"0,0,0",
+           luces:true, neon:"#5FD8E8", cartel:1,
+           cielo:["#03101A","#1E5A70"], collage:["luna","salvavidas","telefono"] },
+  /* el remate: la alfombra gris de Los Museos 1 */
+  lunes :{ oscuro:false, piso:["#C9C7C2","#C2C0BB"], patron:"lunes", junta:"#0000001C",
+           luz:"#F4F1E8", luzA:.14, pared:"#E8E6E0", void:"#9AA0A6", vineta:.10,
+           fondo:"#9AA0A6", alto:"#D2D0CB", bajo:"#B2B0AB", sombra:"60,62,68",
+           luces:false, neon:null, cartel:.5,
+           cielo:["#8E969E","#C6CBD0"], collage:["reloj","cono","silla","paloma"] },
 };
 
 const FOES_7 = {
@@ -3756,7 +3806,7 @@ const FOES_7 = {
 };
 
 const SALAS_7 = {
-  t0:{ num:0, name:"La birra de más", wing:"El previo", piso:"viaje", afuera:"niebla",
+  t0:{ num:0, name:"La birra de más", wing:"El previo", piso:"birra", afuera:"collage",
     ac:["#E8A33C","#F2CE93","#FDF1DE"],
     hero:"negro", foe:"mareo", comps:["hippie","chuna","chupa"],
     e:L(`..K..P
@@ -3765,7 +3815,7 @@ const SALAS_7 = {
          P.P..D`),
     w:["h:2:1","h:3:1","v:4:3","h:3:3","v:1:5","h:5:2"],
     v:["v:5:4","h:4:3","v:2:2"] },
-  t1:{ num:1, name:"El fernet", wing:"El previo", piso:"viaje", afuera:"niebla",
+  t1:{ num:1, name:"El fernet", wing:"El previo", piso:"fernet", afuera:"collage",
     ac:["#C7563F","#E8A08C","#FBE8E2"],
     hero:"marian", foe:"lengua", comps:["lamber","chupa","damian"],
     e:L(`P....E
@@ -3774,7 +3824,7 @@ const SALAS_7 = {
          P.E..P`),
     w:["h:2:1","h:3:1","v:5:2","h:4:3","v:2:2","h:2:4"],
     v:["v:3:4","h:5:2","v:1:3"] },
-  t2:{ num:2, name:"El porro", wing:"La joda", piso:"viaje", afuera:"niebla",
+  t2:{ num:2, name:"El porro", wing:"La joda", piso:"porro", afuera:"collage",
     ac:["#4FA85F","#A6D8AE","#EBF7ED"],
     hero:"kzk", foe:"paranoia", comps:["matxi","hippie","chuna"],
     e:L(`P.K..P
@@ -3783,7 +3833,7 @@ const SALAS_7 = {
          PA...M`),
     w:["h:2:1","h:3:1","v:4:4","h:3:2","v:1:5","h:6:2"],
     v:["v:3:5","h:2:4","v:5:3"] },
-  t3:{ num:3, name:"El vino", wing:"La joda", piso:"viaje", afuera:"niebla",
+  t3:{ num:3, name:"El vino", wing:"La joda", piso:"vino", afuera:"collage",
     ac:["#8A2E4A","#C98AA0","#F6E6EB"],
     hero:"damian", foe:"sueno", comps:["negro","chuna","chupa"],
     e:L(`P..K.P
@@ -3792,7 +3842,7 @@ const SALAS_7 = {
          PC.T.D`),
     w:["h:2:1","h:3:1","v:3:2","h:6:3","v:1:4","h:4:5"],
     v:["v:5:2","h:3:3","v:4:5"] },
-  t4:{ num:4, name:"La merca", wing:"La madrugada", piso:"viaje", afuera:"niebla",
+  t4:{ num:4, name:"La merca", wing:"La madrugada", piso:"merca", afuera:"collage",
     ac:["#5B6B8A","#AEB8CC","#EDF0F6"],
     hero:"lamber", foe:"noPara", comps:["kzk","chupa","hippie"],
     e:L(`P.K.P.
@@ -3801,7 +3851,7 @@ const SALAS_7 = {
          M.T..P`),
     w:["h:2:1","h:3:1","v:4:2","h:4:3","v:1:4","h:6:4"],
     v:["v:2:2","h:2:3","v:3:5"] },
-  t5:{ num:5, name:"El MD", wing:"La madrugada", piso:"bajon", afuera:"niebla",
+  t5:{ num:5, name:"El MD", wing:"La madrugada", piso:"md", afuera:"collage",
     ac:["#E0553F","#8A2E20","#2A1512"],
     hero:"chupa", foe:"abrazo", comps:["matxi","hippie","lamber"],
     e:L(`P....Q
@@ -3810,7 +3860,7 @@ const SALAS_7 = {
          .D...P`),
     w:["h:2:1","h:3:1","v:5:3","h:5:2","v:2:5","h:2:4"],
     v:["v:4:4","h:3:2","v:3:2"] },
-  t6:{ num:6, name:"Los hongos", wing:"El after", piso:"bajon", afuera:"niebla",
+  t6:{ num:6, name:"Los hongos", wing:"El after", piso:"hongos", afuera:"collage",
     ac:["#6FCB8A","#2E6B45","#0D2418"],
     hero:"tomy", foe:"bosque", comps:["negro","lamber","chupa"],
     e:L(`P..K.Q
@@ -3819,7 +3869,7 @@ const SALAS_7 = {
          D.E..P`),
     w:["h:2:1","h:3:1","v:4:3","h:2:3","v:2:2","h:6:5"],
     v:["v:3:5","h:4:2","v:1:4"] },
-  t7:{ num:7, name:"El LSD", wing:"El after", piso:"bajon", afuera:"niebla",
+  t7:{ num:7, name:"El LSD", wing:"El after", piso:"lsd", afuera:"collage",
     ac:["#B98CFF","#5B3E8A","#170F26"],
     hero:"hippie", foe:"patron", comps:["kzk","chupa","damian"],
     e:L(`Q..A.P
@@ -3828,7 +3878,7 @@ const SALAS_7 = {
          .D...P`),
     w:["h:2:1","h:3:1","v:3:3","h:5:4","v:1:2","h:3:5"],
     v:["v:5:5","h:4:2","v:4:2"] },
-  t8:{ num:8, name:"La keta", wing:"El agujero", piso:"bajon", afuera:"niebla",
+  t8:{ num:8, name:"La keta", wing:"El agujero", piso:"keta", afuera:"collage",
     ac:["#5FD8E8","#2C6B78","#0E2429"],
     hero:"chuna", foe:"agujero", comps:["tomy","hippie","lamber"],
     e:L(`...K.Q
@@ -3837,7 +3887,7 @@ const SALAS_7 = {
          D.E..P`),
     w:["h:2:1","h:3:1","v:5:2","h:4:4","v:2:3","h:2:2"],
     v:["v:3:3","h:5:3","v:1:4"] },
-  t9:{ num:9, name:"El lunes", wing:"El agujero", piso:"bajon", afuera:"niebla",
+  t9:{ num:9, name:"El lunes", wing:"El agujero", piso:"lunes", afuera:"collage",
     ac:["#D2A24C","#8A6B31","#241C0C"],
     hero:"matxi", foe:"lunes", comps:["negro","lamber","chuna"],
     e:L(`P.M..Q
@@ -5201,36 +5251,266 @@ function repartirAlto(paso, alto){
   return ys;
 }
 
-/* Lo de afuera del viaje: niebla. No hay pasillo, no hay atrio, no hay calle
-   —no hay nada—, y ésa es la idea: adentro del tablero todavía hay reglas y
-   afuera ya no. Se dibuja como capas de humo que se pisan, con unos destellos
-   sueltos que podrían ser luces o podrían no ser nada. */
-function drawNiebla(g, th){
+/* ---------- el collage ----------
+   El afuera de Total disociación es el cielo del disco de la banda: celeste,
+   con recortes de cosas que no tienen nada que ver entre sí flotando —un
+   globo, una vaca, un teléfono naranja, un triciclo, un busto con anteojos—.
+   Antes acá había niebla, que era un relleno.
+
+   Dos cosas lo hacen collage y no ilustración, y son las dos que hay que
+   respetar si se agrega un recorte nuevo: el <b>borde blanco de tijera</b> y
+   la <b>sombra del papel</b>. Sin eso son dibujos sueltos en un cielo.
+
+   Cada sala trae su lista en el tema (th.collage) y ninguna repite la misma,
+   así que las diez pantallas se reconocen de lejos. */
+const RECORTES = {
+  globo: g => {                                     // el globo aerostático
+    const GAJOS = ["#E0685D","#F2C14E","#5FD8E8","#6FCB8A"];
+    papel(g, () => { g.beginPath(); g.moveTo(0,-20);
+      g.bezierCurveTo(16,-20, 16,-2, 0,12); g.bezierCurveTo(-16,-2, -16,-20, 0,-20);
+      g.closePath(); });
+    for(let k = 0; k < 4; k++){
+      g.fillStyle = GAJOS[k];
+      g.beginPath(); g.moveTo(0,-20);
+      g.bezierCurveTo(4 + k*4, -18, 6 + k*3, -4, 0, 12);
+      g.bezierCurveTo(-2 - k*3, -4, -1 - k*4, -18, 0, -20);
+      g.closePath(); g.fill();
+    }
+    g.fillStyle = "#8A5A38"; rr(g, -4, 12, 8, 7, 1.5); g.fill();
+    g.strokeStyle = "#5A3A22"; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(-5,6); g.lineTo(-3,12); g.moveTo(5,6); g.lineTo(3,12); g.stroke();
+  },
+  luna: g => {                                      // la luna llena
+    papel(g, () => { g.beginPath(); g.arc(0,0,17,0,7); });
+    g.fillStyle = "#E8E4DA"; g.beginPath(); g.arc(0,0,17,0,7); g.fill();
+    g.fillStyle = "#C9C4B9";
+    for(const [cx,cy,r] of [[-6,-5,4.5],[5,3,3.4],[-3,7,2.6],[8,-7,2.2],[0,-1,1.6]]){
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+    }
+    g.fillStyle = "#FFFFFF44"; g.beginPath(); g.arc(-7,-9,6,0,7); g.fill();
+  },
+  cono: g => {                                      // el cono de obra
+    papel(g, () => { g.beginPath(); g.moveTo(0,-19); g.lineTo(11,14); g.lineTo(-11,14);
+      g.closePath(); });
+    g.fillStyle = "#E86A28";
+    g.beginPath(); g.moveTo(0,-19); g.lineTo(11,14); g.lineTo(-11,14); g.closePath(); g.fill();
+    g.fillStyle = "#F4F1E8";
+    g.beginPath(); g.moveTo(-5.6,-2); g.lineTo(5.6,-2); g.lineTo(7.4,5); g.lineTo(-7.4,5);
+    g.closePath(); g.fill();
+    g.fillStyle = "#C9541E"; rr(g, -14, 14, 28, 5, 1.5); g.fill();
+    g.fillStyle = "#00000018"; g.fillRect(-11, 14, 22, 1.4);
+  },
+  reloj: g => {                                     // el despertador
+    papel(g, () => { g.beginPath(); g.arc(0,1,15,0,7); });
+    g.fillStyle = "#3A4150"; g.beginPath(); g.arc(0,1,15,0,7); g.fill();
+    g.fillStyle = "#F4F1E8"; g.beginPath(); g.arc(0,1,12,0,7); g.fill();
+    g.strokeStyle = "#22242A"; g.lineWidth = 1.8; g.lineCap = "round";
+    g.beginPath(); g.moveTo(0,1); g.lineTo(0,-6); g.moveTo(0,1); g.lineTo(6,3); g.stroke();
+    g.fillStyle = "#22242A"; g.beginPath(); g.arc(0,1,1.6,0,7); g.fill();
+    g.fillStyle = "#8E9298";
+    for(const a of [0, 1.57, 3.14, 4.71]){
+      g.fillRect(Math.cos(a)*9 - .8, 1 + Math.sin(a)*9 - .8, 1.6, 1.6);
+    }
+    g.fillStyle = "#3A4150"; rr(g, -9, -18, 6, 5, 2); g.fill(); rr(g, 3, -18, 6, 5, 2); g.fill();
+  },
+  telefono: g => {                                  // el tubo naranja, descolgado
+    papel(g, () => { g.beginPath(); g.moveTo(-15,-12);
+      g.quadraticCurveTo(0,14, 15,-12); g.lineTo(15,-4);
+      g.quadraticCurveTo(0,22, -15,-4); g.closePath(); });
+    g.fillStyle = "#E86A28";
+    g.beginPath(); g.moveTo(-15,-12); g.quadraticCurveTo(0,14, 15,-12);
+    g.lineTo(15,-4); g.quadraticCurveTo(0,22, -15,-4); g.closePath(); g.fill();
+    g.fillStyle = "#C9541E"; rr(g, -18, -16, 9, 8, 2.5); g.fill();
+    rr(g, 9, -16, 9, 8, 2.5); g.fill();
+    g.strokeStyle = "#E86A28"; g.lineWidth = 2; g.lineCap = "round";
+    g.beginPath(); g.moveTo(0,14);
+    for(let k = 0; k < 4; k++) g.quadraticCurveTo(6 - k*3, 18 + k*4, 0, 20 + k*4);
+    g.stroke();
+  },
+  pez: g => {                                       // el pez naranja, en el aire
+    papel(g, () => { g.beginPath(); g.ellipse(1,0,16,9,0,0,7); });
+    g.fillStyle = "#E88A28"; g.beginPath(); g.ellipse(1,0,16,9,0,0,7); g.fill();
+    g.fillStyle = "#C96A18";
+    g.beginPath(); g.moveTo(-13,0); g.lineTo(-22,-7); g.lineTo(-20,0); g.lineTo(-22,7);
+    g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(0,-8); g.lineTo(4,-14); g.lineTo(8,-7); g.closePath(); g.fill();
+    g.fillStyle = "#F4C078"; g.beginPath(); g.ellipse(4,3,9,4,0,0,7); g.fill();
+    g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(10,-2,3,0,7); g.fill();
+    g.fillStyle = "#22242A"; g.beginPath(); g.arc(11,-2,1.6,0,7); g.fill();
+  },
+  paloma: g => {                                    // la paloma de plaza
+    papel(g, () => { g.beginPath(); g.ellipse(0,2,14,8,-.14,0,7); });
+    g.fillStyle = "#8E949E"; g.beginPath(); g.ellipse(0,2,14,8,-.14,0,7); g.fill();
+    g.fillStyle = "#6E747E";
+    g.beginPath(); g.ellipse(-2,0,9,4.6,-.3,0,7); g.fill();                 // el ala
+    g.beginPath(); g.moveTo(-12,3); g.lineTo(-22,1); g.lineTo(-13,7);
+    g.closePath(); g.fill();                                                 // la cola
+    g.fillStyle = "#8E949E"; g.beginPath(); g.arc(12,-4,5.4,0,7); g.fill();  // la cabeza
+    g.fillStyle = "#E8A33C";
+    g.beginPath(); g.moveTo(16,-4); g.lineTo(22,-3); g.lineTo(16,-1); g.closePath(); g.fill();
+    g.fillStyle = "#22242A"; g.beginPath(); g.arc(13.5,-5.4,1.3,0,7); g.fill();
+    g.fillStyle = "#4FA8A0"; g.beginPath(); g.ellipse(8,0,3.4,2.4,0,0,7); g.fill();
+  },
+  triciclo: g => {                                  // el triciclo rojo
+    papel(g, () => { g.beginPath(); g.arc(-8,5,13,0,7); });
+    const rueda = (cx, cy, r) => {
+      g.fillStyle = "#22242A"; g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+      g.fillStyle = "#E8E4DA"; g.beginPath(); g.arc(cx,cy,r*.42,0,7); g.fill();
+      g.strokeStyle = "#8E9298"; g.lineWidth = 1;
+      for(let k = 0; k < 6; k++){ const a = k*1.05;
+        g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+Math.cos(a)*r*.88, cy+Math.sin(a)*r*.88);
+        g.stroke(); }
+    };
+    g.fillStyle = "#D8433A"; rr(g, -6, -4, 22, 5, 2); g.fill();              // el cuadro
+    g.fillStyle = "#B03028"; rr(g, 12, -14, 5, 11, 2); g.fill();             // el asiento
+    g.strokeStyle = "#C2CBD0"; g.lineWidth = 2.4; g.lineCap = "round";
+    g.beginPath(); g.moveTo(-8,3); g.lineTo(-8,-15); g.moveTo(-15,-16); g.lineTo(-1,-16);
+    g.stroke();
+    rueda(-8, 5, 13); rueda(14, 10, 7);
+  },
+  nube: g => {                                      // una nube suelta
+    papel(g, () => { g.beginPath(); g.arc(-8,2,9,0,7); g.arc(2,-4,12,0,7);
+      g.arc(13,3,8,0,7); g.rect(-17,2,30,8); });
+    g.fillStyle = "#FFFFFF";
+    g.beginPath(); g.arc(-8,2,9,0,7); g.fill();
+    g.beginPath(); g.arc(2,-4,12,0,7); g.fill();
+    g.beginPath(); g.arc(13,3,8,0,7); g.fill();
+    rr(g, -17, 2, 30, 8, 4); g.fill();
+    g.fillStyle = "#DCE6EF"; rr(g, -15, 7, 27, 3, 1.5); g.fill();
+  },
+  barrilete: g => {                                 // el barrilete de colores
+    papel(g, () => { g.beginPath(); g.moveTo(0,-19); g.lineTo(13,0); g.lineTo(0,17);
+      g.lineTo(-13,0); g.closePath(); });
+    const C = ["#E0685D","#F2C14E","#5FD8E8","#6FCB8A"];
+    const V = [[0,-19,13,0],[13,0,0,17],[0,17,-13,0],[-13,0,0,-19]];
+    V.forEach((v, k) => {
+      g.fillStyle = C[k];
+      g.beginPath(); g.moveTo(0,0); g.lineTo(v[0],v[1]); g.lineTo(v[2],v[3]);
+      g.closePath(); g.fill();
+    });
+    g.strokeStyle = "#F4F1E8"; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(0,-19); g.lineTo(0,17); g.moveTo(-13,0); g.lineTo(13,0); g.stroke();
+    g.strokeStyle = "#E8E4DA"; g.lineWidth = 1.4; g.lineCap = "round";
+    g.beginPath(); g.moveTo(0,17);
+    g.bezierCurveTo(6,24, -6,30, 2,38); g.stroke();
+    g.fillStyle = "#E0685D";
+    for(const ty of [23, 30, 36]){ rr(g, -2.4, ty, 5, 3, 1); g.fill(); }
+  },
+  vaca: g => {                                      // la vaca, de perfil
+    papel(g, () => { g.beginPath(); rr(g,-17,-8,31,17,7); });
+    g.fillStyle = "#F4F1E8"; rr(g, -17, -8, 31, 17, 7); g.fill();
+    g.fillStyle = "#22242A";
+    g.beginPath(); g.ellipse(-8,-2,6,5,.3,0,7); g.fill();
+    g.beginPath(); g.ellipse(6,2,5,4,-.2,0,7); g.fill();
+    g.fillStyle = "#22242A";                                                 // las patas
+    for(const lx of [-13,-7,5,11]) rr(g, lx, 8, 3.4, 10, 1); g.fill();
+    g.fillStyle = "#F4F1E8"; g.beginPath(); g.ellipse(17,-8,7,6,.2,0,7); g.fill();
+    g.fillStyle = "#E8B0B8"; g.beginPath(); g.ellipse(21,-6,3.4,3,0,0,7); g.fill();
+    g.fillStyle = "#22242A"; g.beginPath(); g.arc(17,-11,1.3,0,7); g.fill();
+    g.fillStyle = "#E8E4DA";
+    g.beginPath(); g.moveTo(13,-13); g.lineTo(11,-19); g.lineTo(16,-15); g.closePath(); g.fill();
+  },
+  salvavidas: g => {                                // el salvavidas
+    papel(g, () => { g.beginPath(); g.arc(0,0,17,0,7); });
+    g.fillStyle = "#E0433A"; g.beginPath(); g.arc(0,0,17,0,7); g.fill();
+    g.fillStyle = "#F4F1E8";
+    for(let k = 0; k < 4; k++){
+      g.beginPath(); g.moveTo(0,0); g.arc(0,0,17, k*1.571 + .32, (k+1)*1.571 - .32);
+      g.closePath(); g.fill();
+    }
+    g.fillStyle = "#00000000";
+    g.save(); g.globalCompositeOperation = "destination-out";
+    g.beginPath(); g.arc(0,0,7.4,0,7); g.fill(); g.restore();
+    g.strokeStyle = "#00000022"; g.lineWidth = 1;
+    g.beginPath(); g.arc(0,0,7.4,0,7); g.stroke();
+  },
+  busto: g => {                                     // el busto con anteojos de sol
+    papel(g, () => { g.beginPath(); g.ellipse(0,-4,12,15,0,0,7); g.rect(-11,8,22,12); });
+    g.fillStyle = "#E4E0D6"; g.beginPath(); g.ellipse(0,-4,12,15,0,0,7); g.fill();
+    rr(g, -11, 6, 22, 14, 3); g.fill();
+    g.fillStyle = "#C9C4B9"; rr(g, -13, 17, 26, 4, 1.5); g.fill();
+    g.fillStyle = "#CFCAC0";                                                 // el pelo rizado
+    for(const [cx,cy] of [[-9,-13],[-3,-17],[4,-16],[10,-11]]){
+      g.beginPath(); g.arc(cx,cy,5,0,7); g.fill();
+    }
+    g.fillStyle = "#22242A"; rr(g, -11, -7, 22, 6, 2); g.fill();             // los anteojos
+    g.fillStyle = "#E0559B"; rr(g, -10, -6.4, 8.6, 4.4, 1.5); g.fill();
+    g.fillStyle = "#5FD8E8"; rr(g, 1.4, -6.4, 8.6, 4.4, 1.5); g.fill();
+    g.fillStyle = "#C9C4B9"; g.fillRect(-1.4, -6, 2.8, 2);
+  },
+  hongo: g => {                                     // el hongo atómico del disco
+    papel(g, () => { g.beginPath(); g.arc(0,-9,15,0,7); g.rect(-5,-6,10,26); });
+    g.fillStyle = "#F0E2C8";
+    for(const [cx,cy,r] of [[-9,-8,8],[0,-14,11],[9,-7,8],[-3,-3,7],[5,-2,6]]){
+      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
+    }
+    rr(g, -5, -4, 10, 24, 3); g.fill();
+    g.fillStyle = "#D8C4A0";
+    g.beginPath(); g.arc(-7,-4,5,0,7); g.fill();
+    g.beginPath(); g.arc(6,-11,5,0,7); g.fill();
+    g.fillStyle = "#E8703F";                                                 // el fuego adentro
+    g.beginPath(); g.arc(0,-10,5.4,0,7); g.fill();
+    g.fillStyle = "#F2C14E"; g.beginPath(); g.arc(0,-10,2.8,0,7); g.fill();
+    g.fillStyle = "#E4D6B8"; rr(g, -12, 18, 24, 4, 2); g.fill();
+  },
+  silla: g => {                                     // una silla de oficina, de perfil
+    papel(g, () => { g.beginPath(); g.rect(-12,-20,9,26); g.rect(-13,4,26,6); });
+    g.fillStyle = "#4A4E56"; rr(g, -12, -20, 9, 26, 3); g.fill();            // el respaldo
+    g.fillStyle = "#3A3E46"; rr(g, -13, 4, 26, 6, 2); g.fill();              // el asiento
+    g.fillStyle = "#6E747E"; g.fillRect(-1.6, 10, 3.2, 8);                   // la columna
+    g.strokeStyle = "#6E747E"; g.lineWidth = 2.4; g.lineCap = "round";
+    g.beginPath(); g.moveTo(0,18); g.lineTo(-11,22); g.moveTo(0,18); g.lineTo(11,22);
+    g.moveTo(0,18); g.lineTo(0,23); g.stroke();
+    g.fillStyle = "#22242A";
+    for(const wx of [-11, 0, 11]){ g.beginPath(); g.arc(wx,23,2.4,0,7); g.fill(); }
+  },
+};
+
+/* El borde de tijera: se llama con el contorno del recorte y lo pinta blanco
+   y un poco más grande, abajo de todo. Es lo único que hace que el dibujo se
+   lea como un papel pegado y no como parte del fondo. */
+function papel(g, contorno){
+  g.save();
+  g.strokeStyle = "#FFFFFF"; g.lineWidth = 6; g.lineJoin = "round";
+  g.fillStyle = "#FFFFFF";
+  contorno(g); g.stroke(); g.fill();
+  g.restore();
+}
+
+function drawCollage(g, th){
   const an = W*CS, al = H*CS;
-  g.fillStyle = th.fondo;
-  g.fillRect(0, 0, an, al);
-  /* las capas: manchones grandes y muy transparentes, uno encima del otro */
-  for(let i = 0; i < 26; i++){
-    const cx = rnd(i, 7, 3) * an, cy = rnd(i, 11, 5) * al;
-    const r  = an * (.10 + rnd(i, 5, 9) * .22);
-    const h  = g.createRadialGradient(cx, cy, 0, cx, cy, r);
-    const tono = i % 3 === 0 ? (th.neon || "#FF7FD0")
-               : i % 3 === 1 ? (th.pared || "#B98CFF")
-               : (th.oscuro ? "#FFFFFF" : "#FFF3D0");
-    h.addColorStop(0, tono + (th.oscuro ? "16" : "22"));
-    h.addColorStop(1, tono + "00");
-    g.fillStyle = h;
-    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+  /* el cielo de la sala */
+  const cielo = th.cielo || ["#5FB4E8","#BFE4F4"];
+  const gr = g.createLinearGradient(0, 0, 0, al);
+  gr.addColorStop(0, cielo[0]); gr.addColorStop(1, cielo[1]);
+  g.fillStyle = gr; g.fillRect(0, 0, an, al);
+  /* unas nubes pintadas al fondo, bien tenues: le dan profundidad para que
+     los recortes se lean adelante y no flotando en un plano liso */
+  for(let k = 0; k < 9; k++){
+    const cx = rnd(k, 3, 7) * an, cy = rnd(k, 11, 5) * al, r = an * (.05 + rnd(k,7,9)*.10);
+    g.fillStyle = "#FFFFFF1C";
+    g.beginPath(); g.ellipse(cx, cy, r, r*.42, 0, 0, 7); g.fill();
   }
-  /* los destellos: chiquitos, desparejos, sin explicación */
-  for(let i = 0; i < 60; i++){
-    const sx = rnd(i, 13, 2) * an, sy = rnd(i, 3, 17) * al;
-    const t = rnd(i, 9, 6);
-    g.fillStyle = th.oscuro ? "#FFFFFF" + (t > .8 ? "70" : "30")
-                            : "#FFFFFF" + (t > .8 ? "90" : "50");
-    g.beginPath(); g.arc(sx, sy, t > .8 ? 1.8 : 1, 0, 7); g.fill();
-  }
-  velo(g, th, .10);
+  /* y los recortes, repartidos por las dos franjas que quedan a los costados
+     del tablero. La lista sale del tema, así que cada sala tiene los suyos. */
+  const lista = (th.collage && th.collage.length) ? th.collage : ["nube","globo"];
+  franjasDeAfuera().forEach((f, nf) => {
+    repartirAlto(CS * 1.30, CS * 0.86).forEach((cy, k) => {
+      const cual = lista[(k + nf * 2) % lista.length];
+      const dib = RECORTES[cual];
+      if(!dib) return;
+      const esc = 0.88 + rnd(k, nf + 1, 3) * 0.36;
+      const giro = (rnd(k, nf + 5, 9) - .5) * 0.7;
+      g.save();
+      g.translate(f.cx, cy); g.rotate(giro); g.scale(esc, esc);
+      /* la sombra del papel, que es la otra mitad del truco */
+      g.shadowColor = "#00000045"; g.shadowBlur = 7;
+      g.shadowOffsetX = 2; g.shadowOffsetY = 4;
+      dib(g);
+      g.restore();
+    });
+  });
+  velo(g, th, .06);
 }
 
 function drawAfuera(g, th){
@@ -5240,7 +5520,7 @@ function drawAfuera(g, th){
     mesas: drawMesas, butacas: drawButacas, carritos: drawCarritos,
     maniquies: drawManiquies, atrio: drawAtrio, pasillo: drawPasillo,
     cubiculos: drawCubiculos, mar: drawMar, estrellas: drawEstrellas,
-    cerro: drawCerro, avenida: drawAvenida, niebla: drawNiebla,
+    cerro: drawCerro, avenida: drawAvenida, collage: drawCollage,
   };
   if(ESCENAS[th.afuera]){ ESCENAS[th.afuera](g, th); return; }
   if(th.afuera !== "estacionamiento") return;
@@ -5886,6 +6166,166 @@ function drawMar(g, th){
   }
 }
 
+/* El piso de cada viaje. Se dibuja una sola vez y queda cacheado en
+   floorLayer, así que nada de acá se mueve: lo que se mueve en esta edición
+   son los remolinos, el ojo y el déjà vu, que se pintan cada cuadro.
+   Todos salen del generador determinista rnd(x,y,k), así que el piso de una
+   sala es siempre el mismo y no cambia entre partidas. */
+function pisoDelViaje(g, x, y, th, px, py){
+  const P = th.patron;
+  if(P === "birra"){
+    /* la espuma: burbujas de tamaños distintos y los cercos que deja el vaso */
+    for(let k = 0; k < 9; k++){
+      const bx = px + rnd(x,y,k+2)*CS, by = py + rnd(x,y,k+9)*CS;
+      const r = 1.6 + rnd(x,y,k+15)*3.4;
+      g.fillStyle = "#FFFFFF55";
+      g.beginPath(); g.arc(bx, by, r, 0, 7); g.fill();
+      g.strokeStyle = "#FFFFFF80"; g.lineWidth = .9;
+      g.beginPath(); g.arc(bx, by, r, 0, 7); g.stroke();
+    }
+    g.strokeStyle = "#00000016"; g.lineWidth = 2;
+    g.beginPath(); g.arc(px + CS*(.3 + rnd(x,y,3)*.4), py + CS*(.3 + rnd(x,y,5)*.4),
+                         CS*.26, 0, 7); g.stroke();
+    return;
+  }
+  if(P === "fernet"){
+    /* el remolino de la coca al caer, y el brillo de un hielo */
+    g.strokeStyle = "#00000030"; g.lineWidth = 2.2; g.lineCap = "round";
+    const cx = px + CS*(.35 + rnd(x,y,3)*.3), cy = py + CS*(.35 + rnd(x,y,7)*.3);
+    g.beginPath();
+    for(let k = 0; k <= 22; k++){
+      const u = k/22, a = rnd(x,y,11)*6.3 + u*4.4, r = 2 + u*CS*.30;
+      const qx = cx + Math.cos(a)*r, qy = cy + Math.sin(a)*r;
+      if(k === 0) g.moveTo(qx, qy); else g.lineTo(qx, qy);
+    }
+    g.stroke();
+    g.fillStyle = "#FFFFFF26";
+    g.beginPath();
+    g.moveTo(px + CS*.62, py + CS*.20); g.lineTo(px + CS*.86, py + CS*.34);
+    g.lineTo(px + CS*.74, py + CS*.54); g.lineTo(px + CS*.54, py + CS*.38);
+    g.closePath(); g.fill();
+    g.fillStyle = "#FFFFFF44"; g.fillRect(px + CS*.64, py + CS*.26, CS*.10, 2);
+    return;
+  }
+  if(P === "porro"){
+    /* el humo: volutas largas que se van deshaciendo */
+    g.strokeStyle = "#FFFFFF3A"; g.lineWidth = 3; g.lineCap = "round";
+    for(let k = 0; k < 2; k++){
+      const sx = px + rnd(x,y,k+2)*CS*.7, sy = py + CS*(.85 - k*.25);
+      g.beginPath(); g.moveTo(sx, sy);
+      g.bezierCurveTo(sx + 14, sy - 14, sx - 12, sy - 26, sx + 8, sy - 40);
+      g.stroke();
+    }
+    g.strokeStyle = "#00000014"; g.lineWidth = 1.4;
+    for(let k = 0; k < 2; k++){
+      const sx = px + rnd(x,y,k+6)*CS*.8 + 4, sy = py + CS*.9;
+      g.beginPath(); g.moveTo(sx, sy);
+      g.bezierCurveTo(sx - 12, sy - 16, sx + 10, sy - 28, sx - 6, sy - 44);
+      g.stroke();
+    }
+    return;
+  }
+  if(P === "vino"){
+    /* las manchas de vino: cercos de copa y una salpicadura */
+    g.strokeStyle = "#00000044"; g.lineWidth = 2.6;
+    const cx = px + CS*(.25 + rnd(x,y,3)*.5), cy = py + CS*(.25 + rnd(x,y,5)*.5);
+    g.beginPath(); g.arc(cx, cy, CS*(.16 + rnd(x,y,9)*.12), 0, 7); g.stroke();
+    g.fillStyle = "#00000026";
+    for(let k = 0; k < 5; k++){
+      const sx = px + rnd(x,y,k+12)*CS, sy = py + rnd(x,y,k+20)*CS;
+      g.beginPath(); g.ellipse(sx, sy, 1.4 + rnd(x,y,k+25)*2.6, 1.2 + rnd(x,y,k+30)*2,
+                               rnd(x,y,k+7)*3, 0, 7); g.fill();
+    }
+    g.fillStyle = "#FFFFFF10";
+    g.beginPath(); g.arc(cx - CS*.06, cy - CS*.06, CS*.07, 0, 7); g.fill();
+    return;
+  }
+  if(P === "merca"){
+    /* las rayas: rectas, paralelas y demasiado prolijas. Y el polvo suelto,
+       que es lo que queda al lado de la raya. */
+    g.fillStyle = "#FFFFFF";
+    const ry = py + CS*(.30 + rnd(x,y,3)*.4);
+    for(let k = 0; k < 2; k++) g.fillRect(px + CS*.14, ry + k*5, CS*.72, 2.6);
+    g.fillStyle = "#00000014";
+    for(let k = 0; k < 2; k++) g.fillRect(px + CS*.14, ry + k*5 + 2.6, CS*.72, 1);
+    for(let k = 0; k < 14; k++){
+      g.fillStyle = rnd(x,y,k+40) > .5 ? "#FFFFFFAA" : "#00000012";
+      g.fillRect(px + rnd(x,y,k+50)*CS, py + rnd(x,y,k+60)*CS, 1.2, 1.2);
+    }
+    return;
+  }
+  if(P === "md"){
+    /* el calor: anillos blandos saliendo de un punto, como cuando todo late
+       para el mismo lado */
+    const ox = px + CS*(.3 + rnd(x,y,3)*.4), oy = py + CS*(.3 + rnd(x,y,7)*.4);
+    for(let k = 5; k >= 1; k--){
+      const h = g.createRadialGradient(ox, oy, k*CS*.07, ox, oy, (k+1)*CS*.09);
+      h.addColorStop(0, "#FF9E7A00"); h.addColorStop(1, "#FF9E7A14");
+      g.fillStyle = h;
+      g.beginPath(); g.arc(ox, oy, (k+1)*CS*.09, 0, 7); g.fill();
+    }
+    g.fillStyle = "#FFC8A030";
+    g.beginPath(); g.arc(ox, oy, CS*.08, 0, 7); g.fill();
+    return;
+  }
+  if(P === "hongos"){
+    /* el micelio: hilos que se ramifican, y las esporas */
+    g.strokeStyle = "#6FCB8A2E"; g.lineWidth = 1.2; g.lineCap = "round";
+    const hx = px + CS*.5, hy = py + CS*.5;
+    for(let k = 0; k < 7; k++){
+      const a = rnd(x,y,k+3)*6.3, l = CS*(.2 + rnd(x,y,k+11)*.3);
+      g.beginPath(); g.moveTo(hx, hy);
+      g.quadraticCurveTo(hx + Math.cos(a)*l*.6 + 6, hy + Math.sin(a)*l*.6 - 6,
+                         hx + Math.cos(a)*l, hy + Math.sin(a)*l);
+      g.stroke();
+    }
+    for(let k = 0; k < 11; k++){
+      g.fillStyle = rnd(x,y,k+30) > .6 ? "#8FE0A83A" : "#00000022";
+      g.beginPath(); g.arc(px + rnd(x,y,k+40)*CS, py + rnd(x,y,k+50)*CS,
+                           1 + rnd(x,y,k+55)*1.8, 0, 7); g.fill();
+    }
+    return;
+  }
+  if(P === "lsd"){
+    /* el caleidoscopio: la casilla partida en gajos de colores desde una
+       esquina, que es lo que hace que el piso parezca girar sin moverse */
+    const ARCO = ["#FF7FD0","#F2C14E","#6FCB8A","#5FD8E8","#B98CFF","#E0685D"];
+    const cx = px + CS*(rnd(x,y,3) > .5 ? 1 : 0), cy = py + CS*(rnd(x,y,5) > .5 ? 1 : 0);
+    const g0 = rnd(x,y,7)*6.3;
+    for(let k = 0; k < 6; k++){
+      g.fillStyle = ARCO[k] + "20";
+      g.beginPath(); g.moveTo(cx, cy);
+      g.arc(cx, cy, CS*1.45, g0 + k*.262, g0 + (k+1)*.262);
+      g.closePath(); g.fill();
+    }
+    g.strokeStyle = "#FFFFFF12"; g.lineWidth = 1;
+    for(let k = 1; k <= 3; k++){
+      g.beginPath(); g.arc(cx, cy, k*CS*.42, 0, 7); g.stroke();
+    }
+    return;
+  }
+  if(P === "keta"){
+    /* el agujero: cuadrados que se van para adentro. Cada casilla tiene el
+       suyo y ninguno cae en el centro, así que el piso no cierra nunca. */
+    const cx = px + CS*(.35 + rnd(x,y,3)*.3), cy = py + CS*(.35 + rnd(x,y,7)*.3);
+    for(let k = 5; k >= 1; k--){
+      const l = CS*.09*k;
+      g.strokeStyle = "#5FD8E8" + (k > 3 ? "10" : k > 1 ? "1A" : "2E");
+      g.lineWidth = 1.2;
+      g.beginPath(); g.rect(cx - l, cy - l, l*2, l*2); g.stroke();
+    }
+    g.fillStyle = "#000000";
+    g.beginPath(); g.arc(cx, cy, CS*.05, 0, 7); g.fill();
+    return;
+  }
+  /* el lunes: la alfombra industrial de Los Museos 1, igual de gris. Es el
+     remate de la edición y por eso no lleva nada del viaje encima. */
+  for(let k = 0; k < 14; k++){
+    g.fillStyle = rnd(x,y,k) > .5 ? "#00000012" : "#ffffff10";
+    g.fillRect(px + rnd(x,y,k+2)*CS, py + rnd(x,y,k+5)*CS, 2, 2);
+  }
+}
+
 function drawPiso(g,x,y,th){
   const px=x*CS, py=y*CS;
   /* En la playa el marco es el muelle de madera: la loseta es la arena y todo
@@ -6023,29 +6463,8 @@ function drawPiso(g,x,y,th){
     g.fillStyle = "#00000026"; g.fillRect(px, py + CS - 1.2, CS, 1.2);
     return;
   }
-  if(th.patron==="vibra"){
-    /* El piso del viaje. Cada casilla saca su propio latido del generador
-       determinista, así que el tablero respira y nunca dos casillas iguales,
-       pero es siempre el mismo: se dibuja una vez y queda cacheado.
-       Encima van las ondas concéntricas, que son lo que hace que el piso
-       parezca que se mueve aunque esté quieto. */
-    const late = rnd(x,y,3);
-    g.fillStyle = th.oscuro
-      ? (late > .5 ? "#FFFFFF0C" : "#00000022")
-      : (late > .5 ? "#FFFFFF3A" : "#0000001A");
-    g.fillRect(px, py, CS, CS);
-    const ox = px + CS*(.2 + rnd(x,y,7)*.6), oy = py + CS*(.2 + rnd(x,y,11)*.6);
-    g.strokeStyle = th.oscuro ? "#FFFFFF14" : "#00000012";
-    g.lineWidth = 1.3;
-    for(let k = 1; k <= 4; k++){
-      g.beginPath(); g.arc(ox, oy, k * CS * .17, 0, 7); g.stroke();
-    }
-    /* y el grano, que le saca lo digital */
-    for(let k = 0; k < 10; k++){
-      g.fillStyle = rnd(x,y,k+40) > .5 ? "#FFFFFF22" : "#00000018";
-      g.fillRect(px + rnd(x,y,k+50)*CS, py + rnd(x,y,k+60)*CS, 1.6, 1.6);
-    }
-  }else if(th.patron==="arena"){
+  if(JUEGO === 7){ pisoDelViaje(g, x, y, th, px, py); }
+  else if(th.patron==="arena"){
     /* Arena lisa: sólo el grano. Los surcos van en las paredes, que es donde
        el agua los deja de verdad; dibujados en el piso parecían un piso de
        tablas, porque lo que hace que algo se lea como madera es la línea larga
@@ -6537,45 +6956,29 @@ function drawVaso(g){
 /* LA MANTA. Es la planta: adonde te metés a que no te vean. Un bollo de tela
    en el piso, con los pliegues marcados —es lo que la hace manta y no mancha. */
 function drawManta(g){
-  g.fillStyle="#00000028";
-  g.beginPath(); g.ellipse(24,36,18,5,0,0,7); g.fill();
-  /* el bulto: un contorno irregular, que es lo que separa una manta tirada de
-     una alfombra. Con borde recto leía como felpudo. */
-  g.fillStyle="#7E4062";
-  g.beginPath();
-  g.moveTo(5,28);
-  g.bezierCurveTo(3,17, 13,10, 22,13);
-  g.bezierCurveTo(31,8, 44,14, 43,24);
-  g.bezierCurveTo(46,32, 38,39, 29,37);
-  g.bezierCurveTo(18,41, 6,37, 5,28);
-  g.closePath(); g.fill();
-  /* la parte de arriba del bulto, más clara: le da el volumen */
-  g.fillStyle="#A85C84";
-  g.beginPath();
-  g.moveTo(8,26);
-  g.bezierCurveTo(7,17, 15,13, 23,16);
-  g.bezierCurveTo(31,12, 40,17, 39,25);
-  g.bezierCurveTo(30,30, 17,31, 8,26);
-  g.closePath(); g.fill();
-  /* las arrugas, saliendo del bulto y no de lado a lado */
-  g.strokeStyle="#67304E"; g.lineWidth=1.6; g.lineCap="round";
-  g.beginPath(); g.moveTo(13,24); g.quadraticCurveTo(19,28, 17,34); g.stroke();
-  g.beginPath(); g.moveTo(24,26); g.quadraticCurveTo(27,31, 25,36); g.stroke();
-  g.beginPath(); g.moveTo(34,24); g.quadraticCurveTo(36,29, 33,34); g.stroke();
-  g.strokeStyle="#C98AA0"; g.lineWidth=1.2;
-  g.beginPath(); g.moveTo(12,20); g.quadraticCurveTo(23,17, 35,21); g.stroke();
-  /* y la punta doblada, arriba a la derecha: el detalle que la termina */
+  /* Doblada, no arrugada: el canto con las capas a la vista es lo único que
+     hace que se lea como manta desde arriba. Arrugada con fleco parecía un
+     bicho tirado en el piso, y nada puede sobresalir de la silueta. */
+  g.fillStyle="#00000028"; rr(g, 8, 34, 32, 7, 4); g.fill();
+  g.save(); g.translate(24, 24); g.rotate(-0.09); g.translate(-24, -24);
+  /* el cuerpo de la manta */
+  g.fillStyle="#7E4062"; rr(g, 7, 12, 34, 24, 4); g.fill();
+  g.fillStyle="#A85C84"; rr(g, 7, 12, 34, 19, 4); g.fill();
+  /* el canto: las tres capas del doblez, que es el detalle que la define */
+  g.fillStyle="#8A4A6E"; rr(g, 7, 27, 34, 4, 2); g.fill();
+  g.fillStyle="#C98AA0"; rr(g, 7, 26, 34, 1.6, .8); g.fill();
+  g.fillStyle="#8A4A6E"; rr(g, 7, 31, 34, 4, 2); g.fill();
+  g.fillStyle="#C98AA0"; rr(g, 7, 30, 34, 1.6, .8); g.fill();
+  /* dos pliegues blandos arriba */
+  g.strokeStyle="#8A4A6E"; g.lineWidth=1.6; g.lineCap="round";
+  g.beginPath(); g.moveTo(12, 17); g.quadraticCurveTo(24, 21, 36, 16); g.stroke();
+  g.beginPath(); g.moveTo(12, 22); g.quadraticCurveTo(24, 25, 36, 21); g.stroke();
+  /* y la punta dada vuelta, arriba a la derecha */
   g.fillStyle="#C98AA0";
-  g.beginPath(); g.moveTo(34,14); g.lineTo(43,17); g.lineTo(37,22); g.closePath(); g.fill();
-  g.fillStyle="#00000020";
-  g.beginPath(); g.moveTo(34,14); g.lineTo(37,22); g.lineTo(35,18); g.closePath(); g.fill();
-  /* el fleco, desparejo */
-  g.strokeStyle="#C98AA0"; g.lineWidth=1.4;
-  for(let k = 0; k < 8; k++){
-    const fx = 9 + k*4.2;
-    g.beginPath(); g.moveTo(fx, 34 + (k%2)*1.6);
-    g.lineTo(fx - 1 + (k%3), 39 + (k%2)*1.4); g.stroke();
-  }
+  g.beginPath(); g.moveTo(31, 12); g.lineTo(41, 12); g.lineTo(41, 21); g.closePath(); g.fill();
+  g.fillStyle="#00000018";
+  g.beginPath(); g.moveTo(31, 12); g.lineTo(41, 21); g.lineTo(36, 14); g.closePath(); g.fill();
+  g.restore();
 }
 
 /* EL OJO. Es la cámara: lo que te mira en línea recta. Pupila dilatada, que es
@@ -7642,7 +8045,7 @@ function drawBanio(g){
 
 function drawComplice(g,c){
   const quien = compOf(c.want);
-  const who = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[quien], quien))))), piece = PIE[c.want];
+  const who = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[quien], quien)))), quien), piece = PIE[c.want];
   const done = !!c.recibio;
   g.fillStyle="#00000030"; rr(g,9,34,30,6,3); g.fill();
   if(JUEGO === 7){
@@ -7721,11 +8124,29 @@ const PLAYEROS = {
    Como el traje del espacio, va puesto al mostrarlo y no se guarda. */
 /* En la ciudad van con mochila, que es con lo que corren en la tapa. Como el
    traje del espacio y el abrigo de la montaña: se pone al mostrarlo. */
-/* En el viaje todos andan con la manta encima: es lo que agarrás cuando te
-   agarra, y es la misma manta que en el tablero te esconde. */
-function deViaje(look){
+/* En el viaje cada uno tiene su pinta, y la pinta sale de la tapa del disco
+   de la banda: los cuatro sentados en el banco con rompevientos, camperas de
+   jean, gorrito de pescador y anteojos de sol. Antes acá iban los diez con la
+   misma manta encima y no se distinguía uno de otro.
+
+   Matxi, que protagoniza el lunes, va con camisa y corbata floja: es el mismo
+   remate que la alfombra de oficina de esa sala. El viaje termina y estás
+   vestido para trabajar. */
+const ROPA_7 = {
+  negro :"rompeviento",   // la birra: el rompeviento con la franja en diagonal
+  marian:"capucha",       // el fernet: buzo con capucha, puesta
+  kzk   :"anteojos",      // el porro: remera negra y anteojos de sol
+  damian:"camisa",        // el vino: camisa abierta sobre la remera
+  lamber:"jean",          // la merca: campera de jean
+  chupa :"rinionera",     // el MD: musculosa y la riñonera cruzada
+  tomy  :"poncho",        // los hongos: el poncho a franjas
+  hippie:"tiedye",        // el LSD: la campera teñida
+  chuna :"deportiva",     // la keta: campera deportiva con las franjas
+  matxi :"oficina",       // el lunes: camisa y corbata floja. El remate.
+};
+function deViaje(look, quien){
   if(JUEGO !== 7 || !look) return look;
-  return Object.assign({}, look, {viaje:true});
+  return Object.assign({}, look, {viaje: ROPA_7[quien] || "rompeviento"});
 }
 
 function deCiudad(look){
@@ -7789,22 +8210,7 @@ function drawPerson(g, look, bob, alpha){
     g.fillStyle = "#2E333C"; g.fillRect(-7.2, -2.4 + bob, 14.4, 2.2);
     g.fillStyle = "#D2A24C"; rr(g, -2.2, -3 + bob, 4.4, 3.4, .8); g.fill();
   }
-  if(look.viaje){
-    /* la manta sobre los hombros, caída de los dos lados. Es la misma que en
-       el tablero te esconde: acá la llevás puesta porque el que está volviendo
-       de un viaje siempre tiene una encima. */
-    g.fillStyle = "#8A4A6E";
-    g.beginPath();
-    g.moveTo(-10.5, -8.5 + bob);
-    g.lineTo(-5, -8.5 + bob); g.lineTo(-3.2, 6 + bob); g.lineTo(-10.5, 6 + bob);
-    g.closePath(); g.fill();
-    g.beginPath();
-    g.moveTo(10.5, -8.5 + bob);
-    g.lineTo(5, -8.5 + bob); g.lineTo(3.2, 6 + bob); g.lineTo(10.5, 6 + bob);
-    g.closePath(); g.fill();
-    g.fillStyle = "#A85C84"; g.fillRect(-10.5, -8.5 + bob, 19, 2.2);
-    g.fillStyle = "#00000020"; g.fillRect(-10.5, -6.3 + bob, 19, 1);
-  }
+  if(look.viaje) ropaDelViaje(g, look, bob);
   if(look.nieve){
     /* la campera acolchada: los canutos horizontales, que es lo que la hace
        campera de nieve y no remera. Van debajo del nombre. */
@@ -7848,6 +8254,7 @@ function drawPerson(g, look, bob, alpha){
   g.beginPath(); g.arc(-2.9,-14.8+bob,1.15,0,7); g.fill();
   g.beginPath(); g.arc(2.9,-14.8+bob,1.15,0,7); g.fill();
   if(look.nieve) ponerGorro(g, look, bob);
+  if(look.viaje) pintaDelViaje(g, look, bob);
   if(look.espacio) ponerCasco(g, look, bob);
   if(look.viste) vestirCabeza(g, look.viste, bob);
   g.globalAlpha=1;
@@ -8015,6 +8422,178 @@ function vestirCabeza(g, d, bob){
 /* El gorro de lana con su pompón, las antiparras en la frente y la bufanda.
    La cara queda a la vista: el gorro se apoya arriba y la bufanda abajo, que
    es justo donde no hay nada que tapar. */
+/* La prenda de cada uno, sobre el torso. Ojo con dos bandas: el nombre se
+   estampa a la altura -0.5 y la cara arranca en -6, así que todo lo que se
+   dibuje entre -2 y 2 le pasa por encima al nombre y no se lee ninguno de los
+   dos. Las prendas trabajan arriba (-8..-3) y abajo (3..7). */
+function ropaDelViaje(g, look, bob){
+  const R = look.viaje, y = bob;
+  if(R === "rompeviento"){
+    /* la franja en diagonal, que es lo que hace rompeviento a una campera */
+    g.fillStyle = "#E86A28"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#1E4A6E";
+    g.beginPath(); g.moveTo(-9.5, 3 + y); g.lineTo(9.5, -3 + y);
+    g.lineTo(9.5, 1 + y); g.lineTo(-9.5, 7 + y); g.closePath(); g.fill();
+    g.fillStyle = "#F4F1E8";
+    g.beginPath(); g.moveTo(-9.5, 4.4 + y); g.lineTo(9.5, -1.6 + y);
+    g.lineTo(9.5, -0.4 + y); g.lineTo(-9.5, 5.6 + y); g.closePath(); g.fill();
+    g.fillStyle = "#00000026"; rr(g, -9.5, -8 + y, 19, 3.4, 4); g.fill();
+    return;
+  }
+  if(R === "capucha"){
+    /* el buzo: el cordón y el bolsillo canguro */
+    g.fillStyle = "#3E5A8A"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#00000026"; rr(g, -9.5, -8 + y, 19, 3.4, 4); g.fill();
+    g.fillStyle = "#E8E4DA";                                  // el cordón
+    g.fillRect(-3.4, -5 + y, 1.2, 4); g.fillRect(2.2, -5 + y, 1.2, 4);
+    g.fillStyle = "#2E4670"; rr(g, -7, 3.6 + y, 14, 3.4, 1.5); g.fill();
+    g.fillStyle = "#00000022"; g.fillRect(-7, 3.6 + y, 14, 1);
+    return;
+  }
+  if(R === "anteojos"){
+    /* remera negra lisa: la pinta se la dan los anteojos, que van en la cara */
+    g.fillStyle = "#1E1E24"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#FFFFFF14"; rr(g, -9.5, -8 + y, 19, 3.4, 4); g.fill();
+    g.fillStyle = "#4FA85F";                                  // una estampa chica
+    g.beginPath(); g.arc(0, 5 + y, 2.2, 0, 7); g.fill();
+    return;
+  }
+  if(R === "camisa"){
+    /* la camisa abierta: se ve la remera en el medio y las dos alas al costado */
+    g.fillStyle = look.shirt; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#7E3A4E";
+    g.beginPath(); g.moveTo(-9.5, -8 + y); g.lineTo(-3.4, -8 + y);
+    g.lineTo(-4.6, 7 + y); g.lineTo(-9.5, 7 + y); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(9.5, -8 + y); g.lineTo(3.4, -8 + y);
+    g.lineTo(4.6, 7 + y); g.lineTo(9.5, 7 + y); g.closePath(); g.fill();
+    g.fillStyle = "#93485E";                                  // el cuello, abierto
+    g.beginPath(); g.moveTo(-5.4, -8 + y); g.lineTo(-1.4, -8 + y);
+    g.lineTo(-4.4, -4 + y); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(5.4, -8 + y); g.lineTo(1.4, -8 + y);
+    g.lineTo(4.4, -4 + y); g.closePath(); g.fill();
+    return;
+  }
+  if(R === "jean"){
+    /* la campera de jean: el cuello, la costura del medio y los dos bolsillos */
+    g.fillStyle = "#4E6E9E"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#3E5A84"; rr(g, -9.5, -8 + y, 19, 3.8, 4); g.fill();
+    g.fillStyle = "#6E8EBE"; g.fillRect(-9.5, -4.6 + y, 19, .9);  // la costura
+    g.fillStyle = "#3E5A84";                                       // los bolsillos
+    rr(g, -7.4, 3.4 + y, 5.4, 3.6, 1); g.fill(); rr(g, 2, 3.4 + y, 5.4, 3.6, 1); g.fill();
+    g.fillStyle = "#8EA8CE"; g.fillRect(-7.4, 3.4 + y, 5.4, .8); g.fillRect(2, 3.4 + y, 5.4, .8);
+    g.fillStyle = "#E8C878"; g.fillRect(-.6, -7 + y, 1.2, 13);      // el cierre
+    return;
+  }
+  if(R === "rinionera"){
+    /* musculosa y la riñonera cruzada al pecho */
+    g.fillStyle = "#E8E4DA"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#00000014"; rr(g, -9.5, -8 + y, 19, 3.4, 4); g.fill();
+    const piel = look.skin || "#EFC08C";
+    g.fillStyle = piel;                                            // los hombros al aire
+    g.fillRect(-9.5, -8 + y, 3.2, 7); g.fillRect(6.3, -8 + y, 3.2, 7);
+    g.fillStyle = "#2E333C";                                       // la cinta, en diagonal
+    g.beginPath(); g.moveTo(-6.4, -8 + y); g.lineTo(-3.4, -8 + y);
+    g.lineTo(7.4, 5 + y); g.lineTo(4.4, 5 + y); g.closePath(); g.fill();
+    g.fillStyle = "#4FA85F"; rr(g, 3.6, 4 + y, 6, 3.6, 1.2); g.fill();
+    return;
+  }
+  if(R === "poncho"){
+    /* el poncho: franjas horizontales y el escote en V */
+    g.fillStyle = "#8A4A2E"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    const FR = ["#E8A33C","#C7563F","#4FA85F"];
+    for(let k = 0; k < 3; k++){
+      g.fillStyle = FR[k];
+      g.fillRect(-9.5, -7 + y + k*2.2, 19, 1.4);
+      g.fillRect(-9.5, 3.2 + y + k*1.4, 19, .9);
+    }
+    g.fillStyle = "#5A2E1C";                                       // el escote
+    g.beginPath(); g.moveTo(-3.4, -8 + y); g.lineTo(3.4, -8 + y);
+    g.lineTo(0, -3.4 + y); g.closePath(); g.fill();
+    return;
+  }
+  if(R === "tiedye"){
+    /* la campera teñida: manchones de colores que se pisan */
+    g.fillStyle = "#F4F1E8"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.save();
+    g.beginPath(); rr(g, -9.5, -8 + y, 19, 15, 5); g.clip();
+    const T = ["#FF7FD0","#F2C14E","#6FCB8A","#5FD8E8","#B98CFF"];
+    T.forEach((c, k) => {
+      g.fillStyle = c + "CC";
+      g.beginPath();
+      g.ellipse(-7 + k*3.6, (k % 2 ? -6 : 5) + y, 5.4, 4.2, k * .7, 0, 7);
+      g.fill();
+    });
+    g.restore();
+    g.fillStyle = "#00000022"; rr(g, -9.5, -8 + y, 19, 2.6, 4); g.fill();
+    return;
+  }
+  if(R === "deportiva"){
+    /* la campera deportiva: las dos franjas por la manga y el cuello alto */
+    g.fillStyle = "#22242A"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+    g.fillStyle = "#E0433A";
+    g.fillRect(-9.5, -7 + y, 2.2, 13); g.fillRect(7.3, -7 + y, 2.2, 13);
+    g.fillStyle = "#F4F1E8";
+    g.fillRect(-6.8, -7 + y, 1.1, 13); g.fillRect(5.7, -7 + y, 1.1, 13);
+    g.fillStyle = "#3A3E46"; rr(g, -5, -8.6 + y, 10, 3, 1.4); g.fill();  // el cuello
+    g.fillStyle = "#C2CBD0"; g.fillRect(-.5, -6 + y, 1, 4);              // el cierre
+    return;
+  }
+  /* el lunes: camisa celeste y la corbata floja. El remate de la edición. */
+  g.fillStyle = "#C8DCEA"; rr(g, -9.5, -8 + y, 19, 15, 5); g.fill();
+  g.fillStyle = "#A8C4D8"; rr(g, -9.5, -8 + y, 19, 3.4, 4); g.fill();
+  g.fillStyle = "#F4F1E8";                                             // el cuello
+  g.beginPath(); g.moveTo(-4.4, -8 + y); g.lineTo(0, -8 + y);
+  g.lineTo(-1.4, -4 + y); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(4.4, -8 + y); g.lineTo(0, -8 + y);
+  g.lineTo(1.4, -4 + y); g.closePath(); g.fill();
+  g.fillStyle = "#8A2E4A";                                             // la corbata, floja
+  g.beginPath(); g.moveTo(-1.6, -5.4 + y); g.lineTo(1.6, -5.4 + y);
+  g.lineTo(2.4, -3.4 + y); g.lineTo(-.8, -3.4 + y); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(-.8, -3.4 + y); g.lineTo(2.4, -3.4 + y);
+  g.lineTo(3.4, 6 + y); g.lineTo(1.4, 7 + y); g.closePath(); g.fill();
+  g.fillStyle = "#00000022"; g.fillRect(-.6, -7 + y, 1.2, 1.6);
+}
+
+/* Lo que va en la cabeza, después del pelo: los anteojos de sol, la capucha y
+   el gorrito de pescador. La cara es un círculo de radio 8 con el centro en
+   (0, -14.5+bob) y los ojos a la altura -14.8, así que los anteojos van justo
+   ahí y la capucha por detrás, a -15. */
+function pintaDelViaje(g, look, bob){
+  const R = look.viaje, cy = -14.5 + bob;
+  if(R === "anteojos" || R === "tiedye"){
+    g.fillStyle = "#1E1E24";
+    rr(g, -7.4, cy - 2.4, 14.8, 4.4, 1.4); g.fill();
+    g.fillStyle = R === "tiedye" ? "#FF7FD0" : "#4FA8C8";
+    rr(g, -6.6, cy - 1.8, 5.6, 2.8, 1); g.fill();
+    g.fillStyle = R === "tiedye" ? "#F2C14E" : "#2C6B88";
+    rr(g, 1, cy - 1.8, 5.6, 2.8, 1); g.fill();
+    g.fillStyle = "#1E1E24"; g.fillRect(-1.2, cy - 1.4, 2.4, 1.2);
+    return;
+  }
+  if(R === "capucha"){
+    /* la capucha puesta: el óvalo por detrás de la cara y el borde */
+    g.fillStyle = "#2E4670";
+    g.beginPath(); g.ellipse(0, cy - 1, 10.6, 10, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#3E5A8A";
+    g.beginPath(); g.ellipse(0, cy - 1, 10.6, 10, 0, Math.PI * 1.08, Math.PI * 1.92); g.fill();
+    g.fillStyle = "#2E4670"; rr(g, -10.6, cy + 4, 21.2, 3, 1.5); g.fill();
+    return;
+  }
+  if(R === "deportiva"){
+    /* el gorrito de pescador */
+    g.fillStyle = "#3A3E46";
+    rr(g, -10.4, cy - 4.6, 20.8, 3.4, 1.6); g.fill();
+    g.beginPath(); g.ellipse(0, cy - 4.4, 7.4, 5.2, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#E0433A"; g.fillRect(-7.4, cy - 5.4, 14.8, 1.2);
+    return;
+  }
+  if(R === "poncho"){
+    /* la vincha */
+    g.fillStyle = "#C7563F"; rr(g, -8.2, cy - 5.4, 16.4, 2.6, 1.2); g.fill();
+    g.fillStyle = "#E8A33C"; g.fillRect(-8.2, cy - 4.6, 16.4, .9);
+  }
+}
+
 function ponerGorro(g, look, bob){
   const y = -14.5 + bob;
   const lana = look.shirt || "#D4534A";
@@ -8980,7 +9559,7 @@ function dibujarCara(el, heroKey, disfrazId){
   g.scale(1.35,1.35);
   /* disfrazId === undefined: el que lleve puesto. "" : sin disfraz, para
      mostrar al personaje como es. Un id: ese, para la vidriera del ropero. */
-  let look = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey)))));
+  let look = deViaje(deCiudad(deMontania(deEspacio(deVacaciones(CREW[heroKey], heroKey)))), heroKey);
   if(disfrazId === undefined) look = conDisfraz(look);
   else if(disfrazId && DISFRACES[disfrazId]){
     const d = DISFRACES[disfrazId];
@@ -9024,7 +9603,15 @@ function temaDeSala(sala){
      tienen color propio y el acento de la sala los desfigura —la vereda
      salía verde en Plaza Lavalle—. Los pisos genéricos (gris, madera,
      alfombra) sí se tiñen: ahí el tinte ES la identidad de la sala. */
-  const propio = arena || ["rejilla","nieve","vereda"].indexOf(base.patron) >= 0;
+  /* Quinta vez que aparece esto, y ahora son diez de una: los pisos del viaje
+     tienen cada uno su color y su patrón —la espuma de la birra, el humo del
+     porro, la alfombra del lunes— y el acento al 24% los dejaba a los diez
+     del mismo tono. El color de la sala vive en el borde de la tarjeta, el
+     número y las bolitas. */
+  const delViaje = ["birra","fernet","porro","vino","merca","md","hongos",
+                    "lsd","keta","lunes"].indexOf(base.patron) >= 0;
+  const propio = arena || delViaje ||
+                 ["rejilla","nieve","vereda"].indexOf(base.patron) >= 0;
   const kPiso  = propio ? 0.05 : (oscuro ? 0.13 : 0.24);
   const kLuz   = arena ? 0.12 : (oscuro ? 0.30 : 0.45);
   const kPared = arena ? 0.04 : (oscuro ? 0.05 : 0.09);
@@ -10156,7 +10743,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "90ffdd9846";
+const VERSION = "ca8d4581fc";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
