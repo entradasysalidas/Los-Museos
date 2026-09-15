@@ -264,9 +264,13 @@
   .ojo .ic{font-size:21px;line-height:1;flex:none;width:26px;text-align:center;color:var(--brass)}
   .ojo.rush .ic{color:var(--alarm)}
   .ojo .t{min-width:0}
-  .ojo .l{font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
+  /* Los dos van en renglones propios. Eran spans inline, asi que el
+     margin-top del valor no hacia nada y el rotulo quedaba pegado al texto:
+     «SU PROXIMA ACCIONVa al sillon del celular». Se notaba poco con un
+     nombre corto y mucho con los dos de Sin filtro. */
+  .ojo .l{display:block;font:500 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim)}
-  .ojo .n{font:700 13.5px/1.25 "Archivo",sans-serif;color:var(--ink);margin-top:4px}
+  .ojo .n{display:block;font:700 13.5px/1.25 "Archivo",sans-serif;color:var(--ink);margin-top:4px}
   .goal .val{font:400 23px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
     margin-top:6px;letter-spacing:-.02em}
   .goal.listo{border-color:var(--patina)} .goal.listo .val{color:var(--patina)}
@@ -1837,7 +1841,47 @@ function objetoDe(id){
   return Object.assign({}, o, {n:n, d:d, aviso:aviso}, piel || {});
 }
 
+/* ---------- las habilidades de Total disociación ----------
+   En el viaje los nueve tienen habilidad nueva, así que las de siempre no
+   corren. Todo el código que preguntaba `S.heroKey==="X"` pregunta ahora
+   `clasico("X")`, que es falso acá; las nuevas se preguntan con
+   `viaje("nombre")`. Nunca hay dos activas a la vez.
+
+   Cada una toca un resorte distinto del motor y ninguna repite el de otra:
+   la alerta, el mazo, el dibujo del alcance, las tres capturas, los pasos,
+   los objetos gastados, el vaso de la mochila, lo que da cada amigo, la
+   posición propia y el turno del que te persigue. */
+const HABILIDAD_7 = {
+  negro :"aguante",      // la birra: la primera vez que se acaba el mazo, la alerta no sube
+  marian:"sinFiltro",    // el fernet: ves las dos próximas cartas
+  kzk   :"paranoia",     // el porro: ves hasta dónde llegaría en la ronda siguiente
+  damian:"todaviaPuedo", // el vino: aguantás cuatro capturas en vez de tres
+  lamber:"manija",       // la merca: un paso más por ronda mientras no uses objetos
+  chupa :"abrazo",       // el MD: cada entrega te devuelve un objeto ya usado
+  tomy  :"vasoLleno",    // los hongos: arrancás con un vaso y no se gasta
+  hippie:"vesElPatron",  // el LSD: sabés qué objeto te va a dar cada amigo
+  chuna :"hueco",        // la keta: una vez por partida te metés en un remolino
+  matxi :"despertador",  // el lunes: una vez por partida, El Lunes no camina
+};
+const PODERES_7 = {
+  negro :{n:"Aguante",       d:"La primera vez que se le acaba el mazo, la alerta no sube."},
+  marian:{n:"Sin filtro",    d:"Ves las <b>dos</b> próximas acciones, no una."},
+  kzk   :{n:"Paranoia útil", d:"Ves marcado hasta dónde podría llegar en la ronda que viene, no sólo en ésta."},
+  damian:{n:"Todavía puedo", d:"Aguantás cuatro cosas perdidas en vez de tres antes de caer."},
+  lamber:{n:"Manija",        d:"Un paso más por ronda, mientras no uses ningún objeto."},
+  chupa :{n:"Abrazo de vuelta", d:"Cada vez que entregás algo, se te renueva un objeto ya usado."},
+  tomy  :{n:"El vaso que no se vacía", d:"Arrancás con un vaso de agua en la mochila y no se gasta nunca."},
+  hippie:{n:"Ves el patrón", d:"Sabés qué objeto te va a dar cada amigo antes de entregarle."},
+  chuna :{n:"El hueco",      d:"Con F, una vez por partida, te metés en un remolino y salís por el que tiene lo que te falta más lejos."},
+  matxi :{n:"Despertador",   d:"Con F, una vez por partida, El Lunes no camina esa ronda."},
+};
+/* «¿corre todavía la habilidad de siempre de este personaje?» */
+function clasico(quien){ return !!S && JUEGO !== 7 && S.heroKey === quien; }
+/* «¿el que juega tiene esta habilidad del viaje?» */
+function viaje(hab){ return !!S && JUEGO === 7 && HABILIDAD_7[S.heroKey] === hab; }
+
 function poderDe(quien){
+  if(JUEGO === 7 && PODERES_7[quien]) return PODERES_7[quien];
   const p = POWERS[quien];
   if(!p) return p;
   const d = enJerga(p.d);
@@ -2220,18 +2264,22 @@ function newGame(salaKey){
     deck:shuffle(DECK.slice()), played:[], lastCard:null, cartaVista:null, peek:null,
     round:1, mp:TUNE.steps, matesTurn:0, drunk:new Set(),
     diagonal:false, powerUsed:false, freeCatch:false, awaitMate:false,
+    aguanta:3, aguantoYa:false, dormido:false, peek2:null,
     over:null, busy:false, phase:"vos", cardPending:false, log:[],
   };
 
-  if(sala.hero==="damian"){
+  if(sala.hero==="damian" && JUEGO !== 7){
     const d=bfsFrom(S.home);
     const v=S.marks.vitrinas.slice().sort((a,b2)=>d[key(a.x,a.y)]-d[key(b2.x,b2.y)])[0];
     if(v) takePiece(S.grid[v.y][v.x], true);
   }
-  if(sala.hero==="chupa") S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
-  if(sala.hero==="tomy")  S.objects.push("mate1");   // el termo va con él
-  if(sala.hero==="negro") S.objects.push("fernet");  // nunca anda sin uno
-  if(sala.hero==="matxi") S.freeCatch = true;
+  if(sala.hero==="chupa" && JUEGO !== 7) S.objects.push(shuffle(Object.keys(OBJECTS))[0]);
+  /* Tomy lleva el suyo en las dos: en el museo es el termo y en el viaje es el
+     vaso que no se vacía, que además no se gasta (ver useObject). */
+  if(sala.hero==="tomy")  S.objects.push("mate1");
+  if(sala.hero==="negro" && JUEGO !== 7) S.objects.push("fernet");  // nunca anda sin uno
+  if(sala.hero==="matxi" && JUEGO !== 7) S.freeCatch = true;
+  if(JUEGO === 7 && sala.hero === "damian") S.aguanta = 4;   // Todavía puedo
 
   fx.floats.length=0; fx.shake=0; fx.banner=null;
   if(typeof limpiarRelato==="function") limpiarRelato();
@@ -3901,16 +3949,16 @@ const SALAS_7 = {
 /* Un consejo por sala: la mitad del viaje que te toca y la otra del poder
    del que la protagoniza. */
 const CONSEJOS_7 = {
-  t0:"El Mareo camina y nada más, así que es el lugar para agarrarle la mano. Arrancás con <b>aire</b> en la mochila: tocalo y ese turno te movés también en diagonal. Y el <b>vaso de agua</b> del piso te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>.",
-  t1:"Cada remolino que abrís hace avanzar a La Lengua Trabada al instante, así que no abras de gusto. Ves su próxima acción antes de moverte: usalo para no abrir justo cuando te conviene estar quieto.",
-  t2:"La Paranoia aparece de cualquier lado y nunca de donde la esperabas: no hay ruta segura, hay que mirarla cada ronda. Con <b>F</b>, una vez por partida, traés lo que quedó más lejos al remolino vacío más cercano.",
-  t3:"El Sueño no tiene trucos, pero no te suelta: no hay vuelta que dar, hay que ser más rápido. Arrancás con una de tus cosas ya en la mano, así que la primera entrega la hacés sin abrir nada.",
-  t4:"El Que No Para anota cada objeto ruidoso que usás y al segundo se acelera: guardalos para la corrida final a la cama. Con <b>F</b> cualquier amigo te acepta cualquier cosa, y te la acepta desde el sillón de al lado.",
-  t5:"El Abrazo te va a deshacer una entrega: te abraza y tu cosa vuelve a un remolino. Al reentregarla tu amigo te convida de nuevo, así que no es sólo pérdida. Empezás con un objeto extra, que es justo lo que hace falta cuando algo se deshace.",
-  t6:"El Bosque acomoda todo cada vez que pasa por un sillón: dos de tus cosas cambian de remolino y la ruta que armaste puede dejar de servir. Arrancás con un vaso de agua en la mochila y los del piso los podés repetir.",
-  t7:"El Patrón te encuentra la mirada en línea recta y gira un cuarto de vuelta por ronda: no termines el turno en su línea aunque haya algo en el medio, porque el vidrio te corta el paso pero no te tapa. Tu poder te esconde también en la casilla de al lado de una manta, y escondido no te agarra ni «¡Se acerca!».",
-  t8:"El Agujero te encuentra igual: acá la manta deja de esconderte, y de acá hasta el final no vuelve a servir. Con <b>F</b> estirás las piernas: cuatro casilleros en vez de dos, una vez por partida, que es lo único que te queda cuando esconderse no es una opción.",
-  t9:"El Lunes te encuentra igual: la manta no te esconde acá, y no hay nada que puedas hacer para que no te vea. La primera vez que te agarre no te saca nada, y ése es todo el margen que tenés.",
+  t0:"El Mareo camina y nada más, así que es el lugar para agarrarle la mano. El <b>vaso de agua</b> del piso te devuelve los pasos que ya diste: parado encima, con <b>Espacio</b>. Y la primera vez que se le acabe el mazo la alerta no sube, así que la primera mitad de la partida es tuya.",
+  t1:"Cada remolino que abrís hace avanzar a La Lengua Trabada al instante, así que no abras de gusto. Y ves <b>las dos próximas acciones</b>: con eso se elige el turno en que conviene abrir, que es todo lo que hay que decidir acá.",
+  t2:"La Paranoia aparece de cualquier lado y nunca de donde la esperabas, así que no hay ruta segura. Lo que tenés es que ves pintado, más tenue, <b>hasta dónde podría llegar en la ronda que viene</b>: no te metas ahí aunque hoy esté lejos.",
+  t3:"El Sueño no tiene trucos, pero no te suelta: no hay vuelta que dar, hay que ser más rápido. A vos te alcanza para perder <b>cuatro</b> cosas antes de caer en vez de tres, así que podés arriesgar un cruce que en cualquier otra sala no se hace.",
+  t4:"El Que No Para anota cada objeto ruidoso que usás y al segundo se acelera. Y mientras no uses <b>ningún</b> objeto caminás un casillero más por ronda: el primero que toques te corta eso para lo que queda de partida. Ésa es toda la sala.",
+  t5:"El Abrazo te va a deshacer una entrega: te abraza y tu cosa vuelve a un remolino. No es sólo pérdida, porque cada entrega te renueva un objeto que ya habías gastado: reentregar te devuelve dos cosas, no una.",
+  t6:"El Bosque acomoda todo cada vez que pasa por un sillón: dos de tus cosas cambian de remolino y la ruta que armaste puede dejar de servir. Arrancás con un vaso de agua en la mochila y <b>no se gasta</b>, así que los pasos nunca son el problema; el problema es la ruta.",
+  t7:"El Patrón te encuentra la mirada en línea recta y gira un cuarto de vuelta por ronda: no termines el turno en su línea aunque haya algo en el medio, porque el vidrio te corta el paso pero no te tapa. A cambio sabés <b>qué objeto te va a dar cada amigo</b>: elegí el orden de las entregas por eso.",
+  t8:"El Agujero te encuentra igual: acá la manta deja de esconderte, y de acá hasta el final no vuelve a servir. Con <b>F</b>, una vez por partida, te metés en un remolino y salís por el que tiene lo que te falta más lejos. Guardalo para cuando quede una sola y esté del otro lado.",
+  t9:"El Lunes te encuentra igual y no hay nada que puedas hacer para que no te vea. Una sola cosa: con <b>F</b>, una vez por partida, se queda dormido y esa ronda no camina —la carta la da vuelta igual—. Ése es todo el margen que tenés, así que no lo gastes temprano.",
 };
 
 const DECK_7 = [
@@ -4050,6 +4098,15 @@ function deliver(c, id){
   if(obj) S.objects.push(obj);
   float(c.x!==undefined?c.x:S.player.x, S.player.y, "✓ "+CREW[compOf(c.want)].n, "#79AE9E");
   say(`🤝 Le pasaste ${PIE[id].sym} <b>${PIE[id].name}</b> a ${CREW[compOf(c.want)].n}. Te dio: <b>${objetoDe(obj).n}</b>.`,"g");
+  /* Abrazo de vuelta (Chupa, el MD): además de lo que te da el amigo, se te
+     renueva un objeto que ya habías gastado. En la sala del Abrazo, que te
+     deshace una entrega, es lo que hace que reentregar no sea sólo pérdida. */
+  if(viaje("abrazo") && S.objUsed.length){
+    const i = S.objUsed.shift();
+    const q = objetoDe(S.objects[i]);
+    float(S.player.x, S.player.y, "↺ " + q.ic, "#FF9E7A");
+    say(`🫂 <b>Abrazo de vuelta</b>: se te renovó <b>${q.n}</b>.`,"g");
+  }
   if(S.delivered.length===3) say("Las tres piezas están afuera. <b>Corré a la salida.</b>","g");
 }
 
@@ -4110,7 +4167,7 @@ function aQuienLlevar(id){
    algo en diecinueve de veinte. Además te deja entregar sin pisar la casilla,
    que cuando el jefe está al lado no es poco. */
 function complicesAlAlcance(){
-  if(!S || S.heroKey!=="lamber" || !S.hand.length) return [];
+  if(!clasico("lamber") || !S.hand.length) return [];
   const px=S.player.x, py=S.player.y, sirve=[];
   const mirar=(x,y)=>{
     const c = S.grid[y] && S.grid[y][x];
@@ -4148,7 +4205,7 @@ function canDrinkHere(){
   if(c.type!=="mate") return false;
   if(S.matesTurn>=TUNE.matesPerTurn) return false;
   if(S.mp>=TUNE.steps) return false;          // no hay pasos que recuperar: seria tirarlo
-  return !S.drunk.has(key(S.player.x,S.player.y)) || S.heroKey==="tomy";
+  return !S.drunk.has(key(S.player.x,S.player.y)) || clasico("tomy");
 }
 
 /* por que no podes tomar el mate que tenes debajo */
@@ -4184,7 +4241,7 @@ function endMovement(){
   if(S.over) return;
   const c=S.grid[S.player.y][S.player.x];
   const hidden = S.foe.twist!=="olfato" && (c.type==="planta" ||
-    (S.heroKey==="hippie" && DIRS.some(([dx,dy])=>{
+    (clasico("hippie") && DIRS.some(([dx,dy])=>{
       const x=S.player.x+dx, y=S.player.y+dy, n=cellAt(x,y);
       return n && n.type==="planta" && canStep(S.player.x,S.player.y,x,y);   // no a través de una pared
     })));
@@ -4198,7 +4255,7 @@ function endMovement(){
     say("📹 Te agarró la cámara: esta ronda avanza <b>un casillero más</b>.","r");
   }
   S.escondido = hidden;
-  if(hidden) say(S.heroKey === "hippie"
+  if(hidden) say(clasico("hippie")
     ? "🪴 Terminaste el turno escondido: no te persigue, y a vos <b>ni ¡Se acerca!</b> te encuentra."
     : "🪴 Terminaste el turno escondido: no te persigue… salvo que saque <b>¡Se acerca!</b>.","g");
   else if(S.foe.twist==="olfato" && c.type==="planta")
@@ -4319,8 +4376,17 @@ function enLineaRecta(){
 function chasePhase(hidden){
   if(S.over) return;
   S.phase="persecucion";
+  /* El despertador de Matxi: esta ronda no camina. La carta la da vuelta
+     igual, que es lo que manda el manual. */
+  if(S.dormido){
+    S.dormido = false;
+    banner("Se quedó dormido: esta ronda no camina", "#79AE9E");
+    say("⏰ No caminó: sigue dormido. Le queda la carta.","g");
+    syncUI();
+    return luego(actionPhase, 900);
+  }
   if(hidden){
-    banner(S.heroKey === "hippie"
+    banner(clasico("hippie")
       ? "Escondido: no te persigue, ni con ¡Se acerca!"
       : "Escondido: no te persigue… salvo que saque ¡Se acerca!", "#79AE9E");
     syncUI();
@@ -4443,6 +4509,15 @@ function refillDeck(){
     S.celular = null;
     say("📱 Con la alerta al máximo ya no le importa el celular: lo dejó sonando.","r");
   }
+  /* Aguante (El Negro, la birra): la primera vez le aguantás el tirón. Frena
+     acá y no en la captura porque la captura no sube la alerta: la suben el
+     mazo, el temporizador y el que anota. */
+  if(viaje("aguante") && !S.aguantoYa){
+    S.aguantoYa = true;
+    banner("Aguante: la alerta no sube", "#79AE9E");
+    say("🍺 <b>Aguante</b>: se le acabó el mazo y te la aguantaste. La alerta no sube… esta vez.","g");
+    return;
+  }
   if(S.alert < TUNE.alertMax){
     S.alert++;
     fx.shake=TUNE.shakeMs;
@@ -4555,7 +4630,7 @@ function rushSteps(n){
   /* El Hippie es el único que se salva de ésta. Su poder es esconderse: una
      carta que ignora los escondites lo dejaba sin poder justo cuando hace
      falta. Cuesta 3 puntos de dificultad en su nivel, medidos. */
-  if(S.escondido && S.heroKey === "hippie"){
+  if(S.escondido && clasico("hippie")){
     banner("Buena onda: la planta lo tapa hasta de ésta","#79AE9E");
     say("🪴 <b>Buena onda</b>: viene derecho, pasa al lado y no te ve.","g");
     syncUI();
@@ -4604,6 +4679,10 @@ function nextRound(){
     }
   }
   S.mp = TUNE.steps - (S.resbalon || 0);   // la cáscara de la ronda pasada
+  /* Manija (Lamber, la merca): un paso más por ronda mientras no hayas usado
+     ningún objeto. El primero que uses la corta para lo que queda de partida,
+     que es justo la decisión que propone la sala. */
+  if(viaje("manija") && !S.objUsed.length) S.mp++;
   S.resbalon = 0;
   S.matesTurn=0; S.drunk.clear();
   S.diagonal=false; S.busy=false; S.awaitMate=false; S.phase="vos";
@@ -4641,7 +4720,12 @@ function losePiece(id){
   }
   if(pick){ S.grid[pick.y][pick.x].alarm=0; S.grid[pick.y][pick.x].piece=id; }
   say(enJerga(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a su vitrina y los dos vuelven a sus puestos.`),"r");
-  if(S.taken>=3) return gameLose(`${S.foe.n} te recuperó las tres piezas.`);
+  /* Todavía puedo (Damián, el vino): una más. Es el único resorte del juego
+     que ningún otro poder toca. */
+  const tope = S.aguanta || 3;
+  if(S.taken>=tope) return gameLose(enJerga(`${S.foe.n} te recuperó las ${tope===3 ? "tres" : "cuatro"} piezas.`));
+  if(tope > 3 && S.taken === 3)
+    say("🍷 <b>Todavía puedo</b>: con tres perdidas cualquiera se iba. Te queda una.","y");
   resetPositions();
 }
 
@@ -4748,8 +4832,12 @@ function useObject(i){
   const id=S.objects[i];
   const noSePuede = porQueNoEsteObjeto(id);
   if(noSePuede){ banner(noSePuede,"#E0685D"); say("🚫 "+noSePuede,"r"); return; }
-  S.objUsed.push(i);
+  /* El vaso que no se vacía (Tomy, los hongos): el de la mochila no se gasta.
+     El tope de tres por turno sigue corriendo, así que no se descontrola. */
+  const noSeGasta = viaje("vasoLleno") && (id === "mate1" || id === "mate2");
+  if(!noSeGasta) S.objUsed.push(i);
   if(id==="mate1"||id==="mate2"){
+    if(noSeGasta) say("💧 <b>El vaso que no se vacía</b>: te queda para la próxima.","g");
     S.matesTurn++; S.mp=TUNE.steps; S.awaitMate=false;
     if(S.diagonal){ S.diagonal=false; say("🥃 Con el mate se te fue el efecto del fernet.","r"); }
     say(enJerga(`🧉 Mate de la mochila: recuperaste los pasos. Te quedan <b>${S.mp}</b>.`),"g");
@@ -4802,20 +4890,73 @@ function useObject(i){
    no hay tecla: sin un botón quedaban sencillamente inalcanzables, y son el
    poder entero de Lamber, Kzk y Chuna. */
 const PODERES_A_MANO = ["chuna", "kzk", "lamber"];
-function poderSeActiva(){ return !!S && PODERES_A_MANO.includes(S.heroKey); }
+/* En el viaje las que se activan a mano son otras dos: el hueco de Chuna y el
+   despertador de Matxi. */
+const A_MANO_7 = ["chuna", "matxi"];
+function poderSeActiva(){
+  if(!S) return false;
+  return (JUEGO === 7 ? A_MANO_7 : PODERES_A_MANO).includes(S.heroKey);
+}
 function puedePoder(){
   if(!S || S.over || S.busy) return false;
-  if(S.heroKey === "chuna")  return puedeCorrer();
-  if(S.heroKey === "kzk")    return !!puedeMudarPieza();
-  if(S.heroKey === "lamber") return canOfferHere();
+  if(viaje("hueco"))       return !!puedeElHueco();
+  if(viaje("despertador")) return puedeDespertador();
+  if(clasico("chuna"))  return puedeCorrer();
+  if(clasico("kzk"))    return !!puedeMudarPieza();
+  if(clasico("lamber")) return canOfferHere();
   return false;
 }
 
 function usarPoder(){
   if(!S || S.over) return;
-  if(S.heroKey === "chuna")  return correr();
-  if(S.heroKey === "kzk")    return fixVitrina();
-  if(S.heroKey === "lamber") return offerDelivery();
+  if(viaje("hueco"))       return meterseEnElHueco();
+  if(viaje("despertador")) return tocarElDespertador();
+  if(clasico("chuna"))  return correr();
+  if(clasico("kzk"))    return fixVitrina();
+  if(clasico("lamber")) return offerDelivery();
+}
+
+/* El hueco (Chuna, la keta): te metés en un remolino y salís por el que tiene
+   lo que te falta más lejos, que es el que de otro modo te iba a costar media
+   partida caminar. Si ya no queda nada expuesto, te deja en el remolino más
+   cerca de la cama. Una vez por partida. */
+function puedeElHueco(){
+  if(!S || S.powerUsed || S.over || S.busy || !S.mp) return null;
+  const d = bfsFrom({x:S.player.x, y:S.player.y});
+  const dist = v => { const n = d[key(v.x,v.y)]; return n < 0 ? -1 : n; };
+  const llenas = S.marks.vitrinas.filter(v => S.grid[v.y][v.x].piece && dist(v) > 1);
+  if(llenas.length) return llenas.slice().sort((a,b)=>dist(b)-dist(a))[0];
+  const dExit = bfsFrom(S.exit);
+  const cerca = S.marks.vitrinas.filter(v => dist(v) > 1)
+                  .sort((a,b)=> (dExit[key(a.x,a.y)] < 0 ? 1e9 : dExit[key(a.x,a.y)]) -
+                                (dExit[key(b.x,b.y)] < 0 ? 1e9 : dExit[key(b.x,b.y)]))[0];
+  return cerca || null;
+}
+function meterseEnElHueco(){
+  const v = puedeElHueco();
+  if(!v) return;
+  S.powerUsed = true;
+  S.player.x = v.x; S.player.y = v.y;
+  float(v.x, v.y, "🕳️", acentoSala());
+  say("🕳️ <b>El hueco</b>: entraste por un remolino y saliste por otro.","g");
+  S.busy = true; return luego(endMovement, TUNE.moveMs + 110);
+}
+
+/* El despertador (Matxi, el lunes): una vez por partida El Lunes no camina.
+   Sigue dando vuelta su carta —eso es del manual y no se toca—, pero los pasos
+   de esa ronda se los pierde. Contra el único que te encuentra siempre, es el
+   margen que tiene la última sala. */
+function puedeDespertador(){
+  return !!(S && viaje("despertador") && !S.powerUsed && !S.over && !S.busy);
+}
+function tocarElDespertador(){
+  if(!puedeDespertador()) return;
+  S.powerUsed = true;
+  S.dormido = true;
+  float(S.foes[0].x, S.foes[0].y, "⏰", "#79AE9E");
+  banner("Despertador: esta ronda no camina", "#79AE9E");
+  say("⏰ <b>Despertador</b>: se quedó dormido. Esta ronda no camina —la carta la da vuelta igual.","g");
+  syncUI();
 }
 
 /* El que deambula: elige entre las salidas de su casilla, pero prefiere no
@@ -9038,6 +9179,17 @@ function pintarCartel(txt, color){
 
 function drawOverlays(now){
   const d=bfsFrom({x:S.foes[0].x,y:S.foes[0].y});
+  /* Paranoia útil (Kzk, el porro): además del alcance de esta ronda, pintado
+     más tenue, hasta dónde podría llegar en la siguiente. Contra La Paranoia,
+     que camina al azar y no se puede anticipar, ver una ronda más adelante es
+     lo único que sirve. */
+  if(viaje("paranoia")){
+    ctx.fillStyle="#E0685D0E";
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+      const v=d[key(x,y)];
+      if(v>foeSpeed() && v<=foeSpeed()*2) ctx.fillRect(x*CS,y*CS,CS,CS);
+    }
+  }
   ctx.fillStyle="#E0685D18";
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const v=d[key(x,y)];
@@ -9195,17 +9347,24 @@ function syncUI(){
   /* El ojo de halcón: hasta ahora la carta se calculaba y no se dibujaba en
      ningún lado, así que el poder de Marian no se veía. Se saca del mazo acá
      mismo, en un solo lugar, para que no pueda quedar viejo. */
-  S.peek = (S.heroKey==="marian" && S.deck.length) ? S.deck[S.deck.length-1] : null;
+  const veCartas = clasico("marian") || viaje("sinFiltro");
+  S.peek = (veCartas && S.deck.length) ? S.deck[S.deck.length-1] : null;
+  /* Sin filtro (Marian, el fernet): la segunda también. Van las dos en el
+     mismo cartel, separadas por una flecha: dos carteles apilados no entran
+     en la columna. */
+  S.peek2 = (viaje("sinFiltro") && S.deck.length > 1) ? S.deck[S.deck.length-2] : null;
   const ojo = $("ojo");
   if(ojo && ojo.classList){
     ojo.classList.toggle("off", !S.peek);
     ojo.classList.toggle("rush", !!S.peek && S.peek.k==="rush");
     if(S.peek){
       const ver = cartaHonesta(S.peek);        // lo que va a hacer, no lo que dice el mazo
+      const ver2 = S.peek2 ? cartaHonesta(S.peek2) : null;
       ojo.innerHTML =
         '<span class="ic">' + iconoDeCarta(ver) + '</span>' +
-        '<span class="t"><span class="l">Su próxima acción</span>' +
-        '<span class="n">' + ver.n + '</span></span>';
+        '<span class="t"><span class="l">' +
+          (ver2 ? 'Sus próximas dos' : 'Su próxima acción') + '</span>' +
+        '<span class="n">' + ver.n + (ver2 ? ' → ' + ver2.n : '') + '</span></span>';
     }
   }
 
@@ -9248,6 +9407,16 @@ function syncUI(){
              '<div class="ic">'+p.sym+'</div>'+
              '<div class="nm">'+p.name+'</div>'+
              '<div class="st">la llevás</div></div>';
+    /* Ves el patrón (el Hippie, el LSD): al lado de cada cosa, el objeto que
+       te va a dar el amigo que la quiere. Es la única información que el
+       tablero esconde de verdad —los remolinos llenos ya muestran su gema—,
+       y sirve para elegir en qué orden entregar. */
+    if(viaje("vesElPatron")){
+      const q = objetoDe(S.under[p.id]);
+      return '<div class="slot vacio" style="color:'+p.color+'"><div class="ic">'+p.sym+
+             '</div><div class="nm">'+p.name+'</div><div class="st">te dan ' +
+             (q && q.ic ? q.ic + ' ' : '') + (q ? q.n : '—') + '</div></div>';
+    }
     return '<div class="slot vacio" style="color:'+p.color+'"><div class="ic">'+p.sym+
            '</div><div class="nm">'+p.name+'</div><div class="st">'+enJerga("en la vitrina")+'</div></div>';
   }).join("");
@@ -10743,7 +10912,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "ca8d4581fc";
+const VERSION = "199a225f9d";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
