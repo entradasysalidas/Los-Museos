@@ -58,8 +58,7 @@
   .placa .fila{display:flex;align-items:baseline;gap:7px;margin-bottom:5px}
   .placa .nom{font:400 13px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
     letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .placa .niv{font:600 9px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
-    color:var(--brass);margin-left:auto;flex:none}
+  .placa .fila{justify-content:space-between}
 
   .barra{position:relative;height:9px;background:#05070A;border-radius:5px;
     overflow:hidden;box-shadow:inset 0 1px 2px #000}
@@ -106,40 +105,95 @@
   @media(min-width:640px){ #menu{grid-template-columns:repeat(4,1fr)} }
   @media(max-height:560px){ #dialogo{min-height:0;padding:8px 11px;font-size:14px}
     .opt{padding:10px 8px} header b{font-size:14px} }
+
+  [hidden]{display:none!important}
+
+  /* ---------- pantalla de elegir equipo ---------- */
+  #pEquipo{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px}
+  .intro{margin:0;color:var(--body);font-size:14px}
+  .intro b{color:var(--brass)}
+  .fichas{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;gap:8px;
+    grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+    align-content:start;                 /* que cada ficha mida lo que mide */
+    padding:2px;-webkit-overflow-scrolling:touch}
+  .ficha{appearance:none;cursor:pointer;text-align:center;padding:6px 4px 8px;
+    background:linear-gradient(var(--panel2),#181C24);color:var(--ink);
+    border:1px solid var(--line);border-radius:11px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    transition:border-color .15s,transform .08s}
+  .ficha:active{transform:translateY(1px)}
+  .ficha canvas{width:64px;height:64px;display:block}
+  .ficha b{font:400 12px/1.1 "Archivo Black","Archivo",sans-serif;letter-spacing:-.01em}
+  .ficha small{font:500 8px/1.3 "IBM Plex Mono",monospace;color:var(--dim);letter-spacing:.04em}
+  .ficha.elegida{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass-dim) inset,0 8px 20px #0008}
+  .ficha.elegida b{color:var(--brass)}
+
+  .btnGrande{flex:none;appearance:none;cursor:pointer;width:100%;
+    background:linear-gradient(#2A2F3B,#1C212B);color:var(--ink);
+    border:1px solid var(--brass-dim);border-radius:12px;padding:14px;
+    font:600 14px/1 "Archivo",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+  .btnGrande[disabled]{opacity:.45;cursor:default;border-color:var(--line)}
+
+  /* ---------- la batalla ---------- */
+  #pBatalla{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px}
+
+  /* el marcador: tres puntos por equipo, y se apagan al caer */
+  .vidas{display:inline-flex;gap:4px;vertical-align:middle}
+  .vidas i{width:7px;height:7px;border-radius:50%;background:var(--patina);
+    box-shadow:0 0 6px #7FB6A466;transition:background .3s,box-shadow .3s}
+  .vidas.ellos i{background:var(--alarm);box-shadow:0 0 6px #E86B5E66}
+  .vidas i.ido{background:#333945;box-shadow:none}
+
+  #submenu{flex:none;display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  @media(min-width:640px){ #submenu{grid-template-columns:repeat(4,1fr)} }
+  .opt small{display:block;margin-top:4px;font:500 8px/1.2 "IBM Plex Mono",monospace;
+    letter-spacing:.04em;text-transform:none;color:var(--dim)}
+  .opt small.a{color:var(--aura)}
+  .opt.volver{border-style:dashed}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <b>Los Museos: Aura</b>
-    <small id="ronda">Ronda 1</small>
+    <span class="vidas" id="tuyos"></span>
+    <small id="ronda">Elegí tu equipo</small>
+    <span class="vidas ellos" id="suyos"></span>
   </header>
 
-  <div id="escena">
-    <canvas id="c"></canvas>
-    <div class="placa rival" id="placaRival">
-      <div class="fila"><span class="nom">—</span><span class="niv">Niv 5</span></div>
-      <div class="barra vida"><i style="width:100%"></i></div>
-      <div class="barra aura"><i style="width:0%"></i></div>
-      <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
-    </div>
-    <div class="placa mio" id="placaMio">
-      <div class="fila"><span class="nom">—</span><span class="niv">Niv 5</span></div>
-      <div class="barra vida"><i style="width:100%"></i></div>
-      <div class="barra aura"><i style="width:0%"></i></div>
-      <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
-    </div>
-    <div id="pista">Tocá a cualquiera de los dos para cambiarlo</div>
-  </div>
+  <section id="pEquipo">
+    <p class="intro">Elegí <b>tres</b>. El otro equipo manda tres de los suyos.</p>
+    <div class="fichas" id="fichas"></div>
+    <button class="btnGrande" id="btnEmpezar" disabled>Elegí tres</button>
+  </section>
 
-  <div id="dialogo">—</div>
+  <section id="pBatalla" hidden>
+    <div id="escena">
+      <canvas id="c"></canvas>
+      <div class="placa rival" id="placaRival">
+        <div class="fila"><span class="nom">—</span></div>
+        <div class="barra vida"><i style="width:100%"></i></div>
+        <div class="barra aura"><i style="width:0%"></i></div>
+        <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
+      </div>
+      <div class="placa mio" id="placaMio">
+        <div class="fila"><span class="nom">—</span></div>
+        <div class="barra vida"><i style="width:100%"></i></div>
+        <div class="barra aura"><i style="width:0%"></i></div>
+        <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
+      </div>
+    </div>
 
-  <div id="menu">
-    <button class="opt" id="optPelear">Pelear</button>
-    <button class="opt" id="optPoder">Poder</button>
-    <button class="opt" id="optMochila">Mochila</button>
-    <button class="opt" id="optCambiar">Cambiar</button>
-  </div>
+    <div id="dialogo">—</div>
+
+    <div id="menu">
+      <button class="opt" id="optPelear">Pelear</button>
+      <button class="opt" id="optPoder">Poder</button>
+      <button class="opt" id="optMochila">Mochila</button>
+      <button class="opt" id="optCambiar">Cambiar</button>
+    </div>
+    <div id="submenu" hidden></div>
+  </section>
 </div>
 
 <script>
@@ -437,6 +491,12 @@ function dibujarPersona(g, look, o){
 
   g.save();
   g.lineJoin = "round"; g.lineCap = "round";
+  /* el que cayó se ve caído: se apaga, se hunde y queda torcido. Sin esto,
+     al final de la pelea el último que perdió sigue parado como si nada. */
+  if(o.caido){
+    g.globalAlpha = 0.42;
+    g.translate(0, 8); g.rotate(-0.13);
+  }
   g.scale(1, t);
 
   g.fillStyle = "rgba(0,0,0,.36)";                                              // sombra en el piso
@@ -641,9 +701,200 @@ function puestos(){
   };
 }
 
-const EN_PANTALLA = { mio: CREW.tomy, rival: OTROS.otro1 };
-let iMio = 0, iRival = 0;
-const parpadeo = { mio:0, rival:0 };
+/* =====================================================================
+   EL MOTOR
+   Esta parte no toca el DOM a propósito: así el mismo código corre en node
+   para jugar miles de batallas solas y mirar el balance. Todo el azar pasa
+   por AZAR, que el arnés reemplaza por uno con semilla fija.
+   ===================================================================== */
+let AZAR = Math.random;
+
+/* Cada uno pelea distinto. Son cuatro números y alcanzan: vida, lo que pega,
+   lo que aguanta, y quién va primero. El quinto es cuánta aura junta por
+   ronda sin hacer nada, que es el que decide quién vive de su poder. */
+const PERFILES = {
+  tomy  :{v:126, at:11, df:11, vel:11, ap:8},   // el del termo: junta aura como nadie
+  lamber:{v:142, at:10, df:13, vel:8,  ap:5},   // aguanta todo, llega tarde
+  chupa :{v:112, at:14, df:9,  vel:12, ap:6},   // pega fuerte y se come todo
+  kzk   :{v:124, at:10, df:14, vel:9,  ap:6},   // el que no se rompe
+  matxi :{v:138, at:11, df:12, vel:8,  ap:5},   // cara de piedra
+  chuna :{v:106, at:12, df:9,  vel:15, ap:7},   // piernas: siempre primero
+  hippie:{v:118, at:10, df:10, vel:13, ap:9},   // aura pura
+  marian:{v:120, at:12, df:11, vel:11, ap:7},
+  damian:{v:110, at:14, df:9,  vel:13, ap:5},   // madrugador: pega y se cae
+  negro :{v:128, at:13, df:11, vel:9,  ap:6},
+};
+/* Los nueve del otro equipo, mientras no tengan nombre, reparten los mismos
+   arquetipos para que las peleas no sean todas iguales. Cuando lleguen los
+   nombres esto se ajusta a lo que sea cada uno. */
+const PERFILES_OTROS = {
+  otro1:{v:120, at:12, df:10, vel:11, ap:6}, otro2:{v:140, at:10, df:13, vel:8,  ap:5},
+  otro3:{v:112, at:13, df:9,  vel:13, ap:7}, otro4:{v:126, at:11, df:12, vel:10, ap:6},
+  otro5:{v:132, at:12, df:11, vel:9,  ap:6}, otro6:{v:108, at:14, df:9,  vel:12, ap:5},
+  otro7:{v:136, at:11, df:12, vel:8,  ap:7}, otro8:{v:116, at:11, df:10, vel:14, ap:8},
+  otro9:{v:122, at:13, df:10, vel:10, ap:6},
+};
+function perfilDe(clave){ return PERFILES[clave] || PERFILES_OTROS[clave]; }
+
+/* Los tres golpes y la cuarta opción, que es no pegar y juntar aura. El
+   canje es siempre el mismo: cuanto más daño hace, menos aura deja. */
+const GOLPES = [
+  {id:"seco",    n:"Golpe seco",  poder:22, punteria:1.00, aura:6,  pie:"seguro"},
+  {id:"volada",  n:"Volada",      poder:40, punteria:0.70, aura:4,  pie:"fuerte, falla"},
+  {id:"chupar",  n:"Chupar aura", poder:11, punteria:0.95, aura:15, roba:10, pie:"roba aura"},
+];
+const CONCENTRAR = {id:"concentrar", n:"Concentrarse", aura:26, guardia:1.45,
+                    pie:"+26 aura, te cubrís"};
+const golpeDe = id => GOLPES.find(g => g.id === id);
+
+function armarPeleador(clave, look){
+  const p = perfilDe(clave);
+  return {clave, look, n:look.n,
+          vida:p.v, vidaMax:p.v, aura:0, auraMax:100,
+          ataque:p.at, defensa:p.df, velocidad:p.vel, auraPorRonda:p.ap,
+          guardia:1, caido:false};
+}
+
+function nuevaBatalla(clavesMias, clavesSuyas){
+  return {
+    ronda: 1,
+    a: {equipo: clavesMias.map(k  => armarPeleador(k, CREW[k])),  i:0, humano:true},
+    b: {equipo: clavesSuyas.map(k => armarPeleador(k, OTROS[k])), i:0, humano:false},
+    fin: null,
+  };
+}
+const activo   = (est, l) => est[l].equipo[est[l].i];
+const enPie    = lado => lado.equipo.filter(p => !p.caido);
+const otroLado = l => l === "a" ? "b" : "a";
+
+/* El daño: lo que pega el golpe, por lo que pega el que pega, dividido por
+   lo que aguanta el que recibe, con un ±15% de azar. Con dos parejos y el
+   golpe seco son unos 22 de daño contra 120 de vida: seis golpes. */
+function calcularDanio(quien, contra, golpe){
+  const base = golpe.poder * quien.ataque / (contra.defensa * contra.guardia);
+  return Math.max(1, Math.round(base * (0.85 + AZAR()*0.30)));
+}
+
+/* Una acción es {t:"golpe", id} · {t:"concentrar"} · {t:"cambiar", i}.
+   Devuelve la lista de cosas que pasaron, que la pantalla después actúa. */
+function aplicarAccion(est, lado, acc, ev){
+  const yo = activo(est, lado), rival = activo(est, otroLado(lado));
+  if(yo.caido) return;
+
+  if(acc.t === "cambiar"){
+    est[lado].i = acc.i;
+    ev.push({t:"dice", txt:"¡" + yo.n + ", volvé! Entra " + est[lado].equipo[acc.i].n + "."});
+    ev.push({t:"entra", lado});
+    return;
+  }
+  if(acc.t === "concentrar"){
+    yo.aura = Math.min(yo.auraMax, yo.aura + CONCENTRAR.aura);
+    yo.guardia = CONCENTRAR.guardia;
+    ev.push({t:"dice", txt:yo.n + " se concentra: junta aura y se cubre."});
+    ev.push({t:"aura", lado});
+    return;
+  }
+  const golpe = golpeDe(acc.id);
+  if(AZAR() > golpe.punteria){
+    yo.aura = Math.min(yo.auraMax, yo.aura + 2);
+    ev.push({t:"dice", txt:yo.n + " tira una " + golpe.n.toLowerCase() + " y no le da."});
+    ev.push({t:"falla", lado});
+    return;
+  }
+  const d = calcularDanio(yo, rival, golpe);
+  rival.vida = Math.max(0, rival.vida - d);
+  yo.aura = Math.min(yo.auraMax, yo.aura + golpe.aura);
+  if(golpe.roba){
+    const roba = Math.min(golpe.roba, rival.aura);
+    rival.aura -= roba; yo.aura = Math.min(yo.auraMax, yo.aura + roba);
+  }
+  /* la bronca: al que le pegan junta algo de aura. Sin esto, el que va
+     perdiendo pierde también la carrera del aura y no vuelve nunca. */
+  rival.aura = Math.min(rival.auraMax, rival.aura + 4);
+  ev.push({t:"pega", lado, cant:d, golpe:golpe.id,
+           txt:yo.n + " le mete " + golpe.n.toLowerCase() + ". " + d + " de daño."});
+  if(rival.vida <= 0){
+    rival.caido = true;
+    ev.push({t:"cae", lado:otroLado(lado), txt:rival.n + " no va más."});
+  }
+}
+
+function resolverRonda(est, accA, accB){
+  const ev = [];
+  const a = activo(est, "a"), b = activo(est, "b");
+  a.guardia = 1; b.guardia = 1;
+
+  /* Los cambios van siempre antes que los golpes, y entre dos golpes manda la
+     velocidad. Empate: lo tira el azar, que es lo que hace el juego de mesa. */
+  const orden = [];
+  if(accA.t === "cambiar") orden.push("a");
+  if(accB.t === "cambiar") orden.push("b");
+  const quedan = ["a","b"].filter(l => !orden.includes(l));
+  quedan.sort((x, y) => {
+    const d = activo(est, y).velocidad - activo(est, x).velocidad;
+    return d !== 0 ? d : (AZAR() < .5 ? -1 : 1);
+  });
+  orden.push(...quedan);
+
+  for(const l of orden) aplicarAccion(est, l, l === "a" ? accA : accB, ev);
+
+  /* el aura que junta cada uno por el solo hecho de estar peleando */
+  for(const l of ["a","b"]){
+    const p = activo(est, l);
+    if(!p.caido){ p.aura = Math.min(p.auraMax, p.aura + p.auraPorRonda); }
+  }
+  ev.push({t:"aura", lado:"a"}); ev.push({t:"aura", lado:"b"});
+
+  for(const l of ["a","b"]){
+    if(!enPie(est[l]).length){ est.fin = otroLado(l); ev.push({t:"fin", gana:est.fin}); }
+  }
+  if(!est.fin) est.ronda++;
+  return ev;
+}
+
+/* Cuando cae el que estaba peleando, el que sigue. La máquina manda al que
+   más vida le queda; el humano elige. */
+function entraSolo(est, lado){
+  const vivos = est[lado].equipo.map((p,i) => ({p,i})).filter(o => !o.p.caido);
+  if(!vivos.length) return false;
+  vivos.sort((x,y) => y.p.vida - x.p.vida);
+  est[lado].i = vivos[0].i;
+  return true;
+}
+
+/* ---------- la máquina ----------
+   No hace trampa: ve lo mismo que se ve en pantalla. Si puede cerrar la
+   pelea de un golpe lo tira, si está para caer se cambia, si no tiene aura
+   junta, y si no, pega. */
+function elegirMaquina(est, lado){
+  lado = lado || "b";
+  const yo = activo(est, lado), vos = activo(est, otroLado(lado));
+  const suplentes = est[lado].equipo.map((p,i) => ({p,i})).filter(o => !o.p.caido && o.i !== est[lado].i);
+
+  for(const g of GOLPES){                       // ¿lo cierro de un golpe?
+    if(g.punteria >= .9 && calcularDanio(yo, vos, g) >= vos.vida) return {t:"golpe", id:g.id};
+  }
+  if(yo.vida < yo.vidaMax*0.22 && suplentes.length && AZAR() < .55){
+    suplentes.sort((x,y) => y.p.vida - x.p.vida);
+    return {t:"cambiar", i:suplentes[0].i};
+  }
+  if(yo.aura < 30 && yo.vida > yo.vidaMax*0.55 && AZAR() < .35) return {t:"concentrar"};
+  const r = AZAR();
+  if(r < .52) return {t:"golpe", id:"seco"};
+  if(r < .84) return {t:"golpe", id:"volada"};
+  return {t:"golpe", id:"chupar"};
+}
+
+/* =====================================================================
+   LA PANTALLA
+   ===================================================================== */
+let EST = null;
+const fx = {a:{lanza:0, sacude:0}, b:{lanza:0, sacude:0}};
+const parpadeo = {a:0, b:0};
+
+function miLook(){ return EST ? activo(EST,"a").look : CREW.tomy; }
+function suLook(){ return EST ? activo(EST,"b").look : OTROS.otro1; }
+function cayo(lado){ return !!(EST && activo(EST, lado).caido); }
 
 let t0 = performance.now(), ultimo = t0;
 function frame(now){
@@ -654,69 +905,244 @@ function frame(now){
   if(fondo) ctx.drawImage(fondo, 0, 0);
 
   const p = puestos();
-  /* la respiración: sube y baja apenas, y cada uno en su tiempo para que no
-     parezcan dos autómatas sincronizados */
   const bobR = Math.sin(t/900)*0.9, bobM = Math.sin(t/900 + 2.1)*0.9;
-  if(t > parpadeo.rival) parpadeo.rival = t + 2200 + Math.random()*3600;
-  if(t > parpadeo.mio)   parpadeo.mio   = t + 2200 + Math.random()*3600;
-  const parpR = parpadeo.rival - t < 160;
+  if(t > parpadeo.b) parpadeo.b = t + 2200 + Math.random()*3600;
+  const parpR = parpadeo.b - t < 160;
+
+  for(const l of ["a","b"]){                 // se van apagando solas
+    fx[l].lanza  = Math.max(0, fx[l].lanza  - dt/170);
+    fx[l].sacude = Math.max(0, fx[l].sacude - dt/260);
+  }
+  /* el envión al pegar: se tira para adelante y vuelve. El que recibe
+     tiembla. Es lo mínimo para que un golpe se vea como un golpe. */
+  const envion = l => Math.sin(fx[l].lanza*Math.PI) * 14 * (l === "a" ? 1 : -1);
+  const tiembla = l => fx[l].sacude > 0 ? Math.sin(fx[l].sacude*34)*5*fx[l].sacude : 0;
 
   tarima(ctx, p.rival.x, p.rival.y, p.rival.u*34, "#E86B5E");
-  ctx.save(); ctx.translate(p.rival.x, p.rival.y); ctx.scale(p.rival.u, p.rival.u);
-  dibujarPersona(ctx, EN_PANTALLA.rival, {bob:bobR, parp:parpR}); ctx.restore();
+  ctx.save();
+  ctx.translate(p.rival.x + envion("b")*0.7 + tiembla("b"), p.rival.y - envion("b")*0.25);
+  ctx.scale(p.rival.u, p.rival.u);
+  dibujarPersona(ctx, suLook(), {bob:bobR, parp:parpR, caido:cayo("b")}); ctx.restore();
 
   tarima(ctx, p.mio.x, p.mio.y, p.mio.u*34, "#7FB6A4");
-  ctx.save(); ctx.translate(p.mio.x, p.mio.y); ctx.scale(p.mio.u, p.mio.u);
-  dibujarPersona(ctx, EN_PANTALLA.mio, {bob:bobM, espalda:true}); ctx.restore();
+  ctx.save();
+  ctx.translate(p.mio.x + envion("a") + tiembla("a"), p.mio.y - envion("a")*0.2);
+  ctx.scale(p.mio.u, p.mio.u);
+  dibujarPersona(ctx, miLook(), {bob:bobM, espalda:true, caido:cayo("a")}); ctx.restore();
 
   dibujarMotas(ctx, dt);
   requestAnimationFrame(frame);
 }
 
-/* ---------- las placas ---------- */
-function placa(id, look, vida, vidaMax, aura, auraMax, nivel){
-  const el = document.getElementById(id);
-  const pv = Math.max(0, vida/vidaMax);
+const $ = id => document.getElementById(id);
+
+function placa(id, p){
+  const el = $(id);
+  const pv = Math.max(0, p.vida/p.vidaMax);
   el.classList.toggle("poca", pv <= .5 && pv > .2);
   el.classList.toggle("nada", pv <= .2);
-  el.querySelector(".nom").textContent = look.n;
-  el.querySelector(".niv").textContent = "Niv " + nivel;
+  el.querySelector(".nom").textContent = p.n;
   el.querySelector(".vida i").style.width = (pv*100).toFixed(1)+"%";
-  el.querySelector(".aura i").style.width = ((aura/auraMax)*100).toFixed(1)+"%";
+  el.querySelector(".aura i").style.width = ((p.aura/p.auraMax)*100).toFixed(1)+"%";
   const c = el.querySelectorAll(".cifras b");
-  c[0].textContent = vida + "/" + vidaMax;
-  c[1].textContent = aura + "/" + auraMax;
+  c[0].textContent = p.vida + "/" + p.vidaMax;
+  c[1].textContent = Math.round(p.aura) + "/" + p.auraMax;
 }
-function pintarTodo(){
-  placa("placaRival", EN_PANTALLA.rival, 120, 120, 0, 100, 5);
-  placa("placaMio",   EN_PANTALLA.mio,   120, 120, 0, 100, 5);
+function marcador(id, lado){
+  $(id).innerHTML = lado.equipo.map(p => '<i class="' + (p.caido ? "ido" : "") + '"></i>').join("");
+}
+function pintar(){
+  if(!EST) return;
+  placa("placaRival", activo(EST,"b"));
+  placa("placaMio",   activo(EST,"a"));
+  marcador("tuyos", EST.a); marcador("suyos", EST.b);
+  $("ronda").textContent = EST.fin ? "Se terminó" : "Ronda " + EST.ronda;
+}
+function decir(txt){ $("dialogo").innerHTML = txt; }
+
+/* ---------- los menús ---------- */
+function botonesArriba(prendidos){
+  for(const id of ["optPelear","optPoder","optMochila","optCambiar"]) $(id).disabled = !prendidos;
+}
+function cerrarSub(){
+  $("submenu").hidden = true; $("submenu").innerHTML = "";
+  $("menu").hidden = false;
+}
+function abrirSub(opciones){
+  const sm = $("submenu");
+  sm.innerHTML = "";
+  for(const o of opciones){
+    const b = document.createElement("button");
+    b.className = "opt" + (o.volver ? " volver" : "");
+    b.innerHTML = o.n + (o.pie ? '<small class="' + (o.aura ? "a" : "") + '">' + o.pie + "</small>" : "");
+    b.disabled = !!o.no;
+    b.addEventListener("click", o.hace);
+    sm.appendChild(b);
+  }
+  sm.hidden = false;
+  $("menu").hidden = true;             // ocho botones no entran en un teléfono
 }
 
-/* ---------- mientras no hay motor ----------
-   Tocando a cualquiera de los dos se cambia de personaje: así se pueden
-   mirar los diecinueve en el teléfono antes de que exista el combate.
-   Esto se va en cuanto los botones hagan algo. */
-document.getElementById("escena").addEventListener("pointerdown", ev => {
-  const caja = cv.getBoundingClientRect();
-  const x = ev.clientX - caja.left;
-  if(x > caja.width*0.5){ iRival = (iRival+1) % SUYOS.length; EN_PANTALLA.rival = SUYOS[iRival]; }
-  else                  { iMio   = (iMio+1)   % MIOS.length;  EN_PANTALLA.mio   = MIOS[iMio]; }
-  pintarTodo();
-});
+let esperando = false;                    // mientras se cuenta lo que pasó, no se toca nada
+function pedirAccion(){
+  if(EST.fin) return;
+  esperando = false;
+  botonesArriba(true); cerrarSub();
+  decir("¿Qué hace <em>" + activo(EST,"a").n + "</em>?");
+}
 
-document.getElementById("dialogo").innerHTML =
-  "Esto es la <em>pinta</em> del juego, todavía sin motor: la escena, los dos " +
-  "que pelean, las barras de vida y de aura. Tocá a cualquiera de los dos para " +
-  "ver a otro.";
-for(const id of ["optPelear","optPoder","optMochila","optCambiar"]){
-  document.getElementById(id).disabled = true;
+function menuGolpes(){
+  const yo = activo(EST,"a");
+  abrirSub(GOLPES.map(g => ({n:g.n, pie:g.pie, hace:() => jugar({t:"golpe", id:g.id})}))
+    .concat([{n:CONCENTRAR.n, pie:CONCENTRAR.pie, aura:true, hace:() => jugar({t:"concentrar"})}]));
+}
+function menuCambiar(obligado){
+  const ops = EST.a.equipo.map((p,i) => ({
+    n:p.n, pie:p.caido ? "no va más" : p.vida + "/" + p.vidaMax,
+    no: p.caido || (!obligado && i === EST.a.i),
+    hace: () => obligado ? entraElegido(i) : jugar({t:"cambiar", i})
+  }));
+  if(!obligado) ops.push({n:"Volver", volver:true, hace:pedirAccion});
+  abrirSub(ops);
+}
+
+/* ---------- contar lo que pasó ----------
+   Los sucesos se muestran de a uno, con una pausa, porque todos juntos no
+   se entienden. Tocando la pantalla se apura. */
+let cola = [], reloj = null;
+function reproducir(ev, alTerminar){
+  cola = ev.slice(); esperando = true;
+  botonesArriba(false); cerrarSub();
+  const paso = () => {
+    if(!cola.length){ reloj = null; pintar(); alTerminar(); return; }
+    const e = cola.shift();
+    if(e.txt) decir(e.txt);
+    if(e.t === "pega"){ fx[e.lado].lanza = 1; fx[otroLado(e.lado)].sacude = 1; }
+    if(e.t === "falla") fx[e.lado].lanza = 0.7;
+    pintar();
+    reloj = setTimeout(paso, e.txt ? 950 : 120);
+  };
+  paso();
+}
+function apurar(){
+  if(!reloj) return;
+  clearTimeout(reloj); reloj = null;
+  while(cola.length){
+    const e = cola.shift();
+    if(e.txt) decir(e.txt);
+  }
+  pintar();
+  if(pendiente){ const f = pendiente; pendiente = null; f(); }
+}
+let pendiente = null;
+
+function jugar(accion){
+  if(esperando) return;
+  const ev = resolverRonda(EST, accion, elegirMaquina(EST));
+  pendiente = despues;
+  reproducir(ev, () => { pendiente = null; despues(); });
+}
+
+function despues(){
+  if(EST.fin){ terminar(); return; }
+  /* si cayó alguno, entra el que sigue: la máquina sola, vos eligiendo */
+  if(activo(EST,"b").caido) entraSolo(EST, "b");
+  if(activo(EST,"a").caido){
+    esperando = false; botonesArriba(false);
+    decir("Cayó. ¿Quién entra?");
+    menuCambiar(true);
+    return;
+  }
+  pintar(); pedirAccion();
+}
+function entraElegido(i){
+  EST.a.i = i; cerrarSub(); pintar();
+  decir("Entra <em>" + activo(EST,"a").n + "</em>.");
+  setTimeout(pedirAccion, 600);
+}
+
+function terminar(){
+  botonesArriba(false); cerrarSub(); pintar();
+  const gane = EST.fin === "a";
+  decir(gane ? "<em>Ganaste.</em> Los tres de ellos abajo."
+             : "<em>Perdiste.</em> Se te cayeron los tres.");
+  abrirSub([{n:"Otra", pie:"elegir equipo de nuevo", hace:volverAElegir}]);
+}
+function volverAElegir(){
+  EST = null; elegidos = [];
+  $("pBatalla").hidden = true; $("pEquipo").hidden = false;
+  $("ronda").textContent = "Elegí tu equipo";
+  $("tuyos").innerHTML = ""; $("suyos").innerHTML = "";
+  pintarFichas();
+}
+
+/* ---------- elegir equipo ---------- */
+let elegidos = [];
+function retrato(cv2, look){
+  const g = cv2.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv2.width = 64*dpr; cv2.height = 64*dpr;
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,64,64);
+  g.save(); g.translate(32, 94); g.scale(1.02, 1.02);
+  dibujarPersona(g, look, {bob:0});
+  g.restore();
+}
+function pintarFichas(){
+  const cont = $("fichas");
+  cont.innerHTML = "";
+  for(const clave of Object.keys(CREW)){
+    const look = CREW[clave], p = PERFILES[clave];
+    const b = document.createElement("button");
+    b.className = "ficha" + (elegidos.includes(clave) ? " elegida" : "");
+    b.innerHTML = '<canvas width="64" height="64"></canvas><b>' + look.n + "</b>" +
+      "<small>" + p.v + " vida · " + p.at + " ata</small>" +
+      "<small>" + p.df + " def · " + p.vel + " vel</small>";
+    b.addEventListener("click", () => {
+      const i = elegidos.indexOf(clave);
+      if(i >= 0) elegidos.splice(i,1);
+      else if(elegidos.length < 3) elegidos.push(clave);
+      pintarFichas();
+    });
+    cont.appendChild(b);
+    retrato(b.querySelector("canvas"), look);
+  }
+  const listo = elegidos.length === 3;
+  $("btnEmpezar").disabled = !listo;
+  $("btnEmpezar").textContent = listo ? "Empezar" : "Elegí tres (" + elegidos.length + "/3)";
+}
+
+function empezar(){
+  /* el otro equipo saca tres al azar de los nueve */
+  const suyos = Object.keys(OTROS).slice();
+  for(let i = suyos.length-1; i > 0; i--){
+    const j = (AZAR()*(i+1))|0; const x = suyos[i]; suyos[i] = suyos[j]; suyos[j] = x;
+  }
+  EST = nuevaBatalla(elegidos, suyos.slice(0,3));
+  $("pEquipo").hidden = true; $("pBatalla").hidden = false;
+  medirSiHaceFalta(); pintar();
+  decir("Enfrente: <em>" + activo(EST,"b").n + "</em>. Arrancás vos.");
+  setTimeout(pedirAccion, 900);
+}
+
+if(typeof document !== "undefined" && document.getElementById){
+  $("optPelear").addEventListener("click", menuGolpes);
+  $("optCambiar").addEventListener("click", () => menuCambiar(false));
+  $("optPoder").addEventListener("click", () => decir("Los poderes son lo que sigue."));
+  $("optMochila").addEventListener("click", () => decir("La mochila es lo que sigue."));
+  $("optPoder").disabled = true; $("optMochila").disabled = true;
+  $("btnEmpezar").addEventListener("click", empezar);
+  $("escena").addEventListener("pointerdown", apurar);
+  pintarFichas();
+  medir();
+  requestAnimationFrame(frame);
 }
 
 /* ---------- ¿quedó vieja esta copia? ----------
    Lo mismo que hace index.html, con su propio archivo de versión. La
    escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "053660189b";
+const VERSION = "c14c8a1bee";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;
@@ -733,10 +1159,6 @@ const VERSION = "053660189b";
     })
     .catch(() => {});
 })();
-
-medir();
-pintarTodo();
-requestAnimationFrame(frame);
 </script>
 </body>
 </html>
