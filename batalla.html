@@ -12,10 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#0E1014">
 <meta name="description" content="Dos equipos, tres contra tres. Cada uno con su poder y su aura.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-  /* La paleta es la de Los Museos de noche. El aura es el color nuevo: no lo
-     usa ninguna otra cosa del juego, para que se lea de un vistazo. */
   :root{
     --bg:#0E1014; --panel:#171A21; --panel2:#1F232C; --sunk:#0A0C10;
     --line:#2A2F3A; --hair:#39404E;
@@ -25,79 +23,89 @@
     --shadow:0 18px 44px #000a;
   }
   *{box-sizing:border-box}
-  canvas,.opt,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  canvas,.opt{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden}
   body{margin:0;background:var(--bg);color:var(--body);
     font:16px/1.5 "Archivo","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 
-  #app{height:100%;max-width:820px;margin:0 auto;padding:10px 12px 12px;
-    display:flex;flex-direction:column;gap:10px}
+  #app{height:100%;max-width:860px;margin:0 auto;padding:8px 10px 10px;
+    display:flex;flex-direction:column;gap:8px}
 
-  /* ---------- el encabezado: quién contra quién ---------- */
-  header{display:flex;align-items:baseline;gap:10px;flex:none}
-  header b{font:400 17px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
+  header{display:flex;align-items:baseline;gap:9px;flex:none;padding:0 2px}
+  header b{font:400 16px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
     letter-spacing:-.02em}
   header small{font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--dim)}
-
-  /* ---------- la escena ----------
-     El lienzo dibuja el salón y los dos que pelean. Las placas van en HTML
-     encima: el texto chico en canvas se ve sucio en el teléfono. */
-  #escena{position:relative;flex:1 1 auto;min-height:0;
-    background:linear-gradient(#12151C,#0A0C10);
-    border:1px solid var(--line);border-radius:14px;overflow:hidden;
-    box-shadow:var(--shadow)}
-  #c{display:block;width:100%;height:100%}
-
-  .placa{position:absolute;min-width:min(52%,240px);padding:8px 10px 9px;
-    background:#0F1218E6;border:1px solid var(--line);border-radius:10px;
-    backdrop-filter:blur(2px)}
-  .placa.rival{left:10px;top:10px}
-  .placa.mio{right:10px;bottom:10px}
-  .placa .fila{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
-  .placa .nom{font:400 14px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
-    letter-spacing:-.01em}
-  .placa .eq{font:500 8px/1 "IBM Plex Mono",monospace;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim);margin-left:auto}
 
-  /* las dos barras: la vida arriba, el aura abajo y más fina */
-  .barra{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden;
-    border:1px solid #00000060}
-  .barra + .barra{margin-top:5px;height:5px}
-  .barra i{display:block;height:100%;border-radius:4px;
-    transition:width .35s ease}
-  .vida i{background:var(--patina)}
-  .placa.poca .vida i{background:var(--brass)}
-  .placa.nada .vida i{background:var(--alarm)}
-  .aura i{background:var(--aura);box-shadow:0 0 8px #A98CF080}
-  .cifras{display:flex;gap:10px;margin-top:6px;
-    font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;color:var(--dim)}
-  .cifras b{color:var(--body);font-weight:500}
-  .cifras .a{color:var(--aura)}
+  /* ---------- la escena ---------- */
+  #escena{position:relative;flex:1 1 auto;min-height:0;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow);background:#0A0C10}
+  #c{display:block;width:100%;height:100%}
 
-  /* ---------- el cajón de abajo: lo que se dice y lo que se elige ---------- */
-  #dialogo{flex:none;min-height:56px;padding:11px 13px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    color:var(--ink);font-size:15px}
+  /* Las placas de vida, al estilo de las cajas de combate: chaflán de un lado,
+     filete de bronce y los números en monoespaciada. Van en HTML y no en el
+     lienzo porque el texto chico dibujado en canvas se ve sucio en el celular. */
+  .placa{position:absolute;width:min(56%,268px);padding:7px 10px 8px;
+    background:linear-gradient(#141821F2,#0D1016F2);
+    border:1px solid #3A4152;border-radius:9px;
+    box-shadow:0 6px 18px #0009, inset 0 1px 0 #FFFFFF12}
+  .placa::after{content:"";position:absolute;inset:2px;border-radius:7px;
+    border:1px solid #D9A94F26;pointer-events:none}
+  .placa.rival{left:9px;top:9px;border-bottom-right-radius:2px}
+  .placa.mio{right:9px;bottom:9px;border-top-left-radius:2px}
+
+  .placa .fila{display:flex;align-items:baseline;gap:7px;margin-bottom:5px}
+  .placa .nom{font:400 13px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
+    letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .placa .niv{font:600 9px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
+    color:var(--brass);margin-left:auto;flex:none}
+
+  .barra{position:relative;height:9px;background:#05070A;border-radius:5px;
+    overflow:hidden;box-shadow:inset 0 1px 2px #000}
+  .barra i{display:block;height:100%;border-radius:5px;transition:width .4s ease}
+  .barra::after{content:"";position:absolute;inset:0;border-radius:5px;
+    background:linear-gradient(#FFFFFF1F,#FFFFFF00 55%);pointer-events:none}
+  .vida i{background:linear-gradient(#9AD2BE,#5E9E8C)}
+  .placa.poca .vida i{background:linear-gradient(#E8C96A,#B8922F)}
+  .placa.nada .vida i{background:linear-gradient(#F08A7C,#C0483E)}
+  .aura{height:6px;margin-top:4px}
+  .aura i{background:linear-gradient(#C4B0FF,#8A6BE0);box-shadow:0 0 9px #A98CF090}
+
+  .cifras{display:flex;gap:9px;margin-top:5px;
+    font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.06em;color:var(--dim)}
+  .cifras b{color:var(--body);font-weight:600}
+  .cifras .a b{color:var(--aura)}
+
+  /* el cartelito de «tocá para ver a otro», mientras no hay combate */
+  #pista{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+    font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.1em;
+    text-transform:uppercase;color:#FFFFFF66;background:#0A0C10AA;
+    border:1px solid #FFFFFF14;border-radius:20px;padding:6px 11px;
+    pointer-events:none;white-space:nowrap}
+  @media(max-width:420px){ #pista{display:none} }
+
+  /* ---------- el cajón de abajo ---------- */
+  #dialogo{flex:none;min-height:52px;padding:10px 12px;
+    background:linear-gradient(var(--panel),#12151C);
+    border:1px solid var(--line);border-radius:12px;
+    color:var(--ink);font-size:15px;
+    box-shadow:inset 0 1px 0 #FFFFFF0D}
   #dialogo em{color:var(--brass);font-style:normal;font-weight:600}
 
-  #menu{flex:none;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-  .opt{appearance:none;border:1px solid var(--line);background:var(--panel2);
+  #menu{flex:none;display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  .opt{appearance:none;border:1px solid var(--line);
+    background:linear-gradient(var(--panel2),#181C24);
     color:var(--ink);border-radius:11px;padding:13px 10px;cursor:pointer;
-    font:600 13px/1 "Archivo",sans-serif;letter-spacing:.06em;text-transform:uppercase;
-    display:flex;align-items:center;justify-content:center;gap:7px;
-    transition:transform .08s,border-color .15s,background .15s}
+    font:600 13px/1 "Archivo",sans-serif;letter-spacing:.07em;text-transform:uppercase;
+    box-shadow:inset 0 1px 0 #FFFFFF0D;
+    transition:transform .08s,border-color .15s}
   .opt:active{transform:translateY(1px)}
-  .opt .costo{font:500 9px/1 "IBM Plex Mono",monospace;letter-spacing:.06em;
-    text-transform:none;color:var(--aura)}
-  .opt[disabled]{opacity:.42;cursor:default}
-  @media(hover:hover){ .opt:not([disabled]):hover{border-color:var(--brass-dim);background:#242935} }
-
-  /* En pantalla ancha el menú entra en una sola fila y la escena respira. */
+  .opt[disabled]{opacity:.4;cursor:default}
+  @media(hover:hover){ .opt:not([disabled]):hover{border-color:var(--brass-dim)} }
   @media(min-width:640px){ #menu{grid-template-columns:repeat(4,1fr)} }
-  /* Apaisado en el teléfono: la escena se achica antes que el menú. */
-  @media(max-height:520px){ #dialogo{min-height:0;padding:8px 11px;font-size:14px}
-    .opt{padding:10px 8px} }
+  @media(max-height:560px){ #dialogo{min-height:0;padding:8px 11px;font-size:14px}
+    .opt{padding:10px 8px} header b{font-size:14px} }
 </style>
 </head>
 <body>
@@ -110,17 +118,18 @@
   <div id="escena">
     <canvas id="c"></canvas>
     <div class="placa rival" id="placaRival">
-      <div class="fila"><span class="nom">—</span><span class="eq">Rival</span></div>
+      <div class="fila"><span class="nom">—</span><span class="niv">Niv 5</span></div>
       <div class="barra vida"><i style="width:100%"></i></div>
       <div class="barra aura"><i style="width:0%"></i></div>
       <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
     </div>
     <div class="placa mio" id="placaMio">
-      <div class="fila"><span class="nom">—</span><span class="eq">Vos</span></div>
+      <div class="fila"><span class="nom">—</span><span class="niv">Niv 5</span></div>
       <div class="barra vida"><i style="width:100%"></i></div>
       <div class="barra aura"><i style="width:0%"></i></div>
       <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
     </div>
+    <div id="pista">Tocá a cualquiera de los dos para cambiarlo</div>
   </div>
 
   <div id="dialogo">—</div>
@@ -138,17 +147,20 @@
    Los Museos: Aura · dos equipos, tres contra tres.
 
    Juego aparte del de sigilo. index.html no se toca y este archivo no lo
-   lee: lo que comparten son los personajes y la forma de dibujarlos, que
-   están COPIADOS acá abajo a propósito.
+   lee: lo único que comparten son los personajes —quién es quién, de qué
+   color anda— y ni siquiera el dibujo.
 
-   Si alguna vez cambia el dibujo de la gente en index.html, este archivo
-   queda viejo y hay que volver a copiarlo a mano. Es a propósito: un
-   script que regenere este archivo desde el otro es justo lo que ya
-   borró trabajo una vez. index.html siempre manda.
+   El dibujo es nuevo a propósito. El del tablero está hecho para verse de
+   un centímetro entre las paredes de una sala: cuatro rectángulos y dos
+   puntos por ojo, y de cerca se nota. Acá el mismo tipo ocupa un tercio de
+   la pantalla, así que tiene cuerpo, sombra propia, cara con expresión y
+   pelo con volumen. Las medidas también cambian: allá la persona mide 30
+   unidades, acá mide 100, con los pies apoyando en 0.
    ===================================================================== */
 
-/* ---------- el grupo del museo ----------
-   Copiado de index.html tal cual. Son los mismos diez de siempre. */
+/* ---------- quién es quién ----------
+   Los diez del museo. Son los mismos de siempre: el pelo, la remera y el
+   nombre estampado vienen de ahí, que es lo que los hace reconocibles. */
 const CREW = {
   tomy  :{n:"Tomy",      hair:"#C2571F", style:"rulos",      beard:false, tall:1.00, shirt:"#4E8FD0"},
   lamber:{n:"Lamber",    hair:"#1E1A18", style:"corto",      beard:true,  tall:1.00, shirt:"#57A06B"},
@@ -161,276 +173,553 @@ const CREW = {
   damian:{n:"Damián",    hair:"#1E1A18", style:"medio",      beard:false, tall:1.00, shirt:"#7FA23E"},
   negro :{n:"El Negro",  hair:"#2A1D14", style:"corto",      beard:true,  tall:1.00, shirt:"#6B4A2F", skin:"#8A5A38"},
 };
-Object.values(CREW).forEach(c => { c.tag = c.n.replace(/^El /,"").toUpperCase(); });
 
-/* ---------- el otro equipo ----------
-   Los nueve todavía no tienen nombre: los pone el autor. Mientras tanto
-   quedan las pintas armadas, para que la pantalla se pueda mirar. En
-   cuanto lleguen los nombres, esto se reemplaza y nada más que esto. */
+/* El otro equipo: nueve, y los nombres los pone el autor. Mientras tanto
+   quedan las pintas armadas para poder mirar la pantalla. Cuando lleguen
+   los nombres se reemplaza este bloque y nada más que este bloque. */
 const OTROS = {
-  otro1:{n:"Sin nombre 1", hair:"#3A2416", style:"medio",      beard:false, tall:1.00, shirt:"#C4506B"},
-  otro2:{n:"Sin nombre 2", hair:"#1E1A18", style:"corto",      beard:true,  tall:1.06, shirt:"#3E7FA0"},
-  otro3:{n:"Sin nombre 3", hair:"#A9793F", style:"largo",      beard:false, tall:1.00, shirt:"#6BA04F"},
-  otro4:{n:"Sin nombre 4", hair:"#C2571F", style:"corto",      beard:false, tall:1.00, shirt:"#8A5AB8"},
-  otro5:{n:"Sin nombre 5", hair:"#2A1D14", style:"largorulos", beard:false, tall:1.00, shirt:"#D8B33C", skin:"#8A5A38"},
-  otro6:{n:"Sin nombre 6", hair:"#6B4526", style:"rulos",      beard:true,  tall:1.00, shirt:"#4E5A70"},
-  otro7:{n:"Sin nombre 7", hair:"#1E1A18", style:"corto",      beard:false, tall:1.14, shirt:"#B8563E"},
-  otro8:{n:"Sin nombre 8", hair:"#7A5230", style:"medio",      beard:false, tall:1.00, shirt:"#2FA88C"},
-  otro9:{n:"Sin nombre 9", hair:"#1E1A18", style:"corto",      beard:true,  tall:1.00, shirt:"#A0863E"},
+  otro1:{n:"Rival 1", hair:"#3A2416", style:"medio",      beard:false, tall:1.00, shirt:"#C4506B"},
+  otro2:{n:"Rival 2", hair:"#1E1A18", style:"corto",      beard:true,  tall:1.06, shirt:"#3E7FA0"},
+  otro3:{n:"Rival 3", hair:"#A9793F", style:"largo",      beard:false, tall:1.00, shirt:"#6BA04F"},
+  otro4:{n:"Rival 4", hair:"#C2571F", style:"corto",      beard:false, tall:1.00, shirt:"#8A5AB8"},
+  otro5:{n:"Rival 5", hair:"#2A1D14", style:"largorulos", beard:false, tall:1.00, shirt:"#D8B33C", skin:"#8A5A38"},
+  otro6:{n:"Rival 6", hair:"#6B4526", style:"rulos",      beard:true,  tall:1.00, shirt:"#4E5A70"},
+  otro7:{n:"Rival 7", hair:"#1E1A18", style:"corto",      beard:false, tall:1.14, shirt:"#B8563E"},
+  otro8:{n:"Rival 8", hair:"#7A5230", style:"medio",      beard:false, tall:1.00, shirt:"#2FA88C"},
+  otro9:{n:"Rival 9", hair:"#1E1A18", style:"corto",      beard:true,  tall:1.00, shirt:"#A0863E"},
 };
-Object.values(OTROS).forEach(c => { c.tag = c.n.replace(/^El /,"").toUpperCase(); });
+for(const c of Object.values(CREW))  c.tag = c.n.replace(/^El /,"").toUpperCase();
+for(const c of Object.values(OTROS)) c.tag = c.n.toUpperCase();
 
-/* Los dieciocho juntos, para buscar a cualquiera por su clave. */
-const GENTE = Object.assign({}, CREW, OTROS);
+const MIOS  = Object.values(CREW);
+const SUYOS = Object.values(OTROS);
 
-/* ---------- el dibujo de la gente ----------
-   Copiado de index.html y podado: allá el mismo cuerpo se pone traje de
-   astronauta, campera de nieve, malla y disfraces, porque hay siete
-   ediciones. Acá no hay ediciones: queda el cuerpo pelado, con la misma
-   silueta y las mismas medidas, para que se reconozcan igual.
-
-   Las medidas del original: el torso mide 19 de ancho, la cara es un
-   círculo de radio 8 centrado en -14.5, y los pies apoyan en 15. */
+/* ---------- color ----------
+   Todo el sombreado sale de mezclar el color propio con blanco o con el
+   negro del fondo. Así ninguna sombra se va de la paleta del juego. */
+function rgbDe(h){
+  const n = parseInt(h.slice(1),16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function mezcla(a, b, t){
+  const x = rgbDe(a), y = rgbDe(b);
+  const c = k => Math.round(x[k] + (y[k]-x[k])*t);
+  return "rgb(" + c(0) + "," + c(1) + "," + c(2) + ")";
+}
+const aclarar  = (h,k) => mezcla(h, "#FFFFFF", k);
+const oscurecer = (h,k) => mezcla(h, "#090B10", k);
+function rgba(h, a){
+  const c = rgbDe(h);
+  return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+}
 const rr = (g,x,y,w,h,r) => { g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r);
   g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); };
-
-/* ¿la remera es oscura? decide si el nombre estampado va en claro o en oscuro */
-function isDark(hex){
-  const n = parseInt(hex.slice(1),16);
-  const r = (n>>16)&255, g = (n>>8)&255, b = n&255;
-  return (0.299*r + 0.587*g + 0.114*b) < 140;
+/* el degradé de siempre: luz arriba a la izquierda, sombra abajo a la derecha */
+function luz(g, x0,y0,x1,y1, c, kl, kd){
+  const gr = g.createLinearGradient(x0,y0,x1,y1);
+  gr.addColorStop(0, aclarar(c,kl)); gr.addColorStop(1, oscurecer(c,kd));
+  return gr;
 }
-function hexA(hex,a){
-  const n = parseInt((hex||"#D9A94F").slice(1),16);
-  return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a.toFixed(2)+")";
-}
-
-function drawHairBack(g, look, bob){
-  const y = -14.5+bob;
-  g.fillStyle = look.hair;
-  if(look.style === "largo"){
-    g.beginPath(); g.arc(0,y-1,9.4,0,7); g.fill();
-    g.fillRect(-9.4,y-1,18.8,10);
-    g.beginPath(); g.arc(0,y+9,9.4,0,Math.PI); g.fill();
-  }else if(look.style === "largorulos"){
-    for(const [cx,cy,r] of [[-8,y+1,5.2],[8,y+1,5.2],[-8.5,y+6,4.8],[8.5,y+6,4.8],[0,y+9,5.2]]){
-      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
-    }
-  }else if(look.style === "medio"){
-    g.beginPath(); g.arc(0,y-1,9.1,0,7); g.fill();
-    g.fillRect(-9.1,y-1,18.2,7);
-  }
+/* ¿la remera es oscura? decide de qué color va el nombre estampado */
+function esOscuro(hex){
+  const c = rgbDe(hex);
+  return (0.299*c[0] + 0.587*c[1] + 0.114*c[2]) < 140;
 }
 
-function drawHair(g, look, bob){
-  const y = -14.5+bob;
-  g.fillStyle = look.hair;
-  if(look.style === "corto"){
-    g.beginPath(); g.arc(0,y-1,8.9,Math.PI*1.02,Math.PI*1.98); g.fill();
-    g.fillRect(-8.9,y-3.5,17.8,4);
-    g.fillRect(-8.9,y-3,2.6,6);  g.fillRect(6.3,y-3,2.6,6);        // patillas
-  }else if(look.style === "medio"){
-    g.beginPath(); g.arc(0,y-1.5,8.6,Math.PI,0); g.fill();
-    g.fillRect(-8.6,y-2.5,17.2,4);
-    g.fillRect(-8.6,y-2,2.8,8);  g.fillRect(5.8,y-2,2.8,8);
-  }else if(look.style === "largo"){
-    g.beginPath(); g.arc(0,y-1.5,8.8,Math.PI,0); g.fill();
-    g.fillRect(-8.8,y-2.5,17.6,4);
-    g.fillRect(-8.8,y-2,2.9,13); g.fillRect(5.9,y-2,2.9,13);       // mechones al costado
-  }else if(look.style === "rulos"){
-    for(const [cx,cy,r] of [[-6,y-4,4.2],[0,y-6.5,4.6],[6,y-4,4.2],[-8,y-.5,3.6],[8,y-.5,3.6]]){
-      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
-    }
-  }else if(look.style === "largorulos"){
-    for(const [cx,cy,r] of [[-6,y-4,4.4],[0,y-6.8,4.8],[6,y-4,4.4],
-                            [-9,y+2,4.2],[9,y+2,4.2],[-8,y+8,4],[8,y+8,4],[0,y+11,4.4]]){
-      g.beginPath(); g.arc(cx,cy,r,0,7); g.fill();
-    }
-  }
+/* =====================================================================
+   LA GENTE
+   Mide 100 de alto con los pies en 0. La cabeza es un óvalo de 15.5 × 16.5
+   centrado en -83, los hombros están en -66 y la cadera en -36.
+   `bob` es la respiración: mueve el torso y la cabeza, nunca los pies.
+   ===================================================================== */
+const PANTALON = "#2B3140", ZAPATO = "#191C23";
+
+function pierna(g, x, pant){
+  g.fillStyle = luz(g, x-5.6,-38, x+5.6,-6, pant, .12, .30);
+  rr(g, x-5.6, -38, 11.2, 33, 3.8); g.fill();
+  g.strokeStyle = oscurecer(pant,.45); g.lineWidth = 1.1; g.stroke();
+  g.fillStyle = rgba("#FFFFFF", .05); rr(g, x-4.6, -37, 3.2, 30, 1.6); g.fill(); // pliegue
+  g.fillStyle = luz(g, x-7,-8, x+7,0, ZAPATO, .22, .22);                        // zapato
+  rr(g, x-7, -8, 14, 8, 2.9); g.fill();
+  g.strokeStyle = oscurecer(ZAPATO,.5); g.stroke();
+  g.fillStyle = aclarar(ZAPATO,.3); rr(g, x-7, -2.6, 14, 2.6, 1.3); g.fill();   // suela
 }
 
-function drawPerson(g, look, bob, alpha){
-  const t = look.tall || 1;
+function brazo(g, lado, bob, piel, col){
+  /* Nace en la costura del hombro y se superpone al torso: si arranca más
+     abajo o más afuera, el brazo se lee como una pastilla suelta al lado
+     del cuerpo. La manga tapa la unión, que es lo que la disimula. */
   g.save();
-  if(alpha !== undefined) g.globalAlpha = alpha;
-  g.scale(1, t);
-  g.fillStyle = "#00000038"; g.beginPath(); g.ellipse(0,15,11,4.5,0,0,7); g.fill();
-  const piel = look.skin || "#EFC08C";
-  g.fillStyle = "#2B3140"; g.fillRect(-6.5,4,5,11); g.fillRect(1.5,4,5,11);    // piernas
-  drawHairBack(g, look, bob);                                                  // melena, detrás de todo
-  g.fillStyle = look.shirt; rr(g,-9.5,-8+bob,19,15,5); g.fill();               // remera
-  g.fillStyle = "#00000022"; rr(g,-9.5,-8+bob,19,4,4); g.fill();
-  if(look.tag){                                                                // nombre estampado
-    g.save();
-    /* la remera mide 19 de ancho y el nombre tiene que entrar adentro: si es
-       largo, achica la letra en vez de irse de la tela. En el otro juego no
-       hacía falta porque los diez tienen nombre corto. */
-    g.font = '700 5.2px "Archivo",system-ui,sans-serif';
-    const ancho0 = g.measureText(look.tag).width;
-    if(ancho0 > 16) g.font = '700 ' + (5.2*16/ancho0).toFixed(2) + 'px "Archivo",system-ui,sans-serif';
-    g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillStyle = isDark(look.shirt) ? "#EFEDE7" : "#1B1D22";
-    g.fillText(look.tag, 0, -0.5+bob);
-    g.restore();
-  }
-  g.fillStyle = piel; g.fillRect(-12.5,-5+bob,3.6,10); g.fillRect(8.9,-5+bob,3.6,10);
-  g.beginPath(); g.arc(0,-14.5+bob,8,0,7); g.fill();                           // cara
-  drawHair(g, look, bob);
-  if(look.beard){
-    g.fillStyle = look.hair;
-    g.beginPath(); g.arc(0,-11.5+bob,6.6,.15*Math.PI,.85*Math.PI); g.fill();
-  }
-  g.fillStyle = "#1C1F26";
-  g.beginPath(); g.arc(-2.9,-14.8+bob,1.15,0,7); g.fill();
-  g.beginPath(); g.arc(2.9,-14.8+bob,1.15,0,7); g.fill();
-  g.globalAlpha = 1;
+  g.translate(lado*15.6, -66.5+bob);
+  g.rotate(lado * 0.055);
+  g.fillStyle = luz(g, -5.4,0, 5.4,15, col, .10, .30);                          // manga
+  rr(g, -5.4, -1.5, 10.8, 16, 4.6); g.fill();
+  g.strokeStyle = oscurecer(col,.48); g.lineWidth = 1.1; g.stroke();
+  g.fillStyle = luz(g, -4.4,13, 4.4,30, piel, .10, .26);                        // antebrazo
+  rr(g, -4.4, 12.5, 8.8, 19, 3.8); g.fill();
+  g.strokeStyle = oscurecer(piel,.4); g.stroke();
+  g.fillStyle = luz(g, -4.8,29, 4.8,38, piel, .14, .24);                        // mano
+  g.beginPath(); g.ellipse(0, 33.5, 4.9, 5.4, 0, 0, 7); g.fill();
+  g.strokeStyle = oscurecer(piel,.42); g.stroke();
   g.restore();
 }
 
-/* ---------- la escena ----------
-   Un salón vacío de museo: piso, pared del fondo y dos tarimas. El que
-   juega abajo a la izquierda y más grande; el rival arriba a la derecha
-   y más chico, que es lo que da la profundidad. */
-const cv = document.getElementById("c");
-const ctx = cv.getContext("2d");
-let ancho = 0, alto = 0;
+function torso(g, bob, col, espalda, tag){
+  const y0 = -67+bob, y1 = -35+bob;
+  g.beginPath();
+  g.moveTo(-17.5, y0+5);
+  g.quadraticCurveTo(-17.5, y0-1.5, -11, y0-2.5);
+  g.lineTo(11, y0-2.5);
+  g.quadraticCurveTo(17.5, y0-1.5, 17.5, y0+5);
+  g.lineTo(13, y1);
+  g.quadraticCurveTo(0, y1+3.2, -13, y1);
+  g.closePath();
+  g.fillStyle = luz(g, -17,y0, 17,y1, col, .15, .28); g.fill();
+  g.strokeStyle = oscurecer(col,.5); g.lineWidth = 1.2; g.stroke();
+
+  if(espalda){
+    g.strokeStyle = rgba("#000000", .16); g.lineWidth = 1;                      // costura del hombro
+    g.beginPath(); g.moveTo(-14.5, y0+4); g.lineTo(14.5, y0+4); g.stroke();
+  }else{
+    g.fillStyle = oscurecer(col,.34);                                           // cuello redondo
+    g.beginPath(); g.ellipse(0, y0-1.5, 6.4, 3.4, 0, 0, Math.PI); g.fill();
+  }
+  g.fillStyle = rgba("#FFFFFF", .06);                                           // brillo del pecho
+  rr(g, -12, y0+3, 7, 22, 3); g.fill();
+
+  if(tag){                                                                      // el nombre estampado
+    g.save();
+    g.textAlign = "center"; g.textBaseline = "middle";
+    let px = 9;
+    g.font = '700 ' + px + 'px "Archivo",system-ui,sans-serif';
+    const an = g.measureText(tag).width;
+    /* entre los dos brazos quedan 20 de remera a la vista: si el nombre no
+       entra, se achica la letra. Con «El Negro» o «Damián» hace falta. */
+    if(an > 18){ px = Math.max(4.6, px*18/an); g.font = '700 ' + px.toFixed(2) + 'px "Archivo",system-ui,sans-serif'; }
+    g.fillStyle = esOscuro(col) ? "rgba(242,241,237,.92)" : "rgba(18,20,26,.82)";
+    g.fillText(tag, 0, y0+16);
+    g.restore();
+  }
+}
+
+/* ---------- las caras ----------
+   Ojos con blanco, iris y un brillo; cejas en el color del pelo; nariz y
+   boca apenas sugeridas. Con eso alcanza para que a esta escala se lea
+   una persona y no un muñeco. */
+/* De un nombre sale siempre el mismo número, así que la cara de cada uno no
+   cambia entre partidas ni entre teléfonos. */
+function semillaDe(nombre){
+  let h = 0;
+  for(let i = 0; i < nombre.length; i++) h = (h*31 + nombre.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+function cara(g, bob, piel, pelo, parp, sem){
+  const cy = -83+bob;
+  const sep  = 5.8 + (sem % 3) * 0.5;                    // ojos más juntos o más separados
+  const ojo  = 3.3 + ((sem >> 2) % 3) * 0.28;            // ojos más chicos o más grandes
+  const ceja = ((sem >> 4) % 3 - 1) * 1.1;               // cejas rectas, altas o caídas
+  const boca = 2.0 + ((sem >> 6) % 4) * 0.85;            // más o menos sonrisa
+  const anchoBoca = 3.0 + ((sem >> 8) % 3) * 0.6;
+  g.save();
+  g.strokeStyle = oscurecer(pelo, .1); g.lineWidth = 1.7; g.lineCap = "round";
+  g.beginPath(); g.moveTo(-sep-3, cy-6.6+ceja); g.lineTo(-sep+2.6, cy-7.6-ceja); // cejas
+  g.moveTo(sep+3, cy-6.6+ceja); g.lineTo(sep-2.6, cy-7.6-ceja); g.stroke();
+
+  if(parp){
+    g.strokeStyle = "#3A3028"; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(-sep-2.8, cy-1.6); g.quadraticCurveTo(-sep, cy+.8, -sep+2.8, cy-1.6);
+    g.moveTo(sep+2.8, cy-1.6); g.quadraticCurveTo(sep, cy+.8, sep-2.8, cy-1.6); g.stroke();
+  }else{
+    for(const s of [-1, 1]){
+      g.fillStyle = "#F7F4EE";
+      g.beginPath(); g.ellipse(s*sep, cy-1.4, ojo, ojo*1.12, 0, 0, 7); g.fill();
+      g.fillStyle = "#2A2118";
+      g.beginPath(); g.ellipse(s*sep+s*0.5, cy-1.2, ojo*0.6, ojo*0.75, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(255,255,255,.85)";
+      g.beginPath(); g.arc(s*sep-0.8, cy-2.6, .85, 0, 7); g.fill();
+    }
+  }
+  g.strokeStyle = oscurecer(piel, .3); g.lineWidth = 1.3;                        // nariz
+  g.beginPath(); g.moveTo(-.6, cy+2.6); g.quadraticCurveTo(1.4, cy+4.4, -.8, cy+5); g.stroke();
+  g.strokeStyle = "rgba(120,70,60,.65)"; g.lineWidth = 1.5;                      // boca
+  g.beginPath(); g.moveTo(-anchoBoca, cy+8.4);
+  g.quadraticCurveTo(0, cy+8.4+boca, anchoBoca, cy+8.4); g.stroke();
+  g.restore();
+}
+
+/* ---------- el pelo ----------
+   Los mismos cinco cortes del juego de tablero, con volumen: una masa de
+   base, un brillo arriba y el contorno un tono más oscuro. El pelo que va
+   detrás de la cabeza (melenas) se dibuja antes que el cuerpo. */
+function peloAtras(g, look, bob, espalda){
+  const cy = -83+bob, pelo = look.hair, e = look.style;
+  if(e !== "largo" && e !== "largorulos" && e !== "medio" && !espalda) return;
+  g.fillStyle = luz(g, -18,cy-16, 18,cy+22, pelo, .10, .30);
+  if(e === "largo"){
+    g.beginPath(); g.moveTo(-16.5, cy-4);
+    g.quadraticCurveTo(-19, cy+18, -13, cy+22);
+    g.lineTo(13, cy+22);
+    g.quadraticCurveTo(19, cy+18, 16.5, cy-4);
+    g.closePath(); g.fill();
+  }else if(e === "largorulos"){
+    for(const [x,y,r] of [[-15,cy+4,8],[15,cy+4,8],[-15.5,cy+13,7.4],[15.5,cy+13,7.4],
+                          [-9,cy+20,7],[9,cy+20,7],[0,cy+21,7.4]]){
+      g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+    }
+  }else{
+    g.beginPath(); g.ellipse(0, cy+1, 17.4, 18.6, 0, 0, 7); g.fill();
+  }
+}
+
+function peloAdelante(g, look, bob, espalda){
+  const cy = -83+bob, pelo = look.hair, e = look.style;
+  g.save();
+  g.fillStyle = luz(g, -16,cy-19, 14,cy+8, pelo, .17, .20);
+  g.strokeStyle = oscurecer(pelo, .42); g.lineWidth = 1.1; g.lineJoin = "round";
+
+  if(espalda){
+    /* de espaldas es una sola masa que tapa casi toda la cabeza */
+    /* tapa la cabeza entera y un poco más: si queda corta, abajo asoma la
+       piel del cráneo y de lejos parece una cara dada vuelta. */
+    g.beginPath(); g.ellipse(0, cy-0.5, 16.8, 18.2, 0, 0, 7); g.fill(); g.stroke();
+    if(e === "rulos" || e === "largorulos"){
+      for(const [x,y,r] of [[-9,cy-11,6.2],[0,cy-14,6.8],[9,cy-11,6.2],
+                            [-13.5,cy-3,5.6],[13.5,cy-3,5.6]]){
+        g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+      }
+    }
+    g.fillStyle = rgba("#FFFFFF", .13);
+    g.beginPath(); g.ellipse(-5.5, cy-9, 5.8, 3.4, -0.5, 0, 7); g.fill();
+    /* la nuca: el pelo baja en punta sobre el cuello. Sin esto la cabeza de
+       atrás es un huevo liso y no se entiende qué se está mirando. */
+    g.fillStyle = oscurecer(pelo, .26);
+    g.beginPath();
+    g.moveTo(-8.4, cy+13);
+    g.quadraticCurveTo(0, cy+21, 8.4, cy+13);
+    g.quadraticCurveTo(0, cy+15.5, -8.4, cy+13);
+    g.closePath(); g.fill();
+    g.restore(); return;
+  }
+
+  if(e === "rulos" || e === "largorulos"){
+    /* los rulos sí son piezas: es lo que los hace rulos. Se rellenan todos
+       primero y recién después va el contorno, así no quedan las costuras
+       de un rulo cruzando por encima del de al lado. */
+    const bollos = [[-9.5,cy-11,6.6],[0,cy-14.8,7.2],[9.5,cy-11,6.6],
+                    [-14,cy-3.5,5.8],[14,cy-3.5,5.8]];
+    for(const [x,y,r] of bollos){ g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  }else{
+    /* corto, medio y largo son la misma silueta con los costados más o menos
+       largos: una sola tirada, del filo de un lado al del otro, y el
+       flequillo cruzado de vuelta. */
+    const hasta = e === "largo" ? cy+17 : e === "medio" ? cy+7 : cy-2;
+    g.beginPath();
+    g.moveTo(-17, hasta);
+    g.quadraticCurveTo(-18.6, cy-16, 0, cy-18.2);
+    g.quadraticCurveTo(18.6, cy-16, 17, hasta);
+    g.lineTo(12.6, hasta);
+    g.quadraticCurveTo(13.8, cy-8.5, 4, cy-10);
+    g.quadraticCurveTo(-7, cy-11, -12.6, cy-2.5);
+    g.lineTo(-12.6, hasta);
+    g.closePath();
+    g.fill(); g.stroke();
+  }
+  g.fillStyle = rgba("#FFFFFF", .15);                                           // brillo
+  g.beginPath(); g.ellipse(-6, cy-12.5, 6.4, 2.8, -0.4, 0, 7); g.fill();
+  g.restore();
+}
+
+function dibujarPersona(g, look, o){
+  o = o || {};
+  const bob = o.bob || 0, espalda = !!o.espalda, t = look.tall || 1;
+  const piel = look.skin || "#EFC08C", pelo = look.hair, col = look.shirt;
+  const cy = -83+bob;
+
+  g.save();
+  g.lineJoin = "round"; g.lineCap = "round";
+  g.scale(1, t);
+
+  g.fillStyle = "rgba(0,0,0,.36)";                                              // sombra en el piso
+  g.beginPath(); g.ellipse(0, 1.5, 25, 6.8, 0, 0, 7); g.fill();
+
+  pierna(g, -11, PANTALON); pierna(g, 11, PANTALON);
+  peloAtras(g, look, bob, espalda);
+
+  g.fillStyle = oscurecer(piel, .22);                                           // cuello
+  rr(g, -5.2, cy+12, 10.4, 10, 2.8); g.fill();
+
+  torso(g, bob, col, espalda, espalda ? look.tag : look.tag);
+
+  const orejas = () => {
+    for(const s of [-1, 1]){
+      g.fillStyle = luz(g, s*14,cy-4, s*20,cy+5, piel, .06, .28);
+      g.beginPath(); g.ellipse(s*15.2, cy+0.5, 3.2, 4.6, 0, 0, 7); g.fill();
+      g.strokeStyle = oscurecer(piel,.4); g.lineWidth = 1; g.stroke();
+    }
+  };
+  if(!espalda) orejas();
+  g.fillStyle = luz(g, -14,cy-16, 12,cy+14, piel, .14, .20);                    // cabeza
+  g.beginPath(); g.ellipse(0, cy, 15.5, 16.5, 0, 0, 7); g.fill();
+  g.strokeStyle = oscurecer(piel, .42); g.lineWidth = 1.2; g.stroke();
+
+  if(!espalda){
+    cara(g, bob, piel, pelo, !!o.parp, semillaDe(look.n));
+    if(look.beard){
+      g.fillStyle = luz(g, -10,cy+2, 10,cy+14, pelo, .08, .26);
+      g.beginPath(); g.moveTo(-11.5, cy+2);
+      g.quadraticCurveTo(-10, cy+15, 0, cy+15.8);
+      g.quadraticCurveTo(10, cy+15, 11.5, cy+2);
+      g.quadraticCurveTo(6, cy+9, 0, cy+9.2);
+      g.quadraticCurveTo(-6, cy+9, -11.5, cy+2);
+      g.closePath(); g.fill();
+    }
+  }
+  peloAdelante(g, look, bob, espalda);
+  if(espalda) orejas();                    // de atrás asoman por fuera del pelo
+  brazo(g, -1, bob, piel, col); brazo(g, 1, bob, piel, col);
+  g.restore();
+}
+
+/* =====================================================================
+   LA ESCENA
+   Un salón con fondo, piso en perspectiva, dos tarimas y polvo en el aire.
+   Lo que no se mueve se dibuja una vez en un lienzo aparte y se estampa en
+   cada cuadro: en el celular, redibujar los degradés sesenta veces por
+   segundo se nota en la batería.
+   ===================================================================== */
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+let ancho = 0, alto = 0, fondo = null;
+const HOR = 0.46;                                   // dónde termina la pared
+
+function cuadro(g, x, y, an, al, semilla){
+  g.save();
+  g.fillStyle = "#0A0B0F"; g.fillRect(x-3, y-3, an+6, al+6);                    // marco
+  const m = g.createLinearGradient(x-3, y-3, x+an+3, y+al+3);
+  m.addColorStop(0, "#E0B564"); m.addColorStop(.5, "#8A6B31"); m.addColorStop(1, "#C79B4A");
+  g.strokeStyle = m; g.lineWidth = 2.6; g.strokeRect(x-2.2, y-2.2, an+4.4, al+4.4);
+  /* la tela: bloques de color, que de lejos es exactamente lo que se ve de
+     un cuadro y no distrae de los que pelean */
+  const tonos = [["#2E4A6E","#7FB6A4"],["#5A2E3E","#D9A94F"],["#2E3E2A","#C8A45E"]][semilla % 3];
+  const f = g.createLinearGradient(x, y, x+an, y+al);
+  f.addColorStop(0, tonos[0]); f.addColorStop(1, oscurecer(tonos[0], .5));
+  g.fillStyle = f; g.fillRect(x, y, an, al);
+  g.fillStyle = rgba(tonos[1], .5);
+  g.beginPath(); g.arc(x+an*0.62, y+al*0.36, an*0.2, 0, 7); g.fill();
+  g.fillStyle = rgba(tonos[1], .22);
+  g.fillRect(x, y+al*0.66, an, al*0.34);
+  g.fillStyle = "rgba(255,255,255,.07)";                                        // reflejo del vidrio
+  g.beginPath(); g.moveTo(x, y+al); g.lineTo(x+an*0.5, y); g.lineTo(x+an*0.78, y);
+  g.lineTo(x+an*0.28, y+al); g.closePath(); g.fill();
+  g.restore();
+}
+
+function foco(g, x, yTecho, yPiso, radio){
+  g.save();
+  const cono = g.createLinearGradient(x, yTecho, x, yPiso);
+  cono.addColorStop(0, "rgba(217,169,79,.16)");
+  cono.addColorStop(1, "rgba(217,169,79,0)");
+  g.fillStyle = cono;
+  g.beginPath(); g.moveTo(x-7, yTecho); g.lineTo(x+7, yTecho);
+  g.lineTo(x+radio, yPiso); g.lineTo(x-radio, yPiso); g.closePath(); g.fill();
+  g.fillStyle = "#1A1E27";                                                      // el artefacto
+  rr(g, x-7, yTecho-7, 14, 8, 2); g.fill();
+  g.fillStyle = "#F0D79A";
+  g.beginPath(); g.ellipse(x, yTecho+1, 5, 2.2, 0, 0, 7); g.fill();
+  g.restore();
+}
+
+function construirFondo(){
+  const f = document.createElement("canvas");
+  f.width = ancho; f.height = alto;
+  const g = f.getContext("2d");
+  const hy = alto*HOR;
+
+  const pared = g.createLinearGradient(0, 0, 0, hy);                            // pared
+  pared.addColorStop(0, "#191D27"); pared.addColorStop(1, "#10131A");
+  g.fillStyle = pared; g.fillRect(0, 0, ancho, hy);
+
+  const piso = g.createLinearGradient(0, hy, 0, alto);                          // piso
+  piso.addColorStop(0, "#232834"); piso.addColorStop(.55, "#161A22"); piso.addColorStop(1, "#0B0D12");
+  g.fillStyle = piso; g.fillRect(0, hy, ancho, alto-hy);
+
+  /* las juntas del piso, abriéndose hacia abajo: es lo único que hace falta
+     para que el piso se lea como piso y no como una franja de color */
+  g.strokeStyle = "rgba(255,255,255,.05)"; g.lineWidth = 1;
+  for(let i = -6; i <= 6; i++){
+    g.beginPath(); g.moveTo(ancho/2 + i*ancho*0.055, hy);
+    g.lineTo(ancho/2 + i*ancho*0.30, alto); g.stroke();
+  }
+  for(let k = 1; k <= 7; k++){
+    const y = hy + (alto-hy) * Math.pow(k/7, 1.9);
+    g.beginPath(); g.moveTo(0, y); g.lineTo(ancho, y); g.stroke();
+  }
+
+  const angosto = ancho < 520;
+  const cuadros = angosto ? [[0.21,0.30],[0.80,0.26]]
+                          : [[0.13,0.28],[0.50,0.20],[0.86,0.30]];
+  cuadros.forEach(([fx, fy], i) => {
+    const an = Math.max(24, Math.min(ancho*0.10, hy*0.34)), al = an*1.25;
+    cuadro(g, ancho*fx - an/2, hy*fy, an, al, i);
+  });
+
+  g.strokeStyle = "#2A2F3A"; g.lineWidth = 1;                                   // zócalo
+  g.beginPath(); g.moveTo(0, hy+.5); g.lineTo(ancho, hy+.5); g.stroke();
+  g.fillStyle = "rgba(217,169,79,.07)"; g.fillRect(0, hy-7, ancho, 7);
+
+  foco(g, ancho*0.74, 6, alto*0.62, ancho*0.16);                                // los dos focos
+  foco(g, ancho*0.27, 6, alto, ancho*0.24);
+
+  const v = g.createRadialGradient(ancho/2, alto/2, Math.min(ancho,alto)*0.28,
+                                   ancho/2, alto/2, Math.max(ancho,alto)*0.78);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.62)");
+  g.fillStyle = v; g.fillRect(0, 0, ancho, alto);
+  fondo = f;
+}
+
+function tarima(g, x, y, radio, tinte){
+  g.save();
+  g.fillStyle = "rgba(0,0,0,.28)";                                              // sombra abajo
+  g.beginPath(); g.ellipse(x, y+radio*0.10, radio*1.06, radio*0.30, 0, 0, 7); g.fill();
+  const p = g.createLinearGradient(x-radio, y-radio*0.3, x+radio, y+radio*0.3);
+  p.addColorStop(0, "#2C323F"); p.addColorStop(.5, "#1D222C"); p.addColorStop(1, "#141821");
+  g.fillStyle = p;
+  g.beginPath(); g.ellipse(x, y, radio, radio*0.28, 0, 0, 7); g.fill();
+  g.strokeStyle = rgba(tinte, .5); g.lineWidth = 1.6;
+  g.beginPath(); g.ellipse(x, y, radio, radio*0.28, 0, 0, 7); g.stroke();
+  g.strokeStyle = rgba(tinte, .16); g.lineWidth = 1;
+  g.beginPath(); g.ellipse(x, y, radio*0.7, radio*0.19, 0, 0, 7); g.stroke();
+  g.restore();
+}
+
+/* el polvo en el aire: doce motas que suben despacio y vuelven a empezar */
+let motas = [];
+function armarMotas(){
+  motas = [];
+  for(let i = 0; i < 12; i++){
+    motas.push({x:Math.random()*ancho, y:Math.random()*alto,
+                r:0.7+Math.random()*1.5, v:2+Math.random()*7, a:0.05+Math.random()*0.13});
+  }
+}
+function dibujarMotas(g, dt){
+  g.save();
+  for(const m of motas){
+    m.y -= m.v*dt/1000;
+    if(m.y < -4){ m.y = alto+4; m.x = Math.random()*ancho; }
+    g.fillStyle = "rgba(230,215,180," + m.a + ")";
+    g.beginPath(); g.arc(m.x, m.y, m.r, 0, 7); g.fill();
+  }
+  g.restore();
+}
 
 function medir(){
   const caja = cv.parentElement.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   ancho = Math.max(1, Math.round(caja.width));
   alto  = Math.max(1, Math.round(caja.height));
-  cv.width  = Math.round(ancho * dpr);
-  cv.height = Math.round(alto  * dpr);
+  cv.width = Math.round(ancho*dpr); cv.height = Math.round(alto*dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  construirFondo(); armarMotas();
 }
-window.addEventListener("resize", medir);
-
-/* Dónde va cada uno y de qué tamaño, en función de lo que haya de pantalla.
-   La persona mide 30 de alto en sus propias unidades: de -22 (la cabeza) a
-   15 (los pies). La escala sale del alto del salón, no del ancho, así en
-   apaisado no se desborda. */
-const HORIZONTE = 0.44;              // dónde termina la pared y empieza el piso
-function puestos(){
-  /* El que juega ocupa como un tercio del alto del salón: más chico no se le
-     ve la cara, más grande no entra con las placas. El ancho también manda,
-     porque apaisado el alto sobra y los dos se pisarían. */
-  const u = Math.max(2.2, Math.min(alto/125, ancho/85, 7));
-  return {
-    /* los dos apoyan por debajo del horizonte, que es lo que los para en el
-       piso en vez de dejarlos colgados de la pared */
-    rival: {x: ancho*0.74, y: alto*0.58, u: u*0.74},
-    mio:   {x: ancho*0.27, y: alto*0.95, u: u},
-  };
-}
-
-function tarima(g, x, y, radio, color){
-  g.save();
-  g.fillStyle = hexA(color, .10);
-  g.beginPath(); g.ellipse(x, y, radio, radio*0.28, 0, 0, 7); g.fill();
-  g.strokeStyle = hexA(color, .34); g.lineWidth = 1.4;
-  g.beginPath(); g.ellipse(x, y, radio, radio*0.28, 0, 0, 7); g.stroke();
-  g.restore();
-}
-
-function salon(g){
-  const horizonte = alto*HORIZONTE;
-  g.fillStyle = "#13161E"; g.fillRect(0, 0, ancho, horizonte);          // pared del fondo
-  const piso = g.createLinearGradient(0, horizonte, 0, alto);
-  piso.addColorStop(0, "#1A1E28"); piso.addColorStop(1, "#0C0E14");
-  g.fillStyle = piso; g.fillRect(0, horizonte, ancho, alto-horizonte);
-  g.strokeStyle = "#2A2F3A"; g.lineWidth = 1;
-  g.beginPath(); g.moveTo(0, horizonte+.5); g.lineTo(ancho, horizonte+.5); g.stroke();
-
-  /* tres cuadros colgados, que es todo lo que hace falta para que se lea
-     «museo» sin robarle atención a los que pelean */
-  /* En el teléfono son dos: el del medio caía justo detrás de la placa del
-     rival y se veía el marco asomando por abajo, que parecía un error. */
-  const marcos = ancho < 520 ? [[0.20,0.42],[0.87,0.36]]
-                             : [[0.13,0.34],[0.57,0.18],[0.88,0.38]];
-  for(const [fx, fh] of marcos){
-    const an = Math.max(22, Math.min(ancho*0.085, alto*0.11)), al = an*1.22;
-    const x = ancho*fx - an/2, y = horizonte*fh;
-    g.fillStyle = "#0A0C10"; g.fillRect(x, y, an, al);
-    g.strokeStyle = hexA("#D9A94F", .38); g.lineWidth = 2;
-    g.strokeRect(x+1, y+1, an-2, al-2);
-    g.fillStyle = hexA("#D9A94F", .05); g.fillRect(x+4, y+4, an-8, al-8);
-  }
-}
-
-let t0 = performance.now();
-function frame(now){
-  const t = now - t0;
-  medirSiHaceFalta();
-  ctx.clearRect(0, 0, ancho, alto);
-  salon(ctx);
-
-  const p = puestos();
-  const bobR = Math.sin(t/620)*0.55;
-  const bobM = Math.sin(t/620 + 1.7)*0.55;
-
-  tarima(ctx, p.rival.x, p.rival.y, p.rival.u*14, "#E86B5E");
-  ctx.save(); ctx.translate(p.rival.x, p.rival.y - p.rival.u*15); ctx.scale(p.rival.u, p.rival.u);
-  drawPerson(ctx, EN_PANTALLA.rival, bobR); ctx.restore();
-
-  tarima(ctx, p.mio.x, p.mio.y, p.mio.u*14, "#7FB6A4");
-  ctx.save(); ctx.translate(p.mio.x, p.mio.y - p.mio.u*15); ctx.scale(p.mio.u, p.mio.u);
-  drawPerson(ctx, EN_PANTALLA.mio, bobM); ctx.restore();
-
-  requestAnimationFrame(frame);
-}
-
-/* El lienzo se remide sólo cuando de verdad cambió de tamaño: medir en cada
-   cuadro fuerza un reflow por cuadro y en el teléfono se nota. */
-let ultimo = "";
+let medida = "";
 function medirSiHaceFalta(){
   const caja = cv.parentElement.getBoundingClientRect();
   const clave = Math.round(caja.width)+"x"+Math.round(caja.height)+"@"+(window.devicePixelRatio||1);
-  if(clave === ultimo) return;
-  ultimo = clave; medir();
+  if(clave === medida) return;
+  medida = clave; medir();
+}
+window.addEventListener("resize", medirSiHaceFalta);
+
+/* Dónde va cada uno. El que juega va grande abajo a la izquierda y de
+   espaldas, como en cualquier combate por turnos; el rival, más chico y
+   más atrás, mirando de frente. La escala la manda el alto del salón, y
+   el ancho la corrige para que apaisado no se toquen. */
+function puestos(){
+  const u = Math.max(0.9, Math.min(alto/330, ancho/235, 2.4));
+  return {
+    rival: {x: ancho*0.735, y: alto*0.605, u: u*0.78},
+    mio:   {x: ancho*0.265, y: alto*0.935, u: u},
+  };
 }
 
-/* ---------- lo que se ve mientras no hay motor ----------
-   La etapa 1 es el esqueleto: se dibuja la pelea, no se pelea. El motor de
-   turnos, el aura y los poderes entran en las etapas que siguen. */
 const EN_PANTALLA = { mio: CREW.tomy, rival: OTROS.otro1 };
+let iMio = 0, iRival = 0;
+const parpadeo = { mio:0, rival:0 };
 
-function placa(id, look, vida, vidaMax, aura, auraMax){
+let t0 = performance.now(), ultimo = t0;
+function frame(now){
+  const dt = Math.min(64, now - ultimo); ultimo = now;
+  const t = now - t0;
+  medirSiHaceFalta();
+  ctx.clearRect(0, 0, ancho, alto);
+  if(fondo) ctx.drawImage(fondo, 0, 0);
+
+  const p = puestos();
+  /* la respiración: sube y baja apenas, y cada uno en su tiempo para que no
+     parezcan dos autómatas sincronizados */
+  const bobR = Math.sin(t/900)*0.9, bobM = Math.sin(t/900 + 2.1)*0.9;
+  if(t > parpadeo.rival) parpadeo.rival = t + 2200 + Math.random()*3600;
+  if(t > parpadeo.mio)   parpadeo.mio   = t + 2200 + Math.random()*3600;
+  const parpR = parpadeo.rival - t < 160;
+
+  tarima(ctx, p.rival.x, p.rival.y, p.rival.u*34, "#E86B5E");
+  ctx.save(); ctx.translate(p.rival.x, p.rival.y); ctx.scale(p.rival.u, p.rival.u);
+  dibujarPersona(ctx, EN_PANTALLA.rival, {bob:bobR, parp:parpR}); ctx.restore();
+
+  tarima(ctx, p.mio.x, p.mio.y, p.mio.u*34, "#7FB6A4");
+  ctx.save(); ctx.translate(p.mio.x, p.mio.y); ctx.scale(p.mio.u, p.mio.u);
+  dibujarPersona(ctx, EN_PANTALLA.mio, {bob:bobM, espalda:true}); ctx.restore();
+
+  dibujarMotas(ctx, dt);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- las placas ---------- */
+function placa(id, look, vida, vidaMax, aura, auraMax, nivel){
   const el = document.getElementById(id);
   const pv = Math.max(0, vida/vidaMax);
   el.classList.toggle("poca", pv <= .5 && pv > .2);
   el.classList.toggle("nada", pv <= .2);
   el.querySelector(".nom").textContent = look.n;
+  el.querySelector(".niv").textContent = "Niv " + nivel;
   el.querySelector(".vida i").style.width = (pv*100).toFixed(1)+"%";
   el.querySelector(".aura i").style.width = ((aura/auraMax)*100).toFixed(1)+"%";
-  const cifras = el.querySelectorAll(".cifras b");
-  cifras[0].textContent = vida + "/" + vidaMax;
-  cifras[1].textContent = aura + "/" + auraMax;
+  const c = el.querySelectorAll(".cifras b");
+  c[0].textContent = vida + "/" + vidaMax;
+  c[1].textContent = aura + "/" + auraMax;
+}
+function pintarTodo(){
+  placa("placaRival", EN_PANTALLA.rival, 120, 120, 0, 100, 5);
+  placa("placaMio",   EN_PANTALLA.mio,   120, 120, 0, 100, 5);
 }
 
-function pintarTodo(){
-  placa("placaRival", EN_PANTALLA.rival, 120, 120, 0, 100);
-  placa("placaMio",   EN_PANTALLA.mio,   120, 120, 0, 100);
-  document.getElementById("dialogo").innerHTML =
-    "Esto es el <em>esqueleto</em>: la escena, las barras y el menú. " +
-    "El combate, el aura y los poderes entran en la etapa que sigue.";
-  for(const id of ["optPelear","optPoder","optMochila","optCambiar"]){
-    document.getElementById(id).disabled = true;
-  }
+/* ---------- mientras no hay motor ----------
+   Tocando a cualquiera de los dos se cambia de personaje: así se pueden
+   mirar los diecinueve en el teléfono antes de que exista el combate.
+   Esto se va en cuanto los botones hagan algo. */
+document.getElementById("escena").addEventListener("pointerdown", ev => {
+  const caja = cv.getBoundingClientRect();
+  const x = ev.clientX - caja.left;
+  if(x > caja.width*0.5){ iRival = (iRival+1) % SUYOS.length; EN_PANTALLA.rival = SUYOS[iRival]; }
+  else                  { iMio   = (iMio+1)   % MIOS.length;  EN_PANTALLA.mio   = MIOS[iMio]; }
+  pintarTodo();
+});
+
+document.getElementById("dialogo").innerHTML =
+  "Esto es la <em>pinta</em> del juego, todavía sin motor: la escena, los dos " +
+  "que pelean, las barras de vida y de aura. Tocá a cualquiera de los dos para " +
+  "ver a otro.";
+for(const id of ["optPelear","optPoder","optMochila","optCambiar"]){
+  document.getElementById(id).disabled = true;
 }
 
 /* ---------- ¿quedó vieja esta copia? ----------
-   Lo mismo que hace index.html, con su propio archivo de versión: GitHub
-   Pages manda diez minutos de caché y agregado a la pantalla de inicio no
-   hay botón de recargar. Se pregunta por version-batalla.txt con la hora
-   pegada al final, una dirección que nunca estuvo en la caché.
-
-   VERSION la escribe scripts/sellar.js: no se toca a mano.
+   Lo mismo que hace index.html, con su propio archivo de versión. La
+   escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "b5bd08e213";
+const VERSION = "053660189b";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
-  if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
+  if(!/^https?:/.test(location.protocol || "")) return;
   let yaRecargue = false;
   try{ yaRecargue = sessionStorage.getItem("aura.recarga") === VERSION; }catch(e){}
   if(yaRecargue) return;
@@ -442,7 +731,7 @@ const VERSION = "b5bd08e213";
       try{ sessionStorage.setItem("aura.recarga", nueva); }catch(e){}
       location.replace(location.pathname + "?v=" + encodeURIComponent(nueva));
     })
-    .catch(() => {});                      // sin señal, se juega con lo que hay
+    .catch(() => {});
 })();
 
 medir();
