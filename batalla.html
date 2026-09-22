@@ -521,6 +521,21 @@ function dibujarPersona(g, look, o){
       g.strokeStyle = oscurecer(piel,.4); g.lineWidth = 1; g.stroke();
     }
   };
+  /* De atrás no se ve la oreja: se ve el filo de afuera y nada más, porque
+     el pelo tapa el resto. Por eso va ANTES del pelo y no después —dibujada
+     encima quedaba pegoteada sobre la nuca, como dos manijas— y por eso es
+     más chica, más abajo y apenas inclinada hacia afuera. Al que tiene
+     melena no le asoma nada, que es lo que corresponde. */
+  const orejasDeAtras = () => {
+    for(const s of [-1, 1]){
+      g.save();
+      g.translate(s*15.4, cy+2.2); g.rotate(s*0.14);
+      g.fillStyle = luz(g, -3,-4, 3,4, piel, .02, .34);
+      g.beginPath(); g.ellipse(0, 0, 2.9, 4.2, 0, 0, 7); g.fill();
+      g.strokeStyle = oscurecer(piel, .46); g.lineWidth = .9; g.stroke();
+      g.restore();
+    }
+  };
   if(!espalda) orejas();
   g.fillStyle = luz(g, -14,cy-16, 12,cy+14, piel, .14, .20);                    // cabeza
   g.beginPath(); g.ellipse(0, cy, 15.5, 16.5, 0, 0, 7); g.fill();
@@ -538,8 +553,8 @@ function dibujarPersona(g, look, o){
       g.closePath(); g.fill();
     }
   }
+  if(espalda) orejasDeAtras();             // antes del pelo: que las tape él
   peloAdelante(g, look, bob, espalda);
-  if(espalda) orejas();                    // de atrás asoman por fuera del pelo
   brazo(g, -1, bob, piel, col); brazo(g, 1, bob, piel, col);
   g.restore();
 }
@@ -1196,7 +1211,7 @@ if(typeof document !== "undefined" && document.getElementById){
    Lo mismo que hace index.html, con su propio archivo de versión. La
    escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "151f216d75";
+const VERSION = "3970735afd";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;
