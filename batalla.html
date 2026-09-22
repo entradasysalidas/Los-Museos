@@ -126,7 +126,7 @@
     display:flex;flex-direction:column;align-items:center;gap:3px;
     transition:border-color .15s,transform .08s}
   .ficha:active{transform:translateY(1px)}
-  .ficha canvas{width:64px;height:64px;display:block}
+  .ficha canvas{width:72px;height:92px;display:block}
   .ficha b{font:400 12px/1.1 "Archivo Black","Archivo",sans-serif;letter-spacing:-.01em}
   .ficha small{font:500 8px/1.3 "IBM Plex Mono",monospace;color:var(--dim);letter-spacing:.04em}
   .ficha.elegida{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass-dim) inset,0 8px 20px #0008}
@@ -1082,13 +1082,25 @@ function volverAElegir(){
 
 /* ---------- elegir equipo ---------- */
 let elegidos = [];
+/* El retrato de la ficha: la persona entera, de la punta del pelo a la
+   sombra de los pies. Antes entraba a lo bruto y quedaba cortada por la
+   cadera, y a los más altos les comía la cabeza.
+
+   La cuenta sale de las medidas de dibujarPersona: la punta del pelo llega
+   a -104 y la sombra a +10, y a los altos el escalado vertical los estira,
+   así que el alto de cada uno depende de su `tall`. */
+const RET_ANCHO = 72, RET_ALTO = 92;
 function retrato(cv2, look){
   const g = cv2.getContext("2d");
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-  cv2.width = 64*dpr; cv2.height = 64*dpr;
+  cv2.width = RET_ANCHO*dpr; cv2.height = RET_ALTO*dpr;
   g.setTransform(dpr,0,0,dpr,0,0);
-  g.clearRect(0,0,64,64);
-  g.save(); g.translate(32, 94); g.scale(1.02, 1.02);
+  g.clearRect(0,0,RET_ANCHO,RET_ALTO);
+  const arriba = 104 * (look.tall || 1), abajo = 10;
+  const esc = RET_ALTO / (arriba + abajo);
+  g.save();
+  g.translate(RET_ANCHO/2, arriba*esc);
+  g.scale(esc, esc);
   dibujarPersona(g, look, {bob:0});
   g.restore();
 }
@@ -1107,7 +1119,7 @@ function pintarFichas(){
        falló— no quedaba ni una ficha y la pantalla se veía vacía. Así, lo
        peor que puede pasar es que a una le falte el dibujo. */
     const lienzo = document.createElement("canvas");
-    lienzo.width = 64; lienzo.height = 64;
+    lienzo.width = RET_ANCHO; lienzo.height = RET_ALTO;
     b.appendChild(lienzo);
     const nom = document.createElement("b");
     nom.textContent = look.n;
@@ -1184,7 +1196,7 @@ if(typeof document !== "undefined" && document.getElementById){
    Lo mismo que hace index.html, con su propio archivo de versión. La
    escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "8f36232e68";
+const VERSION = "151f216d75";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;
