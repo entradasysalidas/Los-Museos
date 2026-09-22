@@ -61,8 +61,12 @@
 
   .placa .fila{display:flex;align-items:baseline;gap:7px;margin-bottom:5px}
   .placa .nom{font:400 13px/1 "Archivo Black","Archivo",sans-serif;color:var(--ink);
-    letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    flex:0 1 auto;max-width:58%}
   .placa .fila{justify-content:space-between}
+  .placa .estado{font:500 8px/1.3 "IBM Plex Mono",monospace;letter-spacing:.04em;
+    color:var(--brass);text-align:right;flex:1 1 auto;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   .barra{position:relative;height:9px;background:#05070A;border-radius:5px;
     overflow:hidden;box-shadow:inset 0 1px 2px #000}
@@ -175,13 +179,13 @@
     <div id="escena">
       <canvas id="c"></canvas>
       <div class="placa rival" id="placaRival">
-        <div class="fila"><span class="nom">—</span></div>
+        <div class="fila"><span class="nom">—</span><span class="estado"></span></div>
         <div class="barra vida"><i style="width:100%"></i></div>
         <div class="barra aura"><i style="width:0%"></i></div>
         <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
       </div>
       <div class="placa mio" id="placaMio">
-        <div class="fila"><span class="nom">—</span></div>
+        <div class="fila"><span class="nom">—</span><span class="estado"></span></div>
         <div class="barra vida"><i style="width:100%"></i></div>
         <div class="barra aura"><i style="width:0%"></i></div>
         <div class="cifras"><span><b>—</b> vida</span><span class="a"><b>—</b> aura</span></div>
@@ -766,12 +770,118 @@ const CONCENTRAR = {id:"concentrar", n:"Concentrarse", aura:26, guardia:1.45,
                     pie:"+26 aura, te cubrís"};
 const golpeDe = id => GOLPES.find(g => g.id === id);
 
+/* ---------- los poderes ----------
+   Uno por cabeza, salvo Chupa que tiene dos. Acá está la razón de juntar
+   aura: cada poder cuesta, y el que no la gasta la junta al pedo.
+
+   Los que escribió el autor van tal cual. Los cuatro que faltaban —Tomy,
+   El Hippie, Marian y El Negro— están inventados en esa misma línea y son
+   para cambiar; lo mismo los nueve del otro equipo, que son provisorios
+   hasta que tengan nombre.
+
+   `hace` recibe al que lo usa y al rival, y toca números y nada más: si
+   alguno mete algo del navegador acá, el arnés deja de correr y se pierde
+   la única forma de probar el balance. */
+function confundir(p){ p.confundido = true; }
+function enamorar(p){ p.enamorado = true; }
+
+const PODERES = {
+  /* --- los del autor --- */
+  lamber:[{ n:"Fentanilo", tipo:"refuerzo", cuesta:35, pie:"+evasión",
+    txt:yo => yo.n + " se pone en pose: se vuelve mucho más difícil de acertar.",
+    hace:yo => { yo.mods.evasion = Math.min(.45, yo.mods.evasion + .25); } }],
+
+  chuna:[{ n:"Desmayo", tipo:"cura", cuesta:55, pie:"cura todo, dormís 3",
+    txt:yo => yo.n + " se desmaya: vuelve entera, pero queda dormida tres turnos.",
+    hace:yo => { yo.vida = yo.vidaMax; yo.dormido = 3; } }],
+
+  chupa:[
+    { n:"Doxeo", tipo:"ofensivo", cuesta:45, pie:"daño y confusión",
+      txt:(yo,r) => yo.n + " doxea a " + r.n + ": le duele y lo deja confundido.",
+      hace:(yo,r) => { r.vida = Math.max(0, r.vida - 20); confundir(r); } },
+    { n:"Alma-mora", tipo:"refuerzo", cuesta:40, pie:"+ataque, te confundís",
+      txt:yo => yo.n + " se toma un vino: pega mucho más fuerte, pero queda confundido.",
+      hace:yo => { yo.mods.ataque = Math.min(2.6, yo.mods.ataque * 1.75); confundir(yo); } },
+  ],
+
+  kzk:[{ n:"Monopatinazo", tipo:"refuerzo", cuesta:30, pie:"+velocidad",
+    txt:yo => yo.n + " se sube al mono: ahora llega primero.",
+    hace:yo => { yo.mods.velocidad = Math.min(2.6, yo.mods.velocidad * 1.7); } }],
+
+  matxi:[{ n:"Seducción", tipo:"estorbo", cuesta:50, pie:"no te puede pegar",
+    txt:(yo,r) => yo.n + " seduce a " + r.n + ": queda enamorado y no atina a pegar.",
+    hace:(yo,r) => { enamorar(r); } }],
+
+  damian:[{ n:"Luces calientes", tipo:"estorbo", cuesta:35, pie:"-puntería del rival",
+    txt:(yo,r) => yo.n + " le clava las luces en la cara a " + r.n + ": no ve un pomo.",
+    hace:(yo,r) => { r.mods.punteria = Math.max(.35, r.mods.punteria * .55); } }],
+
+  /* --- los cuatro inventados, para que el autor los apruebe o los tire --- */
+  tomy:[{ n:"Mate cebado", tipo:"cura", cuesta:30, pie:"te repone y +aura por ronda",
+    txt:yo => yo.n + " ceba y no suelta más el termo: se repone un poco y junta el doble de aura.",
+    hace:yo => { yo.mods.auraExtra = yo.auraPorRonda;            // no se apila
+                 yo.vida = Math.min(yo.vidaMax, yo.vida + Math.round(yo.vidaMax*.22)); } }],
+
+  hippie:[{ n:"Buena onda", tipo:"estorbo", cuesta:40, pie:"le baja el ataque y le borra lo bueno",
+    txt:(yo,r) => yo.n + " baja un cambio: a " + r.n + " se le va el envión y lo que se había puesto encima.",
+    hace:(yo,r) => { r.mods.ataque = Math.min(r.mods.ataque, 1) * .5;
+                     r.mods.velocidad = Math.min(r.mods.velocidad, 1);
+                     r.mods.evasion = 0; r.mods.auraExtra = 0; } }],
+
+  marian:[{ n:"Ojo de halcón", tipo:"refuerzo", cuesta:40, pie:"3 turnos sin fallar y pegando más",
+    txt:yo => yo.n + " lo tiene marcado: tres turnos sin errar una, esquive lo que esquive.",
+    hace:yo => { yo.noFalla = 3; yo.mods.ataque = Math.min(2.6, yo.mods.ataque * 1.3); } }],
+
+  negro:[{ n:"Fernet", tipo:"refuerzo", cuesta:40, pie:"+ataque, -defensa",
+    txt:yo => yo.n + " se sirve uno: pega mucho más fuerte y se cubre mucho peor.",
+    hace:yo => { yo.mods.ataque = Math.min(2.6, yo.mods.ataque * 1.6);
+                 yo.mods.defensa = Math.max(.5, yo.mods.defensa * .7); } }],
+};
+
+/* Los nueve de enfrente, provisorios: reparten los mismos efectos para que
+   las peleas no queden desparejas mientras no tengan nombre ni poder propio. */
+const PODERES_OTROS = {
+  otro1:[{ n:"Escabullirse", tipo:"refuerzo", cuesta:35, pie:"+evasión",
+    txt:yo => yo.n + " se escurre: cuesta acertarle.",
+    hace:yo => { yo.mods.evasion = Math.min(.45, yo.mods.evasion + .25); } }],
+  otro2:[{ n:"Encandilar", tipo:"estorbo", cuesta:35, pie:"-puntería del rival",
+    txt:(yo,r) => yo.n + " encandila a " + r.n + ".",
+    hace:(yo,r) => { r.mods.punteria = Math.max(.35, r.mods.punteria * .55); } }],
+  otro3:[{ n:"Pique", tipo:"refuerzo", cuesta:30, pie:"+velocidad",
+    txt:yo => yo.n + " pica y se adelanta.",
+    hace:yo => { yo.mods.velocidad = Math.min(2.6, yo.mods.velocidad * 1.7); } }],
+  otro4:[{ n:"Cortina de humo", tipo:"estorbo", cuesta:45, pie:"confunde",
+    txt:(yo,r) => yo.n + " deja a " + r.n + " sin saber dónde está parado.",
+    hace:(yo,r) => { confundir(r); } }],
+  otro5:[{ n:"Envión", tipo:"refuerzo", cuesta:40, pie:"+ataque, -defensa",
+    txt:yo => yo.n + " se envalentona.",
+    hace:yo => { yo.mods.ataque = Math.min(2.6, yo.mods.ataque * 1.6);
+                 yo.mods.defensa = Math.max(.5, yo.mods.defensa * .7); } }],
+  otro6:[{ n:"Labia", tipo:"estorbo", cuesta:50, pie:"no te puede pegar",
+    txt:(yo,r) => yo.n + " le habla al oído y " + r.n + " se olvida de pegar.",
+    hace:(yo,r) => { enamorar(r); } }],
+  otro7:[{ n:"Segundo aire", tipo:"cura", cuesta:50, pie:"se cura bastante",
+    txt:yo => yo.n + " agarra un segundo aire.",
+    hace:yo => { yo.vida = Math.min(yo.vidaMax, yo.vida + Math.round(yo.vidaMax*.33)); } }],
+  otro8:[{ n:"Respirar hondo", tipo:"refuerzo", cuesta:30, pie:"el doble de aura por ronda",
+    txt:yo => yo.n + " respira hondo y se carga.",
+    hace:yo => { yo.mods.auraExtra = yo.auraPorRonda; } }],
+  otro9:[{ n:"Cabezazo", tipo:"ofensivo", cuesta:45, pie:"golpe fuerte que no falla",
+    txt:(yo,r) => yo.n + " le mete un cabezazo que no se esquiva.",
+    hace:(yo,r) => { r.vida = Math.max(0, r.vida - 25); } }],
+};
+function poderesDe(clave){ return PODERES[clave] || PODERES_OTROS[clave] || []; }
+
 function armarPeleador(clave, look){
   const p = perfilDe(clave);
   return {clave, look, n:look.n,
           vida:p.v, vidaMax:p.v, aura:0, auraMax:100,
           ataque:p.at, defensa:p.df, velocidad:p.vel, auraPorRonda:p.ap,
-          guardia:1, caido:false};
+          guardia:1, caido:false,
+          poderes: poderesDe(clave),
+          /* los estados: dormido cuenta turnos, los otros dos son sí o no */
+          dormido:0, confundido:false, enamorado:false, noFalla:0,
+          mods:{ataque:1, defensa:1, velocidad:1, punteria:1, evasion:0, auraExtra:0}};
 }
 
 function nuevaBatalla(clavesMias, clavesSuyas){
@@ -790,8 +900,25 @@ const otroLado = l => l === "a" ? "b" : "a";
    lo que aguanta el que recibe, con un ±15% de azar. Con dos parejos y el
    golpe seco son unos 22 de daño contra 120 de vida: seis golpes. */
 function calcularDanio(quien, contra, golpe){
-  const base = golpe.poder * quien.ataque / (contra.defensa * contra.guardia);
+  const base = golpe.poder * quien.ataque * quien.mods.ataque /
+               (contra.defensa * contra.mods.defensa * contra.guardia);
   return Math.max(1, Math.round(base * (0.85 + AZAR()*0.30)));
+}
+/* Acertar: lo que acierta el golpe, por lo que ve el que pega, menos lo que
+   esquiva el que recibe. El Ojo de halcón se saltea toda la cuenta. */
+function acierta(quien, contra, golpe){
+  if(quien.noFalla > 0) return true;
+  const p = golpe.punteria * quien.mods.punteria - contra.mods.evasion;
+  return AZAR() < Math.max(.15, Math.min(1, p));
+}
+
+/* Lo que se va cuando el peleador sale a la banca: los estados y todo lo que
+   se había puesto encima. La confusión y el enamoramiento se cortan
+   cambiando —está dicho en el poder— y los enviones no se guardan para la
+   próxima entrada. El sueño no: es el costo del Desmayo y se paga. */
+function limpiarAlSalir(p){
+  p.confundido = false; p.enamorado = false; p.noFalla = 0;
+  p.mods = {ataque:1, defensa:1, velocidad:1, punteria:1, evasion:0, auraExtra:0};
 }
 
 /* Una acción es {t:"golpe", id} · {t:"concentrar"} · {t:"cambiar", i}.
@@ -801,11 +928,61 @@ function aplicarAccion(est, lado, acc, ev){
   if(yo.caido) return;
 
   if(acc.t === "cambiar"){
+    limpiarAlSalir(yo);
     est[lado].i = acc.i;
     ev.push({t:"dice", txt:"¡" + yo.n + ", volvé! Entra " + est[lado].equipo[acc.i].n + "."});
     ev.push({t:"entra", lado});
     return;
   }
+
+  /* ---- los estados, antes de cualquier otra cosa ---- */
+  if(yo.dormido > 0){
+    yo.dormido--;
+    ev.push({t:"dice", txt:yo.n + (yo.dormido ? " sigue dormido." : " se despierta, pero ya es tarde por esta ronda.")});
+    return;
+  }
+  if(yo.enamorado){
+    if(AZAR() < .33){
+      yo.enamorado = false;
+      ev.push({t:"dice", txt:yo.n + " reacciona y se le pasa."});
+    }else{
+      ev.push({t:"dice", txt:yo.n + " está embobado y no ataca."});
+      return;
+    }
+  }
+  if(yo.confundido){
+    if(AZAR() < .33){
+      yo.confundido = false;
+      ev.push({t:"dice", txt:yo.n + " se acomoda la cabeza: se le fue la confusión."});
+    }else if(AZAR() < .40){
+      const d = Math.max(1, Math.round(yo.vidaMax * .07));
+      yo.vida = Math.max(0, yo.vida - d);
+      ev.push({t:"pega", lado:otroLado(lado), cant:d,
+               txt:yo.n + " está confundido y se pega solo. " + d + " de daño."});
+      if(yo.vida <= 0){
+        yo.caido = true;
+        ev.push({t:"cae", lado, txt:yo.n + " no va más."});
+      }
+      return;
+    }
+  }
+
+  if(acc.t === "poder"){
+    const pod = yo.poderes[acc.i];
+    if(!pod || yo.aura < pod.cuesta){
+      ev.push({t:"dice", txt:yo.n + " no tiene aura para eso."});
+      return;
+    }
+    yo.aura -= pod.cuesta;
+    pod.hace(yo, rival);
+    ev.push({t:"poder", lado, txt:pod.txt(yo, rival)});
+    if(rival.vida <= 0 && !rival.caido){
+      rival.caido = true;
+      ev.push({t:"cae", lado:otroLado(lado), txt:rival.n + " no va más."});
+    }
+    return;
+  }
+
   if(acc.t === "concentrar"){
     yo.aura = Math.min(yo.auraMax, yo.aura + CONCENTRAR.aura);
     yo.guardia = CONCENTRAR.guardia;
@@ -814,7 +991,7 @@ function aplicarAccion(est, lado, acc, ev){
     return;
   }
   const golpe = golpeDe(acc.id);
-  if(AZAR() > golpe.punteria){
+  if(!acierta(yo, rival, golpe)){
     yo.aura = Math.min(yo.auraMax, yo.aura + 2);
     ev.push({t:"dice", txt:yo.n + " tira una " + golpe.n.toLowerCase() + " y no le da."});
     ev.push({t:"falla", lado});
@@ -849,8 +1026,9 @@ function resolverRonda(est, accA, accB){
   if(accA.t === "cambiar") orden.push("a");
   if(accB.t === "cambiar") orden.push("b");
   const quedan = ["a","b"].filter(l => !orden.includes(l));
+  const rapidez = l => { const p = activo(est, l); return p.velocidad * p.mods.velocidad; };
   quedan.sort((x, y) => {
-    const d = activo(est, y).velocidad - activo(est, x).velocidad;
+    const d = rapidez(y) - rapidez(x);
     return d !== 0 ? d : (AZAR() < .5 ? -1 : 1);
   });
   orden.push(...quedan);
@@ -860,7 +1038,9 @@ function resolverRonda(est, accA, accB){
   /* el aura que junta cada uno por el solo hecho de estar peleando */
   for(const l of ["a","b"]){
     const p = activo(est, l);
-    if(!p.caido){ p.aura = Math.min(p.auraMax, p.aura + p.auraPorRonda); }
+    if(p.caido) continue;
+    p.aura = Math.min(p.auraMax, p.aura + p.auraPorRonda + p.mods.auraExtra);
+    if(p.noFalla > 0) p.noFalla--;
   }
   ev.push({t:"aura", lado:"a"}); ev.push({t:"aura", lado:"b"});
 
@@ -880,6 +1060,8 @@ function entraSolo(est, lado){
   est[lado].i = vivos[0].i;
   return true;
 }
+/* ¿puede hacer algo más que mirar? Sirve para la pantalla y para la máquina */
+function puedeElegir(p){ return !p.caido && p.dormido <= 0; }
 
 /* ---------- la máquina ----------
    No hace trampa: ve lo mismo que se ve en pantalla. Si puede cerrar la
@@ -892,6 +1074,21 @@ function elegirMaquina(est, lado){
 
   for(const g of GOLPES){                       // ¿lo cierro de un golpe?
     if(g.punteria >= .9 && calcularDanio(yo, vos, g) >= vos.vida) return {t:"golpe", id:g.id};
+  }
+  /* los poderes: primero el que cierra la pelea, después el que la salva, y
+     recién ahí el que mejora. Los refuerzos se usan dos veces como mucho:
+     una tercera no cambia nada por los topes y sería un turno regalado. */
+  const puede = yo.poderes.map((p,i) => ({p,i})).filter(o => yo.aura >= o.p.cuesta);
+  const deTipo = t => puede.filter(o => o.p.tipo === t);
+  for(const o of deTipo("ofensivo")){
+    if(o.p.n === "Doxeo" && vos.vida <= 20) return {t:"poder", i:o.i};
+    if(o.p.n === "Cabezazo" && vos.vida <= 25) return {t:"poder", i:o.i};
+  }
+  if(yo.vida < yo.vidaMax*0.45 && deTipo("cura").length) return {t:"poder", i:deTipo("cura")[0].i};
+  if(yo.usados === undefined) yo.usados = 0;
+  if(yo.usados < 2 && AZAR() < .5){
+    const buenos = deTipo("estorbo").concat(deTipo("refuerzo"), deTipo("ofensivo"));
+    if(buenos.length){ yo.usados++; return {t:"poder", i:buenos[(AZAR()*buenos.length)|0].i}; }
   }
   if(yo.vida < yo.vidaMax*0.22 && suplentes.length && AZAR() < .55){
     suplentes.sort((x,y) => y.p.vida - x.p.vida);
@@ -961,6 +1158,22 @@ function placa(id, p){
   el.classList.toggle("poca", pv <= .5 && pv > .2);
   el.classList.toggle("nada", pv <= .2);
   el.querySelector(".nom").textContent = p.n;
+  /* Lo que le está pasando encima. Sin esto, «no ataca» o «se pega solo»
+     parecen errores del juego en vez de un estado que le pusieron. */
+  const marcas = [];
+  if(p.dormido > 0)  marcas.push("dormido " + p.dormido);
+  if(p.confundido)   marcas.push("confundido");
+  if(p.enamorado)    marcas.push("enamorado");
+  if(p.noFalla > 0)  marcas.push("no falla " + p.noFalla);
+  if(p.mods.evasion > 0)   marcas.push("+esquiva");
+  if(p.mods.ataque > 1)    marcas.push("+ataque");
+  if(p.mods.velocidad > 1) marcas.push("+veloz");
+  if(p.mods.punteria < 1)  marcas.push("-puntería");
+  if(p.mods.auraExtra > 0) marcas.push("+aura");
+  /* dos y no más: con tres, el nombre se empezaba a cortar y el nombre
+     importa más que el tercer estado */
+  const chapa = el.querySelector(".estado");
+  if(chapa) chapa.textContent = marcas.slice(0,2).join(" · ") + (marcas.length > 2 ? " +" + (marcas.length-2) : "");
   el.querySelector(".vida i").style.width = (pv*100).toFixed(1)+"%";
   el.querySelector(".aura i").style.width = ((p.aura/p.auraMax)*100).toFixed(1)+"%";
   const c = el.querySelectorAll(".cifras b");
@@ -982,6 +1195,17 @@ function decir(txt){ $("dialogo").innerHTML = txt; }
 /* ---------- los menús ---------- */
 function botonesArriba(prendidos){
   for(const id of ["optPelear","optPoder","optMochila","optCambiar"]) $(id).disabled = !prendidos;
+  $("optMochila").disabled = true;                 // todavía no hay mochila
+  if(prendidos && EST){
+    /* el del poder se apaga solo cuando no alcanza el aura para ninguno: es
+       la forma de que se vea para qué sirve juntarla */
+    const yo = activo(EST,"a");
+    const alcanza = yo.poderes.some(p => yo.aura >= p.cuesta);
+    $("optPoder").disabled = !alcanza;
+    $("optPoder").innerHTML = yo.poderes.length
+      ? "Poder" + (alcanza ? "" : '<small>falta aura</small>')
+      : "Poder";
+  }
 }
 function cerrarSub(){
   $("submenu").hidden = true; $("submenu").innerHTML = "";
@@ -1006,6 +1230,15 @@ let esperando = false;                    // mientras se cuenta lo que pasó, no
 function pedirAccion(){
   if(EST.fin) return;
   esperando = false;
+  /* Dormido no elige nada: la ronda se resuelve sola y sólo se cuenta qué
+     pasó. Si se pidiera acción igual, el juego quedaría esperando un toque
+     que no cambia nada. */
+  if(!puedeElegir(activo(EST,"a"))){
+    botonesArriba(false); cerrarSub();
+    decir("<em>" + activo(EST,"a").n + "</em> está dormido.");
+    setTimeout(() => jugar({t:"dormido"}), 800);
+    return;
+  }
   botonesArriba(true); cerrarSub();
   decir("¿Qué hace <em>" + activo(EST,"a").n + "</em>?");
 }
@@ -1015,6 +1248,18 @@ function menuGolpes(){
   abrirSub(GOLPES.map(g => ({n:g.n, pie:g.pie, hace:() => jugar({t:"golpe", id:g.id})}))
     .concat([{n:CONCENTRAR.n, pie:CONCENTRAR.pie, aura:true, hace:() => jugar({t:"concentrar"})}]));
 }
+function menuPoderes(){
+  const yo = activo(EST,"a");
+  const ops = yo.poderes.map((p,i) => ({
+    n:p.n, pie:p.cuesta + " aura · " + p.pie, aura:true,
+    no: yo.aura < p.cuesta,
+    hace: () => jugar({t:"poder", i})
+  }));
+  if(!ops.length) ops.push({n:"Sin poder", pie:"todavía no tiene", no:true, hace:()=>{}});
+  ops.push({n:"Volver", volver:true, hace:pedirAccion});
+  abrirSub(ops);
+}
+
 function menuCambiar(obligado){
   const ops = EST.a.equipo.map((p,i) => ({
     n:p.n, pie:p.caido ? "no va más" : p.vida + "/" + p.vidaMax,
@@ -1056,7 +1301,7 @@ function apurar(){
 let pendiente = null;
 
 function jugar(accion){
-  if(esperando) return;
+  if(esperando && accion.t !== "dormido") return;
   const ev = resolverRonda(EST, accion, elegirMaquina(EST));
   pendiente = despues;
   reproducir(ev, () => { pendiente = null; despues(); });
@@ -1191,9 +1436,10 @@ if(typeof document !== "undefined" && document.getElementById){
  try{
   $("optPelear").addEventListener("click", menuGolpes);
   $("optCambiar").addEventListener("click", () => menuCambiar(false));
-  $("optPoder").addEventListener("click", () => decir("Los poderes son lo que sigue."));
+  $("optPoder").addEventListener("click", menuPoderes);
   $("optMochila").addEventListener("click", () => decir("La mochila es lo que sigue."));
-  $("optPoder").disabled = true; $("optMochila").disabled = true;
+  /* el botón del poder se prende y apaga solo según el aura: lo hace botonesArriba */
+  $("optMochila").disabled = true;
   $("btnEmpezar").addEventListener("click", empezar);
   $("escena").addEventListener("pointerdown", apurar);
   pintarFichas();
@@ -1211,7 +1457,7 @@ if(typeof document !== "undefined" && document.getElementById){
    Lo mismo que hace index.html, con su propio archivo de versión. La
    escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "3970735afd";
+const VERSION = "450b98af24";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;
