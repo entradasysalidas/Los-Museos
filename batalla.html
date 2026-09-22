@@ -1090,14 +1090,31 @@ function retrato(cv2, look){
 }
 function pintarFichas(){
   const cont = $("fichas");
+  if(!cont) return;
   cont.innerHTML = "";
   for(const clave of Object.keys(CREW)){
-    const look = CREW[clave], p = PERFILES[clave];
+    const look = CREW[clave], p = PERFILES[clave] || {};
     const b = document.createElement("button");
     b.className = "ficha" + (elegidos.includes(clave) ? " elegida" : "");
-    b.innerHTML = '<canvas width="64" height="64"></canvas><b>' + look.n + "</b>" +
-      "<small>" + p.v + " vida · " + p.at + " ata</small>" +
-      "<small>" + p.df + " def · " + p.vel + " vel</small>";
+
+    /* Cada pedazo se arma y se cuelga por separado, y el dibujo va al final
+       y aparte. Antes era un innerHTML con el canvas adentro y el retrato
+       pegado: si cualquiera de esas cosas fallaba —y en algún teléfono
+       falló— no quedaba ni una ficha y la pantalla se veía vacía. Así, lo
+       peor que puede pasar es que a una le falte el dibujo. */
+    const lienzo = document.createElement("canvas");
+    lienzo.width = 64; lienzo.height = 64;
+    b.appendChild(lienzo);
+    const nom = document.createElement("b");
+    nom.textContent = look.n;
+    b.appendChild(nom);
+    const l1 = document.createElement("small");
+    l1.textContent = (p.v || "?") + " vida · " + (p.at || "?") + " ata";
+    b.appendChild(l1);
+    const l2 = document.createElement("small");
+    l2.textContent = (p.df || "?") + " def · " + (p.vel || "?") + " vel";
+    b.appendChild(l2);
+
     b.addEventListener("click", () => {
       const i = elegidos.indexOf(clave);
       if(i >= 0) elegidos.splice(i,1);
@@ -1105,7 +1122,7 @@ function pintarFichas(){
       pintarFichas();
     });
     cont.appendChild(b);
-    retrato(b.querySelector("canvas"), look);
+    try{ retrato(lienzo, look); }catch(e){ lienzo.style.display = "none"; }
   }
   const listo = elegidos.length === 3;
   $("btnEmpezar").disabled = !listo;
@@ -1125,7 +1142,22 @@ function empezar(){
   setTimeout(pedirAccion, 900);
 }
 
+/* ---------- si se rompe, que se vea ----------
+   Un error suelto deja la pantalla vacía y en el teléfono no hay consola
+   para enterarse. Esto lo escribe arriba de todo, que es la única forma de
+   que el que está jugando lo pueda contar. */
+function avisarDelError(txt){
+  const p = document.querySelector(".intro");
+  if(p){ p.innerHTML = "<b>Se rompió algo:</b> " + txt; p.style.color = "#E86B5E"; }
+}
+if(typeof window !== "undefined" && window.addEventListener){
+  window.addEventListener("error", ev => {
+    avisarDelError((ev.message || "error") + " · línea " + (ev.lineno || "?"));
+  });
+}
+
 if(typeof document !== "undefined" && document.getElementById){
+ try{
   $("optPelear").addEventListener("click", menuGolpes);
   $("optCambiar").addEventListener("click", () => menuCambiar(false));
   $("optPoder").addEventListener("click", () => decir("Los poderes son lo que sigue."));
@@ -1136,13 +1168,19 @@ if(typeof document !== "undefined" && document.getElementById){
   pintarFichas();
   medir();
   requestAnimationFrame(frame);
+ }catch(e){
+  avisarDelError((e && e.message ? e.message : e) + "");
+  /* aunque se haya roto el resto, que la lista esté: es lo único que hace
+     falta para empezar a jugar */
+  try{ pintarFichas(); }catch(e2){}
+ }
 }
 
 /* ---------- ¿quedó vieja esta copia? ----------
    Lo mismo que hace index.html, con su propio archivo de versión. La
    escribe scripts/sellar.js: no se toca a mano.
        node scripts/sellar.js batalla.html                                */
-const VERSION = "c14c8a1bee";
+const VERSION = "4a73c945e1";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;
