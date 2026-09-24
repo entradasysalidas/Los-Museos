@@ -1422,10 +1422,10 @@
       <span class="sello" id="sello6">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa7" onclick="tocarTapa(7)" aria-pressed="false">
+    <!-- la 7 no lleva candado: es la que están jugando ahora y se entra directo -->
+    <button class="tapa" id="tapa7" onclick="tocarTapa(7)" aria-pressed="false">
       <img src="caja7.jpg" alt="Los Museos 7 · Total disociación"
            onerror="this.remove()">
-      <span class="sello" id="sello7">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 7</b><small>Total disociación</small></span>
     </button>
     <button class="tapa diaria" id="botondiaria" onclick="entrarDiaria()">
@@ -10656,7 +10656,7 @@ function sellarTapas(){
   /* Las cuatro que se abren, en un solo lugar. Vaciarle el texto al sello no
      alcanza: la franja tiene fondo propio y sigue pintada, así que hay que
      esconderla. Y la clase «cerrada» es la que deja la tapa apagada. */
-  for(const n of [2, 3, 4, 5, 6, 7]){
+  for(const n of [2, 3, 4, 5, 6]){
     const abierto = elJuegoEstaAbierto(n);
     const tapa = document.getElementById("tapa" + n);
     if(tapa && tapa.classList) tapa.classList.toggle("cerrada", !abierto);
@@ -10812,7 +10812,9 @@ const PALABRA_3 = "caipirinha";  // abre las vacaciones
 const PALABRA_4 = "ingravidez";  // abre el espacio
 const PALABRA_5 = "chocolate";   // abre la montaña
 const PALABRA_6 = "obelisco";    // abre la ciudad
-const PALABRA_7 = "disociacion"; // abre el viaje
+/* Total disociación no tiene palabra: está abierta para todos. El portero
+   servía para que no entrara el que pasa de casualidad, y el link de esta
+   edición ya circula entre los nueve, así que no cuidaba nada. */
 
 /* El shopping se lo gana el que termino Los Museos. La palabra clave es para
    el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
@@ -10821,11 +10823,6 @@ const PALABRA_7 = "disociacion"; // abre el viaje
 function elTresEstaAbierto(){
   if(LEGAJO.clave3) return true;
   return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
-}
-
-function elSieteEstaAbierto(){
-  if(LEGAJO.clave7) return true;
-  return Object.keys(JUEGOS[6].salas).every(k => hechaEn(k, 1));
 }
 
 function elSeisEstaAbierto(){
@@ -10848,8 +10845,7 @@ function elJuegoEstaAbierto(n){
        : n === 3 ? elTresEstaAbierto()
        : n === 4 ? elCuatroEstaAbierto()
        : n === 5 ? elCincoEstaAbierto()
-       : n === 6 ? elSeisEstaAbierto()
-       : n === 7 ? elSieteEstaAbierto() : true;
+       : n === 6 ? elSeisEstaAbierto() : true;   // la 7 está abierta para todos
 }
 
 function elDosEstaAbierto(){
@@ -10878,15 +10874,13 @@ function entrar(){
     if(caja && caja.classList && caja.classList.contains("off")){
       pedirNombre("clave"); return;
     }
-    const suya = ELEGIDO === 7 ? PALABRA_7
-               : ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
+    const suya = ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
                : ELEGIDO === 4 ? PALABRA_4
                : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
     const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
     if(dicha === suya){
       /* ya no hace falta pedirla de nuevo */
-      if(ELEGIDO === 7)      LEGAJO.clave7 = true;
-      else if(ELEGIDO === 6) LEGAJO.clave6 = true;
+      if(ELEGIDO === 6)      LEGAJO.clave6 = true;
       else if(ELEGIDO === 5) LEGAJO.clave5 = true;
       else if(ELEGIDO === 4) LEGAJO.clave4 = true;
       else if(ELEGIDO === 3) LEGAJO.clave3 = true;
@@ -10897,8 +10891,7 @@ function entrar(){
         : ({3:"Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave.",
             4:"El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.",
             5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave.",
-            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave.",
-            7:"La disociación se abre <b>terminando las diez de la ciudad</b>, o con la palabra clave."}[ELEGIDO]
+            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave."}[ELEGIDO]
            || "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
       if(cla){
         if(cla.focus) { try{ cla.focus(); }catch(e){} }
@@ -11013,7 +11006,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "862a03d76b";
+const VERSION = "e75989fe2a";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
