@@ -4466,10 +4466,40 @@ function chasePhase(hidden){
 }
 
 /* ======================= FASE 3 · acción ======================= */
-/* Cuanto más grande la empresa, menos se relaja con las tres piezas afuera. */
-const PISO_FUGA = {"Pasantía":0, "Mini Pyme":0, "S.R.L.":0, "S.A.":2, "Multinacional":2,
-                   "Local":0, "Franquicia":0, "Cadena":0, "Corporación":2, "Grupo inversor":2};
-function pisoFuga(){ return PISO_FUGA[S.sala.wing] || 0; }
+/* Cuanto más avanzada el ala, menos se relaja con las tres piezas afuera. La
+   regla es la misma en las siete ediciones: las dos últimas alas —salas 6 a
+   9— aprietan en la fuga final con piso 2.
+
+   Sólo tenía las diez alas del museo y el shopping. Las 25 de las ediciones
+   3 a 7 caían al «|| 0» y ahí el antagonista se relajaba del todo con las
+   tres afuera: una regla que no se aplicaba en 50 de 70 salas, sin ningún
+   error a la vista. Cada edición nueva tiene que sumar sus alas acá. */
+const PISO_FUGA = {
+  // 1 · Los Museos
+  "Pasantía":0, "Mini Pyme":0, "S.R.L.":0, "S.A.":2, "Multinacional":2,
+  // 2 · Escape del shopping
+  "Local":0, "Franquicia":0, "Cadena":0, "Corporación":2, "Grupo inversor":2,
+  // 3 · De vacaciones
+  "Recién llegados":0, "Media mañana":0, "Mediodía":0, "Siesta":2, "Atardecer":2,
+  // 4 · En el espacio
+  "Órbita baja":0, "Órbita alta":0, "El cinturón":0, "Espacio profundo":2, "El borde":2,
+  // 5 · En la montaña
+  "La base":0, "Media montaña":0, "Sobre el bosque":0, "Cerca de la cumbre":2, "La cumbre":2,
+  // 6 · En la ciudad
+  "Salida del museo":0, "Microcentro":0, "El sur":0, "La ribera":2, "La avenida":2,
+  // 7 · Total disociación
+  "El previo":0, "La joda":0, "La madrugada":0, "El after":2, "El agujero":2,
+};
+
+/* Si un ala no está en la tabla —una edición nueva que se olvidó de
+   sumarla— se decide por el número de sala, con la misma regla de arriba, y
+   no cae a 0 en silencio. */
+function pisoFuga(){
+  if(!S || !S.sala) return 0;
+  const p = PISO_FUGA[S.sala.wing];
+  if(p !== undefined) return p;
+  return S.sala.num >= 6 ? 2 : 0;
+}
 
 /* ==========================================================================
    LAS TRES DIFICULTADES · una sola perilla: cuánto se relaja el antagonista
@@ -4754,11 +4784,18 @@ function losePiece(id){
     if(!S.grid[v.y][v.x].alarm || dd<0) continue;
     if(cerca ? dd<best : dd>best){ best=dd; pick=v; }
   }
+  /* Red: si ninguna vitrina vacía se alcanza desde donde se mide, la pieza
+     igual tiene que volver a alguna. Antes quedaba sin lugar y desaparecía de
+     la partida. Sólo a una VACÍA: con tres piezas y tres vitrinas, si perdiste
+     una siempre hay al menos una vacía, y caer en una llena la pisaría y haría
+     desaparecer otra —que es lo que hacía el arreglo que se había propuesto—. */
+  if(!pick) pick = S.marks.vitrinas.find(v => S.grid[v.y][v.x].alarm && !S.grid[v.y][v.x].piece) || null;
   if(pick){ S.grid[pick.y][pick.x].alarm=0; S.grid[pick.y][pick.x].piece=id; }
-  say(enJerga(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/3). Volvió a su vitrina y los dos vuelven a sus puestos.`),"r");
   /* Todavía puedo (Damián, el vino): una más. Es el único resorte del juego
-     que ningún otro poder toca. */
+     que ningún otro poder toca. El contador lo dice: con «/3» fijo, tres
+     renglones decían (3/3) y el siguiente que la partida seguía. */
   const tope = S.aguanta || 3;
+  say(enJerga(`🚨 Te sacó <b>${PIE[id].name}</b> ${PIE[id].sym} (${S.taken}/${tope}). Volvió a su vitrina y los dos vuelven a sus puestos.`),"r");
   if(S.taken>=tope) return gameLose(enJerga(`${S.foe.n} te recuperó las ${tope===3 ? "tres" : "cuatro"} piezas.`));
   if(tope > 3 && S.taken === 3)
     say("🍷 <b>Todavía puedo</b>: con tres perdidas cualquiera se iba. Te queda una.","y");
@@ -5160,7 +5197,7 @@ function pantallaFinal(gano, titulo, bajada, salaKey, remate, botones, cerrable,
         '<div class="datos">' +
           dato("Rondas", S.round, gano) +
           dato("Entregadas", S.delivered.length + "/3", false) +
-          dato("Te recuperó", S.taken + "/3", false) +
+          dato("Te recuperó", S.taken + "/" + (S.aguanta || 3), false) +
           dato("Alerta final", S.alert + "/" + TUNE.alertMax, false) +
         '</div>' +
         '<div class="pzs">' + piezas + '</div>' +
@@ -10235,6 +10272,10 @@ function drawEditorOverlay(){
 /* ---------- elegir qué pieza te saca ---------- */
 function askWhichPiece(){
   picking = true;
+  /* Con Damián en el vino el tope es cuatro. Ésta es justo la pantalla donde
+     se decide cuánto arriesgar, así que no puede decir «a la tercera». */
+  const tope = (S && S.aguanta) || 3;
+  const aLa = {3:"tercera", 4:"cuarta"}[tope] || tope + "ª";
   const opts = S.hand.map(id=>{
     const p=PIE[id];
     return `<button class="btn piece" style="background:${p.color};color:#0F1114"
@@ -10243,7 +10284,7 @@ function askWhichPiece(){
   showModal("Te agarró con las manos llenas", `
     <p class="lead"><b>${S.foe.n}</b> te revisa la mochila y se lleva <b>una</b> pieza.
     Elegí cuál devolvés.</p>${opts}
-    <div class="rules">Llevás <b>${S.taken}/3</b> recuperadas por él. A la tercera, se termina.</div>`, false);
+    <div class="rules">Llevás <b>${S.taken}/${tope}</b> recuperadas por él. A la ${aLa}, se termina.</div>`, false);
 }
 function pickPiece(id){ picking=false; closeModal(true); losePiece(id); }
 
@@ -11006,7 +11047,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "e75989fe2a";
+const VERSION = "e4b8115185";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés
