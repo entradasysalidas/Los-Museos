@@ -107,21 +107,45 @@ automática, como antes.
 
 ## Probar
 
-No hay framework. En `scratchpad/` de la sesión hay un arnés que emula el DOM y el
-canvas en node y corre un bot que juega solo:
+No hay framework. Se prueba corriendo el juego en node, con un arnés que emula lo justo
+del navegador y un bot que juega solo.
 
-- `nchecks.js` — estructura de las diez salas, paredes como aristas, alcanzabilidad,
-  un solo antagonista por sala, que cada nivel se pueda ganar.
-- `revision.js` — invariantes sobre cientos de partidas simuladas.
-- `curva3.js` — la curva de dificultad, sala por sala.
+**Lo que se arma queda en `scripts/`, versionado.** No en la carpeta temporal de la
+sesión: esa se borra al cerrar, y el arnés de `index.html` ya se rehizo de cero tres
+veces porque esta sección mandaba a buscarlo ahí.
 
-Para correrlos hay que sacar el JavaScript del html primero, porque el juego vive
-adentro de `index.html`:
+### Aura (`batalla.html`) ya tiene el suyo
 
 ```
-node extraer.js index.html juego.js      # corta lo que hay entre <script> y </script>
-node drun.js juego.js nchecks.js         # el arnés carga los archivos que le pasés
+node scripts/balance-aura.js
 ```
 
-Si el arnés no está, se rehace: son stubs de `document`, `canvas` y `localStorage`
-más un `eval` de los archivos que se le pasen.
+Juega miles de batallas de la máquina contra sí misma. Lo que hay que mirar: que gane
+cerca del 50%, que ninguna pelea quede sin terminar y que entre la mejor y la peor de
+las diez no haya un abismo. Se apoya en `scripts/arnes-aura.js`, que no se usa solo.
+Que el motor de Aura no toque el DOM es a propósito y hay que mantenerlo así: es lo
+único que permite probarlo sin navegador.
+
+### Los Museos (`index.html`) todavía no tiene arnés versionado
+
+Hay que armarlo y dejarlo en `scripts/`. Son cuatro cosas: cortar el JavaScript que está
+entre `<script>` y `</script>`, levantarlo con stubs de `document`, `canvas`,
+`localStorage` y `fetch`, reemplazar `setTimeout` por una cola que se drene a mano —el
+juego encadena las fases con temporizadores— y dejar el motor a mano para jugar solo.
+
+Con eso se mide:
+
+- **estructura** — que cada sala tenga 3 vitrinas, un cómplice de cada símbolo, las
+  escaleras en pares, un solo antagonista, y que todo lo que hace falta para ganar se
+  alcance desde tu puesto. Vale para las salas fijas y para las del desafío diario.
+- **invariantes** — cientos de partidas al azar usando objetos y poderes, controlando
+  que las tres piezas estén siempre en algún lado, que la alerta no se salga de 1 a 3,
+  que los pasos no se vayan a negativo y que nadie termine fuera del tablero.
+- **la curva** — el porcentaje de victorias, sala por sala y dificultad por dificultad.
+
+Dos trampas conocidas:
+
+- El **desafío diario** fija el azar en la semilla del día, así que un bot determinista
+  juega siempre la misma partida y da 0% o 100%. Para medirlo hay que variar al jugador
+  (desempate al azar), no el tablero.
+- Las rutas con **espacios** rompen los comandos: la carpeta del proyecto tiene uno.
