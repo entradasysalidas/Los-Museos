@@ -476,11 +476,6 @@
   /* la ayuda va en voz baja: más chica que la bajada y sin negrita. Es una
      ayuda para el que no cayó, no un anuncio. */
   .tapa.elegida .rotulo small{color:var(--brass);font-size:8px;opacity:.8}
-  .tapa .sello{position:absolute;left:0;right:0;top:44%;
-    background:var(--brass);color:#14120E;text-align:center;
-    font:700 clamp(9px,1.7vw,12px)/1 "IBM Plex Mono",monospace;letter-spacing:.2em;
-    text-transform:uppercase;padding:8px 0;transform:rotate(-4deg);
-    box-shadow:0 6px 18px #00000055;pointer-events:none}
 
   /* la caja del 2, dibujada mientras no exista la ilustración */
   .cajadibujada{position:relative;background:#1A1D24;overflow:hidden;
@@ -1383,8 +1378,8 @@
 </div>
 
 <div id="portal">
-  <!-- quién sos, arriba y en una línea: el bloque de abajo con el nombre, la
-       clave y el botón Entrar quedaba al fondo de siete tapas -->
+  <!-- quién sos, arriba y en una línea: el bloque de abajo con el nombre y el
+       botón Entrar quedaba al fondo de siete tapas -->
   <div class="saludo off" id="saludo">
     <span id="saludonom"></span>
     <button class="cambiar" onclick="pedirNombre()">cambiar</button>
@@ -1394,35 +1389,30 @@
       <img src="caja.jpg" alt="Los Museos · 9 amigos, 1 misión: escapar del museo">
       <span class="rotulo"><b>Los Museos</b><small>10 salas · listo para jugar</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa2" onclick="tocarTapa(2)" aria-pressed="false">
+    <button class="tapa" id="tapa2" onclick="tocarTapa(2)" aria-pressed="false">
       <img src="caja2.jpg" alt="Los Museos 2 · Escape del shopping">
-      <span class="sello" id="sello2">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 2</b><small>Escape del shopping</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa3" onclick="tocarTapa(3)" aria-pressed="false">
+    <button class="tapa" id="tapa3" onclick="tocarTapa(3)" aria-pressed="false">
       <img src="caja3.jpg" alt="Los Museos 3 · Vacaciones en la playa">
-      <span class="sello" id="sello3">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 3</b><small>Vacaciones en la playa</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa4" onclick="tocarTapa(4)" aria-pressed="false">
+    <button class="tapa" id="tapa4" onclick="tocarTapa(4)" aria-pressed="false">
       <img src="caja4.jpg" alt="Los Museos 4 · En el espacio"
            onerror="this.remove()">
-      <span class="sello" id="sello4">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 4</b><small>En el espacio</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa5" onclick="tocarTapa(5)" aria-pressed="false">
+    <button class="tapa" id="tapa5" onclick="tocarTapa(5)" aria-pressed="false">
       <img src="caja5.jpg" alt="Los Museos 5 · Escapan de la montaña"
            onerror="this.remove()">
-      <span class="sello" id="sello5">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 5</b><small>Escapan de la montaña</small></span>
     </button>
-    <button class="tapa cerrada" id="tapa6" onclick="tocarTapa(6)" aria-pressed="false">
+    <button class="tapa" id="tapa6" onclick="tocarTapa(6)" aria-pressed="false">
       <img src="caja6.jpg" alt="Los Museos 6 · Escapan de la ciudad"
            onerror="this.remove()">
-      <span class="sello" id="sello6">🔒 Cerrado</span>
       <span class="rotulo"><b>Los Museos 6</b><small>Escapan de la ciudad</small></span>
     </button>
-    <!-- la 7 no lleva candado: es la que están jugando ahora y se entra directo -->
+    <!-- ninguna tapa lleva candado: las siete ediciones están abiertas -->
     <button class="tapa" id="tapa7" onclick="tocarTapa(7)" aria-pressed="false">
       <img src="caja7.jpg" alt="Los Museos 7 · Total disociación"
            onerror="this.remove()">
@@ -1438,17 +1428,13 @@
 
   <div class="pie" id="portalpie"></div>
 
-  <!-- el cartel flotante: el nombre la primera vez, y la palabra clave
-       cuando tocás una edición cerrada. Los campos viven acá y no en el
-       flujo, así que la portada es sólo las tapas. -->
+  <!-- el cartel flotante: pide el nombre la primera vez. El campo vive acá y
+       no en el flujo, así que la portada es sólo las tapas. -->
   <div class="pedido off" id="pedido" onclick="cerrarPedidoAfuera(event)">
     <div class="cajapedido quiensos">
       <label id="pedidotit" for="nombre">¿Quién entra al museo?</label>
       <div class="fila">
         <input id="nombre" type="text" maxlength="16" placeholder="Tu nombre" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="fila off" id="filaclave">
-        <input id="clave" type="text" maxlength="20" placeholder="Palabra clave" autocomplete="off" spellcheck="false">
       </div>
       <div class="fila">
         <button class="btn" id="pedidobtn" onclick="entrar()" style="flex:1">Entrar</button>
@@ -2487,12 +2473,8 @@ function leerLegajo(){
       dif       : l.dif || 1,               // la dificultad elegida
       puesto    : typeof l.puesto === "string" ? l.puesto : "",  // el disfraz
     };
-    /* Las palabras clave, copiadas por número y no una por una. Estaban
-       escritas a mano clave2 y clave3, así que el espacio y la montaña se
-       desbloqueaban, se jugaban, y al volver a la portada estaban cerrados
-       otra vez: la clave no sobrevivía a la relectura del legajo. Así, la
-       edición que venga no hay que acordarse de agregarla acá. */
-    for(const n of Object.keys(JUEGOS)) if(l["clave" + n]) legajo["clave" + n] = true;
+    /* Ya no se copian las palabras clave: no hay ediciones cerradas. Si un
+       legajo viejo las trae guardadas, quedan ahí sin molestar. */
     /* los récords viejos eran uno solo: eran del museo */
     if(l.maraton && !legajo.maratones[1]) legajo.maratones[1] = l.maraton;
     return legajo;
@@ -10691,23 +10673,6 @@ function pintarFranjaDiaria(){
     : "Una sala nueva, la misma para todos" + racha;
 }
 
-/* El candado de cada tapa. Estaba escrito para la dos y ahora hay tres; con
-   una cuarta no habría que volver a tocarlo. */
-function sellarTapas(){
-  /* Las cuatro que se abren, en un solo lugar. Vaciarle el texto al sello no
-     alcanza: la franja tiene fondo propio y sigue pintada, así que hay que
-     esconderla. Y la clase «cerrada» es la que deja la tapa apagada. */
-  for(const n of [2, 3, 4, 5, 6]){
-    const abierto = elJuegoEstaAbierto(n);
-    const tapa = document.getElementById("tapa" + n);
-    if(tapa && tapa.classList) tapa.classList.toggle("cerrada", !abierto);
-    const sel = document.getElementById("sello" + n);
-    if(!sel) continue;
-    sel.textContent = abierto ? "" : "🔒 Cerrado";
-    sel.hidden = abierto;        // ganada la tapa, la franja se va y se ve el dibujo
-  }
-}
-
 /* Qué tapa está marcada en la portada. No es lo mismo que JUEGO: JUEGO es la
    edición que se está jugando, y sólo cambia en cargarJuego, que mueve las
    tablas y el dibujo juntos. Tocar una tapa sin entrar no puede cambiarla:
@@ -10722,11 +10687,10 @@ let ELEGIDO = 1;
 function tocarTapa(n){
   if(ELEGIDO === n) return entrar();
   elegirJuego(n);
-  /* Si falta algo, se pide en el cartel flotante y no scrolleando hasta el
-     fondo: con siete tapas el fondo está lejos. Si no falta nada, el
-     segundo toque entra y no hace falta mover nada. */
+  /* Lo único que puede faltar es el nombre, y se pide en el cartel flotante y
+     no scrolleando hasta el fondo: con siete tapas el fondo está lejos. Si no
+     falta nada, el segundo toque entra y no hace falta mover nada. */
   if(!(LEGAJO && LEGAJO.nombre)) return pedirNombre();
-  if(!elJuegoEstaAbierto(n)) return pedirNombre("clave");
 }
 
 function elegirJuego(n){
@@ -10745,12 +10709,6 @@ function elegirJuego(n){
       chico.textContent = ELEGIDO === i ? "tocá de nuevo" : suyo;
     }
   }
-  sellarTapas();
-  /* la casilla de la clave sale sólo si el juego elegido está cerrado */
-  const fila = document.getElementById("filaclave");
-  if(fila && fila.classList) fila.classList.toggle("off", elJuegoEstaAbierto(ELEGIDO));
-  const btn = document.getElementById("pedidobtn");
-  if(btn) btn.textContent = elJuegoEstaAbierto(ELEGIDO) ? "Entrar" : "Abrir";
   textoDelPie();
 }
 
@@ -10766,18 +10724,14 @@ function textoDelPie(){
   const total = Object.keys(j.salas).length;
   const n = Object.keys(j.salas).filter(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha).length;
   if(ELEGIDO === 4){
-    pie.innerHTML = elCuatroEstaAbierto()
-      ? "<b>En el espacio</b> · " + total + " módulos. Las muestras salen de cápsulas, " +
-        "el oxígeno del piso te devuelve los pasos y el propulsor te deja cortar en diagonal." +
-        (n ? " Llevás " + n + " de " + total + "." : "")
-      : "El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.";
+    pie.innerHTML = "<b>En el espacio</b> · " + total + " módulos. Las muestras salen de cápsulas, " +
+      "el oxígeno del piso te devuelve los pasos y el propulsor te deja cortar en diagonal." +
+      (n ? " Llevás " + n + " de " + total + "." : "");
     return;
   }
   if(ELEGIDO === 2){
-    pie.innerHTML = elDosEstaAbierto()
-      ? "<b>Escape del shopping</b> · " + total + " salas, con cámaras, escaleras mecánicas, " +
-        "puertas con lector y vidrieras con temporizador." + (n ? " Llevás " + n + " de " + total + "." : "")
-      : "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.";
+    pie.innerHTML = "<b>Escape del shopping</b> · " + total + " salas, con cámaras, escaleras mecánicas, " +
+      "puertas con lector y vidrieras con temporizador." + (n ? " Llevás " + n + " de " + total + "." : "");
     return;
   }
   pie.innerHTML = LEGAJO.nombre
@@ -10786,24 +10740,16 @@ function textoDelPie(){
     : "Se guarda en este dispositivo, no hace falta cuenta.";
 }
 
-/* Abre el cartel flotante. «clave» pide la palabra de la edición elegida y
-   «nombre» pide quién sos. */
-function pedirNombre(modo){
+/* Abre el cartel flotante. Ahora pide una sola cosa: quién sos. */
+function pedirNombre(){
   const caja = document.getElementById("pedido");
   if(!caja || !caja.classList) return;
-  const porLaClave = modo === "clave";
   const tit = document.getElementById("pedidotit");
-  const fila = document.getElementById("filaclave");
   const inp = document.getElementById("nombre");
-  const cla = document.getElementById("clave");
-  if(tit) tit.textContent = porLaClave ? "Esta edición está cerrada"
-                                       : "¿Quién entra al museo?";
-  if(fila && fila.classList) fila.classList.toggle("off", !porLaClave);
-  if(cla && porLaClave) cla.value = "";
+  if(tit) tit.textContent = "¿Quién entra al museo?";
   caja.classList.remove("off");
   textoDelPie();
-  const foco = porLaClave ? cla : inp;
-  if(foco && foco.focus) { try{ foco.focus(); }catch(e){} }
+  if(inp && inp.focus) { try{ inp.focus(); }catch(e){} }
 }
 function cerrarPedido(){
   const caja = document.getElementById("pedido");
@@ -10835,113 +10781,36 @@ function prepararPortal(){
   /* la primera vez, y sólo la primera, se pide el nombre en el cartel */
   if(!LEGAJO.nombre) pedirNombre();
   textoDelPie();
-  sellarTapas();
   pintarFranjaDiaria();
-  pintarNovedad();          // si no, el que ya lo ganó ve «Cerrado» hasta tocar una tapa
+  pintarNovedad();
   /* Nada de foco automático acá: el campo vive en el cartel flotante y lo
      enfoca pedirNombre cuando de verdad hay algo que escribir. Pedirlo en
      la portada abría el teclado y iOS la scrolleaba hasta el campo. */
   if(typeof scrollTo === "function"){ try{ scrollTo(0, 0); }catch(e){} }
 }
 
-/* La palabra que hay que decir en la puerta. Ojo: esto es un portero, no una
-   cerradura. La página es pública y la palabra viaja en el código, así que
-   cualquiera que mire el fuente la encuentra. Sirve para que no entre el que
-   pasa de casualidad, no para guardar un secreto. */
-const PALABRA = "candombe";      // abre el shopping
-const PALABRA_3 = "caipirinha";  // abre las vacaciones
-const PALABRA_4 = "ingravidez";  // abre el espacio
-const PALABRA_5 = "chocolate";   // abre la montaña
-const PALABRA_6 = "obelisco";    // abre la ciudad
-/* Total disociación no tiene palabra: está abierta para todos. El portero
-   servía para que no entrara el que pasa de casualidad, y el link de esta
-   edición ya circula entre los nueve, así que no cuidaba nada. */
+/* ---------- las siete ediciones, todas abiertas ----------
+   Antes cada edición se ganaba terminando las diez de la anterior, y el que
+   ya la había pasado en otro teléfono entraba escribiendo una palabra clave.
+   Se sacaron las dos cosas. La palabra viajaba en el código de una página
+   pública, así que no guardaba ningún secreto —el que miraba el fuente la
+   encontraba—, y tener que pasar seis ediciones para poder mirar la séptima
+   era una traba y nada más: el link ya circula entre los nueve.
 
-/* El shopping se lo gana el que termino Los Museos. La palabra clave es para
-   el que lo paso en otro dispositivo, o para el que se la sopla un amigo. */
-/* Vacaciones se abre terminando las diez del shopping EN NORMAL. La clave
-   sirve igual, para poder entrar a mirarlo sin tener que pasarlo todo. */
-function elTresEstaAbierto(){
-  if(LEGAJO.clave3) return true;
-  return Object.keys(JUEGOS[2].salas).every(k => hechaEn(k, 1));
-}
-
-function elSeisEstaAbierto(){
-  if(LEGAJO.clave6) return true;
-  return Object.keys(JUEGOS[5].salas).every(k => hechaEn(k, 1));
-}
-
-function elCincoEstaAbierto(){
-  if(LEGAJO.clave5) return true;
-  return Object.keys(JUEGOS[4].salas).every(k => hechaEn(k, 1));
-}
-
-function elCuatroEstaAbierto(){
-  if(LEGAJO.clave4) return true;
-  return Object.keys(JUEGOS[3].salas).every(k => hechaEn(k, 1));
-}
-
-function elJuegoEstaAbierto(n){
-  return n === 2 ? elDosEstaAbierto()
-       : n === 3 ? elTresEstaAbierto()
-       : n === 4 ? elCuatroEstaAbierto()
-       : n === 5 ? elCincoEstaAbierto()
-       : n === 6 ? elSeisEstaAbierto() : true;   // la 7 está abierta para todos
-}
-
-function elDosEstaAbierto(){
-  if(LEGAJO.clave2) return true;
-  const delUno = Object.keys(JUEGOS[1].salas);
-  return delUno.every(k => LEGAJO.salas[k] && LEGAJO.salas[k].hecha);
-}
+   La función queda porque la miran tres lugares —el pie de la portada, la
+   ficha y el aviso de edición nueva—: decirles que sí a todas las deja
+   andando sin tocarlas. */
+function elJuegoEstaAbierto(n){ return true; }
 
 function entrar(){
   if(yaEntre) return;
   const inp = document.getElementById("nombre");
-  const cla = document.getElementById("clave");
   const pie = document.getElementById("portalpie");
   const nom = (inp && inp.value ? inp.value : "").trim().slice(0,16);
   if(!nom){
     pedirNombre();
     if(pie) pie.innerHTML = "Poné un nombre, aunque sea un apodo.";
     return;
-  }
-  /* Cada juego cerrado tiene su palabra. La de siempre abre el shopping y la
-     nueva las vacaciones; una no sirve para el otro. */
-  if(!elJuegoEstaAbierto(ELEGIDO)){
-    /* si el cartel de la clave no está abierto, se abre: entrar puede venir
-       del segundo toque en la tapa y ahí no hay dónde escribirla */
-    const caja = document.getElementById("pedido");
-    if(caja && caja.classList && caja.classList.contains("off")){
-      pedirNombre("clave"); return;
-    }
-    const suya = ELEGIDO === 6 ? PALABRA_6 : ELEGIDO === 5 ? PALABRA_5
-               : ELEGIDO === 4 ? PALABRA_4
-               : ELEGIDO === 3 ? PALABRA_3 : PALABRA;
-    const dicha = (cla && cla.value ? cla.value : "").trim().toLowerCase();
-    if(dicha === suya){
-      /* ya no hace falta pedirla de nuevo */
-      if(ELEGIDO === 6)      LEGAJO.clave6 = true;
-      else if(ELEGIDO === 5) LEGAJO.clave5 = true;
-      else if(ELEGIDO === 4) LEGAJO.clave4 = true;
-      else if(ELEGIDO === 3) LEGAJO.clave3 = true;
-      else                   LEGAJO.clave2 = true;
-    } else {
-      if(pie) pie.innerHTML = dicha
-        ? "Esa no es. <b>Preguntale a alguno que ya lo haya pasado.</b>"
-        : ({3:"Las vacaciones se abren <b>pasando las diez del shopping en normal</b>, o con la palabra clave.",
-            4:"El espacio se abre <b>terminando las diez de la playa</b>, o con la palabra clave.",
-            5:"La montaña se abre <b>terminando las diez del espacio</b>, o con la palabra clave.",
-            6:"La ciudad se abre <b>terminando las diez de la montaña</b>, o con la palabra clave."}[ELEGIDO]
-           || "El shopping se abre <b>pasando las diez salas de Los Museos</b>, o con la palabra clave.");
-      if(cla){
-        if(cla.focus) { try{ cla.focus(); }catch(e){} }
-        if(cla.animate){ try{ cla.animate(
-          [{transform:"translateX(0)"},{transform:"translateX(-6px)"},
-           {transform:"translateX(6px)"},{transform:"translateX(0)"}], {duration:240}); }catch(e){} }
-      }
-      return;
-    }
   }
   LEGAJO.nombre = nom;
   guardarLegajo(LEGAJO);
@@ -11047,7 +10916,7 @@ addEventListener("keydown", e=>{
    VERSION la escribe scripts/sellar.js junto con version.txt: no se toca a
    mano. Si alguna vez quedan iguales por olvido, no pasa nada: simplemente
    no hay recarga automática esa vez. */
-const VERSION = "e4b8115185";
+const VERSION = "33b27e1fa5";
 (function mirarSiHayNueva(){
   if(typeof window === "undefined" || !window.fetch) return;
   if(!/^https?:/.test(location.protocol || "")) return;   // abierto como archivo, o el arnés

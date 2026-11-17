@@ -82,6 +82,21 @@ está en el manual. Sin esa válvula la alerta sólo sube, el antagonista termin
 juego de mesa es así de duro y esta adaptación eligió ser jugable. Si alguna vez se
 quiere la versión cruda, va como modo aparte, nunca reemplazando a ésta.
 
+## Las siete ediciones están abiertas: decisión tomada
+
+Antes cada edición se ganaba terminando las diez salas de la anterior, y el que ya la
+había pasado en otro teléfono entraba escribiendo una palabra clave (`candombe`,
+`caipirinha`, …). **Se sacaron las dos cosas el 17/11/2026 y no vuelven.** Dos razones: la
+palabra viajaba en el código de una página pública, así que no guardaba ningún secreto, y
+obligar a pasar seis ediciones para poder mirar la séptima era una traba y nada más —el
+link ya circula entre los nueve—.
+
+Queda `elJuegoEstaAbierto(n)`, que devuelve `true` siempre. **No la borres:** la miran el
+pie de la portada, la ficha y el aviso de edición nueva. Si algún día se quiere volver a
+cerrar algo, se cambia esa función y nada más.
+
+`scripts/revisar-portada.js` existe justamente para que esto no vuelva sin querer.
+
 ## Sellar la versión antes de subir
 
 GitHub Pages sirve la página con `Cache-Control: max-age=600` y no deja cambiar
@@ -126,14 +141,28 @@ las diez no haya un abismo. Se apoya en `scripts/arnes-aura.js`, que no se usa s
 Que el motor de Aura no toque el DOM es a propósito y hay que mantenerlo así: es lo
 único que permite probarlo sin navegador.
 
-### Los Museos (`index.html`) todavía no tiene arnés versionado
+### Los Museos (`index.html`) ya tiene arnés
 
-Hay que armarlo y dejarlo en `scripts/`. Son cuatro cosas: cortar el JavaScript que está
-entre `<script>` y `</script>`, levantarlo con stubs de `document`, `canvas`,
-`localStorage` y `fetch`, reemplazar `setTimeout` por una cola que se drene a mano —el
-juego encadena las fases con temporizadores— y dejar el motor a mano para jugar solo.
+```
+node scripts/revisar-portada.js
+```
 
-Con eso se mide:
+Comprueba que las siete ediciones estén libres y que no haya vuelto el candado ni la
+palabra clave: 19 comprobaciones, y además arranca una sala de cada edición. Se le puede
+pasar otro html para comparar (`node scripts/revisar-portada.js copia-vieja.html`), que es
+la forma de confirmar que la prueba todavía detecta el error.
+
+Se apoya en `scripts/arnes-museos.js`, que no se usa solo. Ése es el arnés: corta el
+JavaScript que está entre `<script>` y `</script>`, lo levanta con stubs de `document`,
+`canvas`, `localStorage` y `fetch`, reemplaza `setTimeout` por una cola que se drena a
+mano —el juego encadena las fases con temporizadores— y deja el motor a mano para jugar
+solo. `cargar()` devuelve `{api, document, TIMERS, drain, sembrar}`.
+
+**Ojo: se puede cargar una sola vez por proceso.** El juego declara todo con `const` y
+`let` arriba de todo, así que un segundo `cargar()` choca con las declaraciones del
+primero. Si hace falta probar dos versiones, van en dos corridas.
+
+**Lo que falta medir** (se escribe con el mismo arnés, un revisor por tema):
 
 - **estructura** — que cada sala tenga 3 vitrinas, un cómplice de cada símbolo, las
   escaleras en pares, un solo antagonista, y que todo lo que hace falta para ganar se
